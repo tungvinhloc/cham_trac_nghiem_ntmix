@@ -266,7 +266,7 @@
     <div class="nav-item" onclick="switchTab('tab-results')">📊 Bảng điểm (<span id="count-graded">0</span>)</div>
 </div>
 
-<!-- TẢI OPENCV BẰNG SCRIPT ĐỘNG AN TOÀN CHỐNG TREO -->
+<!-- TẢI OPENCV DÙNG CDN HTTPS AN TOÀN CHỐNG CHẶN TRÊN GITHUB -->
 <script>
     window.addEventListener('DOMContentLoaded', () => {
         const isGithub = window.location.hostname.includes('github.io');
@@ -277,9 +277,9 @@
             label.textContent = "💻 Đang chạy trên Mạng nội bộ LAN / Localhost";
         }
 
-        // Tải động script OpenCV để tránh kẹt sự kiện onload của trình duyệt di động
+        // Sử dụng CDN jsDelivr với https chuẩn xác cho GitHub Pages
         const script = document.createElement('script');
-        script.src = "https://docs.opencv.org/4.8.0/opencv.js";
+        script.src = "https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0/dist/opencv.js";
         script.async = true;
         script.onload = () => {
             if (typeof cv !== 'undefined') {
@@ -293,9 +293,9 @@
             }
         };
         script.onerror = () => {
-            // Fallback sang CDN dự phòng nếu CDN chính lỗi
+            // Fallback sang CDN dự phòng
             const backupScript = document.createElement('script');
-            backupScript.src = "https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0/dist/opencv.js";
+            backupScript.src = "https://docs.opencv.org/4.8.0/opencv.js";
             backupScript.async = true;
             backupScript.onload = () => { onOpenCvReady(); };
             document.head.appendChild(backupScript);
@@ -303,12 +303,12 @@
         document.head.appendChild(script);
     });
 
-    // Phòng hờ thêm bộ đếm thời gian 5 giây tự động ép mở khóa nếu mạng quá chậm
+    // Phòng hờ bộ đếm 3 giây tự động mở khóa giao diện
     setTimeout(() => {
         if (!cvReady && typeof cv !== 'undefined') {
             onOpenCvReady();
         }
-    }, 5000);
+    }, 3000);
 </script>
 
 <script>
