@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - Auto-Magnetic Search</title>
+    <title>NTMIX OMR Mobile - Camera Tràn Viền Tự Chụp</title>
     <!-- Thư viện đọc/xuất Excel và QR -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -40,7 +40,7 @@
         #qr-video { width: 100%; display: block; }
         .qr-target-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 3px solid #00ff00; border-radius: 12px; }
 
-        /* CAMERA TRÀN MÀN HÌNH TỰ ĐỘNG CHỤP */
+        /* CAMERA TRÀN MÀN HÌNH */
         #camera-fullscreen-ui {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 9999; flex-direction: column; overflow: hidden;
@@ -56,15 +56,14 @@
             pointer-events: none;
         }
 
-        /* 4 Ô vuông xanh định vị khớp chuẩn lề giấy BGD */
         .corner-box {
-            position: absolute; width: 9%; aspect-ratio: 1 / 1;
+            position: absolute; width: 12%; aspect-ratio: 1 / 1;
             border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.1); transition: background 0.2s;
         }
-        .corner-box.tl { top: 2.5%; left: 3.5%; }
-        .corner-box.tr { top: 2.5%; right: 3.5%; }
-        .corner-box.bl { bottom: 2.5%; left: 3.5%; }
-        .corner-box.br { bottom: 2.5%; right: 3.5%; }
+        .corner-box.tl { top: 0; left: 0; }
+        .corner-box.tr { top: 0; right: 0; }
+        .corner-box.bl { bottom: 0; left: 0; }
+        .corner-box.br { bottom: 0; right: 0; }
 
         .cam-controls { padding: 16px; background: #0f172a; text-align: center; }
         #hud-text { color: #fff; font-size: 14px; font-weight: bold; margin-bottom: 12px; min-height: 20px; transition: color 0.3s; }
@@ -129,6 +128,7 @@
                 <label>📄 Hoặc chọn file Excel Đáp án (DapAn_TNMaker.xlsx):</label>
                 <label class="btn-upload">
                     <span id="label-file-key">📁 Bấm vào đây để chọn File Excel</span>
+                    <!-- Khai báo MIME types chuẩn chống chặn trên iOS/Zalo -->
                     <input type="file" id="file-key" accept=".xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display: none;">
                 </label>
             </div>
@@ -245,7 +245,7 @@
         </div>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Đưa 4 ô vuông đen lọt vào 4 ô xanh lục</p>
+        <p id="hud-text">Đưa 4 ô vuông đen của phiếu lọt vào 4 ô xanh lục</p>
         <div class="cam-btn-group">
             <button class="btn btn-danger" style="flex: 2;" onclick="manualCapture()">📸 Chụp (Bằng Tay)</button>
             <button class="btn btn-secondary" style="flex: 1;" onclick="closeFullscreenCamera()">❌ Đóng</button>
@@ -270,6 +270,7 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
+// THÔNG SỐ TỌA ĐỘ CHUẨN BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -302,8 +303,9 @@ function updateKeyStatusDisplay() {
     const codes = Object.keys(answerKey).sort();
     const box = document.getElementById('key-status-box');
     if (codes.length === 0) { box.style.display = 'none'; return; }
+    const sample = answerKey[codes[0]];
     box.style.display = 'block';
-    box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề`;
+    box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề (<b>${codes.join(', ')}</b>)`;
 }
 
 function parseNtmixQrString(rawText) {
@@ -443,7 +445,6 @@ function startAutoScan() {
         const cropW = rectO.width * scaleX;
         const cropH = rectO.height * scaleY;
 
-        // Quét siêu nhỏ để kiểm tra 4 góc (200x282)
         const tmpCanvas = document.createElement('canvas');
         tmpCanvas.width = 200; tmpCanvas.height = 282;
         const ctx = tmpCanvas.getContext('2d');
@@ -453,7 +454,7 @@ function startAutoScan() {
         let sum = 0;
         for(let i=0; i<imgData.length; i+=4) { sum += 0.299*imgData[i] + 0.587*imgData[i+1] + 0.114*imgData[i+2]; }
         const avg = sum / (200*282);
-        const thresh = Math.min(125, avg * 0.75);
+        const thresh = Math.min(125, avg * 0.7);
 
         function checkDarkness(cx, cy, w, h) {
             let darkCount = 0;
@@ -467,15 +468,11 @@ function startAutoScan() {
             return darkCount / (w * h);
         }
 
-        // Khớp với tỷ lệ CSS inset của 4 góc xanh: top 2.5%, left 3.5%, width 9%
-        const startX = Math.round(200 * 0.035);
-        const startY = Math.round(282 * 0.025);
-        const bw = Math.round(200 * 0.09); // 18px
-
-        const tl = checkDarkness(startX, startY, bw, bw);
-        const tr = checkDarkness(200 - startX - bw, startY, bw, bw);
-        const bl = checkDarkness(startX, 282 - startY - bw, bw, bw);
-        const br = checkDarkness(200 - startX - bw, 282 - startY - bw, bw, bw);
+        const bw = 24; 
+        const tl = checkDarkness(0, 0, bw, bw);
+        const tr = checkDarkness(200 - bw, 0, bw, bw);
+        const bl = checkDarkness(0, 282 - bw, bw, bw);
+        const br = checkDarkness(200 - bw, 282 - bw, bw, bw);
 
         function isValid(val) { return val > 0.02 && val < 0.35; }
         
@@ -503,7 +500,7 @@ function startAutoScan() {
             }
         } else {
             stableFrames = 0;
-            hudText.innerHTML = "Đưa 4 ô đen vào đúng 4 ô vuông xanh lục";
+            hudText.innerHTML = "Đưa 4 ô vuông đen lọt vào 4 ô vuông xanh lục";
             hudText.style.color = "#fff";
         }
     }, 250);
@@ -574,7 +571,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     const imgData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
     const data = imgData.data;
 
-    // Ngưỡng tính toán thông minh dựa vào ánh sáng cục bộ của bức ảnh
     let sumGray = 0;
     for(let i=0; i<data.length; i+=4) { sumGray += 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]; }
     let avgGray = sumGray / (WIDTH * HEIGHT);
@@ -594,10 +590,8 @@ function processImagePureJS(sourceCanvas, fileName) {
         return total > 0 ? darkCount / total : 0;
     }
 
-    // THUẬT TOÁN ĐỘT PHÁ: DÒ TÌM ĐIỂM ĐEN LÂN CẬN CHỐNG LỆCH GÓC
     function probeSquareCell(cx, cy, cw, ch) {
         let bestScore = 0, bestX = cx, bestY = cy;
-        // Rà quét xung quanh tâm chuẩn một vùng bán kính +/- 6 pixel
         for (let dy = -6; dy <= 6; dy += 3) {
             for (let dx = -6; dx <= 6; dx += 3) {
                 let score = getRegionDarkness(cx + dx - cw/2, cy + dy - ch/2, cw, ch);
@@ -615,15 +609,31 @@ function processImagePureJS(sourceCanvas, fileName) {
     const diemP3 = parseFloat(document.getElementById('cfg-p3').value) || 0.5;
     const fallbackCode = document.getElementById('fallback-code').value.trim();
 
+    // SỬA ĐỔI drawBubble: Dùng fill() vẽ dấu chấm vàng đặc, loại bỏ stroke()
     function drawBubble(x, y, status) {
         ctx.beginPath();
-        if (status === 'correct_fill') { ctx.fillStyle = "rgba(0, 200, 0, 0.8)"; ctx.arc(x, y, 7, 0, 2*Math.PI); ctx.fill(); }
-        else if (status === 'wrong_fill') { ctx.fillStyle = "rgba(255, 0, 0, 0.8)"; ctx.arc(x, y, 7, 0, 2*Math.PI); ctx.fill(); }
-        else if (status === 'missing_key') { ctx.strokeStyle = "rgba(255, 215, 0, 0.9)"; ctx.lineWidth = 2; ctx.arc(x, y, 11, 0, 2*Math.PI); ctx.stroke(); }
-        else if (status === 'info_read') { ctx.fillStyle = "rgba(0, 80, 255, 0.8)"; ctx.arc(x, y, 7, 0, 2*Math.PI); ctx.fill(); }
+        if (status === 'correct_fill') { 
+            ctx.fillStyle = "rgba(0, 200, 0, 0.8)"; 
+            ctx.arc(x, y, 7, 0, 2*Math.PI); 
+            ctx.fill(); 
+        }
+        else if (status === 'wrong_fill') { 
+            ctx.fillStyle = "rgba(255, 0, 0, 0.8)"; 
+            ctx.arc(x, y, 7, 0, 2*Math.PI); 
+            ctx.fill(); 
+        }
+        else if (status === 'missing_key') { 
+            ctx.fillStyle = "rgba(255, 215, 0, 1)"; // DẤU CHẤM TRÒN VÀNG ĐẬM
+            ctx.arc(x, y, 6, 0, 2*Math.PI); 
+            ctx.fill(); 
+        }
+        else if (status === 'info_read') { 
+            ctx.fillStyle = "rgba(0, 80, 255, 0.8)"; 
+            ctx.arc(x, y, 7, 0, 2*Math.PI); 
+            ctx.fill(); 
+        }
     }
 
-    // 1. Đọc SBD bằng Magnetic Probe
     let scannedSbd = "";
     for (let x of GRID_SPEC.sbd.x) {
         let probes = GRID_SPEC.sbd.y.map(y => probeSquareCell(x, y, 12, 12));
@@ -636,7 +646,6 @@ function processImagePureJS(sourceCanvas, fileName) {
         } else scannedSbd += "0";
     }
 
-    // 2. Đọc Mã đề bằng Magnetic Probe
     let scannedCode = "";
     for (let x of GRID_SPEC.made.x) {
         let probes = GRID_SPEC.made.y.map(y => probeSquareCell(x, y, 12, 12));
@@ -658,7 +667,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     let key = answerKey[code] || { p1: [], p2: [], p3: [] };
     let stuInfo = dshsDict[sbd] || { name: "", className: "" };
 
-    // 3. Chấm Phần I
     let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
     for (let i = 0; i < key.p1.length; i++) {
         let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
@@ -680,7 +688,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     }
     let scoreP1 = +(right1 * diemP1).toFixed(2);
 
-    // 4. Chấm Phần II
     let key2Str = key.p2.join(''); let student2 = ''; let scoreP2 = 0, right2Details = 0;
     for (let i = 0; i < key.p2.length; i++) {
         let blockIdx = Math.floor(i / 2); if (blockIdx >= 4) break;
@@ -702,7 +709,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     }
     scoreP2 = +scoreP2.toFixed(2);
 
-    // 5. Chấm Phần III
     let scoreP3 = 0, right3 = 0, validP3Count = 0; const rowChars = GRID_SPEC.p3.chars;
     for (let q = 0; q < 6; q++) {
         let cleanKey = (q < key.p3.length) ? String(key.p3[q]).trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '') : "";
