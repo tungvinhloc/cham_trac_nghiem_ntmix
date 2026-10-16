@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - Khung Ngắm Lớn</title>
+    <title>NTMIX OMR Mobile - Khung Ngắm Tràn Viền</title>
     <!-- Thư viện đọc/xuất Excel và QR -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -35,32 +35,31 @@
         .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; transition: 0.2s; }
         .btn-upload:active { background: #e2e8f0; border-color: #94a3b8; }
 
-        /* Khung quét QR */
         #qr-scanner-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-top: 8px; margin-bottom: 10px; }
         #qr-video { width: 100%; display: block; }
         .qr-target-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 3px solid #00ff00; border-radius: 12px; }
 
-        /* CAMERA TRÀN MÀN HÌNH TỰ ĐỘNG CHỤP */
+        /* CAMERA TRÀN MÀN HÌNH - FULL SCREEN THỰC SỰ */
         #camera-fullscreen-ui {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #000; z-index: 9999; flex-direction: column; overflow: hidden;
+            background: #000; z-index: 9999;
         }
-        #video-container { position: relative; flex: 1; width: 100%; background: #000; overflow: hidden; }
+        #video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; }
         #video { width: 100%; height: 100%; object-fit: cover; display: block; }
         
-        /* PHÓNG TO KHUNG NGẮM CAMERA GẦN KỊCH MÀN HÌNH */
+        /* KHUNG NGẮM TRÀN VIỀN CHIỀU RỘNG (96%) */
         #cam-overlay { 
             position: absolute; 
-            top: 47%; left: 50%; transform: translate(-50%, -50%);
-            width: 96%; /* Phóng to chiếm 96% chiều ngang màn hình */
-            max-width: 650px; 
+            top: 45%; left: 50%; transform: translate(-50%, -50%);
+            width: 96vw; /* Tràn ra sát hai mép màn hình */
+            max-width: 600px; 
             aspect-ratio: 800 / 1130; 
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); 
-            border: 2px dashed rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); 
+            border: 2px dashed rgba(255, 255, 255, 0.6);
             pointer-events: none;
+            z-index: 10;
         }
 
-        /* 4 Ô vuông xanh định vị lề */
         .corner-box {
             position: absolute; width: 10%; aspect-ratio: 1 / 1;
             border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.1); transition: background 0.2s;
@@ -70,8 +69,14 @@
         .corner-box.bl { bottom: 2.5%; left: 3.5%; }
         .corner-box.br { bottom: 2.5%; right: 3.5%; }
 
-        .cam-controls { padding: 16px; background: #0f172a; text-align: center; }
-        #hud-text { color: #fff; font-size: 14px; font-weight: bold; margin-bottom: 12px; min-height: 20px; transition: color 0.3s; }
+        /* Bảng điều khiển nổi lên trên video ở cạnh dưới */
+        .cam-controls { 
+            position: absolute; bottom: 0; left: 0; width: 100%; 
+            padding: 20px 16px 30px 16px; 
+            background: linear-gradient(transparent, rgba(0,0,0,0.9)); 
+            text-align: center; z-index: 20; 
+        }
+        #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 14px; min-height: 20px; transition: color 0.3s; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .cam-btn-group { display: flex; gap: 10px; justify-content: center; }
 
         .score-dashboard { display: none; background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 12px; margin-top: 10px; box-shadow: 0 4px 10px rgba(220,38,38,0.12); }
@@ -251,8 +256,8 @@
     <div class="cam-controls">
         <p id="hud-text">Đưa 4 ô vuông đen của phiếu lọt vào 4 ô xanh lục</p>
         <div class="cam-btn-group">
-            <button class="btn btn-danger" style="flex: 2;" onclick="manualCapture()">📸 Chụp (Bằng Tay)</button>
-            <button class="btn btn-secondary" style="flex: 1;" onclick="closeFullscreenCamera()">❌ Đóng</button>
+            <button class="btn btn-danger" style="flex: 2; font-size: 16px;" onclick="manualCapture()">📸 Chụp Ngay</button>
+            <button class="btn btn-secondary" style="flex: 1; font-size: 16px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
         </div>
     </div>
 </div>
@@ -266,7 +271,7 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
     const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 Dò Tâm Tự Động (Auto-Magnetic)" : "💻 Dò Tâm Tự Động (Auto-Magnetic)";
+    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 Dò Tâm Tự Động (Tràn viền)" : "💻 Dò Tâm Tự Động (Tràn viền)";
 });
 
 let answerKey = {}; let dshsDict = {}; let gradedRows = [];
@@ -274,7 +279,6 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
-// THÔNG SỐ TỌA ĐỘ CHUẨN BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -307,7 +311,6 @@ function updateKeyStatusDisplay() {
     const codes = Object.keys(answerKey).sort();
     const box = document.getElementById('key-status-box');
     if (codes.length === 0) { box.style.display = 'none'; return; }
-    const sample = answerKey[codes[0]];
     box.style.display = 'block';
     box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề`;
 }
@@ -473,10 +476,10 @@ function startAutoScan() {
             return darkCount / (w * h);
         }
 
-        // Khớp với tỷ lệ CSS inset của 4 góc xanh: top 2.5%, left 3.5%, width 10%
+        // Tỷ lệ góc 3.5%, kích thước 10%
         const startX = Math.round(200 * 0.035);
         const startY = Math.round(282 * 0.025);
-        const bw = Math.round(200 * 0.10); // 20px
+        const bw = Math.round(200 * 0.10);
 
         const tl = checkDarkness(startX, startY, bw, bw);
         const tr = checkDarkness(200 - startX - bw, startY, bw, bw);
@@ -509,7 +512,7 @@ function startAutoScan() {
             }
         } else {
             stableFrames = 0;
-            hudText.innerHTML = "Đưa 4 ô đen vào đúng 4 ô vuông xanh lục";
+            hudText.innerHTML = "Đưa 4 ô vuông đen lọt vào 4 ô xanh lục";
             hudText.style.color = "#fff";
         }
     }, 250);
