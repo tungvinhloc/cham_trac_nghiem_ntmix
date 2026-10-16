@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - Nắn Tọa Độ Thông Minh</title>
+    <title>NTMIX OMR Mobile - Auto-Magnetic Search</title>
     <!-- Thư viện đọc/xuất Excel và QR -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -40,7 +40,7 @@
         #qr-video { width: 100%; display: block; }
         .qr-target-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 3px solid #00ff00; border-radius: 12px; }
 
-        /* CAMERA TRÀN MÀN HÌNH */
+        /* CAMERA TRÀN MÀN HÌNH TỰ ĐỘNG CHỤP */
         #camera-fullscreen-ui {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 9999; flex-direction: column; overflow: hidden;
@@ -56,14 +56,15 @@
             pointer-events: none;
         }
 
+        /* 4 Ô vuông xanh định vị khớp chuẩn lề giấy BGD */
         .corner-box {
-            position: absolute; width: 12%; aspect-ratio: 1 / 1;
+            position: absolute; width: 9%; aspect-ratio: 1 / 1;
             border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.1); transition: background 0.2s;
         }
-        .corner-box.tl { top: 0; left: 0; }
-        .corner-box.tr { top: 0; right: 0; }
-        .corner-box.bl { bottom: 0; left: 0; }
-        .corner-box.br { bottom: 0; right: 0; }
+        .corner-box.tl { top: 2.5%; left: 3.5%; }
+        .corner-box.tr { top: 2.5%; right: 3.5%; }
+        .corner-box.bl { bottom: 2.5%; left: 3.5%; }
+        .corner-box.br { bottom: 2.5%; right: 3.5%; }
 
         .cam-controls { padding: 16px; background: #0f172a; text-align: center; }
         #hud-text { color: #fff; font-size: 14px; font-weight: bold; margin-bottom: 12px; min-height: 20px; transition: color 0.3s; }
@@ -99,7 +100,7 @@
 <header>
     <h1>NTMIX OMR MOBILE</h1>
     <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span class="badge-cv">✅ Hệ thống Sẵn Sàng 100%</span>
+    <span class="badge-cv">✅ Hệ thống Sẵn Sàng</span>
 </header>
 
 <div class="container">
@@ -261,7 +262,7 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
     const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 Nắn Tọa Độ Động (Auto-Capture)" : "💻 Nắn Tọa Độ Động (Auto-Capture)";
+    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 Dò Tâm Tự Động (Auto-Magnetic)" : "💻 Dò Tâm Tự Động (Auto-Magnetic)";
 });
 
 let answerKey = {}; let dshsDict = {}; let gradedRows = [];
@@ -269,7 +270,6 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
-// THÔNG SỐ TỌA ĐỘ CHUẨN BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -302,7 +302,6 @@ function updateKeyStatusDisplay() {
     const codes = Object.keys(answerKey).sort();
     const box = document.getElementById('key-status-box');
     if (codes.length === 0) { box.style.display = 'none'; return; }
-    const sample = answerKey[codes[0]];
     box.style.display = 'block';
     box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề`;
 }
@@ -421,7 +420,6 @@ function startAutoScan() {
     autoScanTimer = setInterval(() => {
         if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
 
-        // Cắt ảnh chính xác theo tọa độ thẻ cam-overlay
         const videoRatio = video.videoWidth / video.videoHeight;
         const elementRatio = video.clientWidth / video.clientHeight;
         let sWidth, sHeight, sx, sy;
@@ -455,7 +453,7 @@ function startAutoScan() {
         let sum = 0;
         for(let i=0; i<imgData.length; i+=4) { sum += 0.299*imgData[i] + 0.587*imgData[i+1] + 0.114*imgData[i+2]; }
         const avg = sum / (200*282);
-        const thresh = Math.min(125, avg * 0.7);
+        const thresh = Math.min(125, avg * 0.75);
 
         function checkDarkness(cx, cy, w, h) {
             let darkCount = 0;
@@ -469,18 +467,22 @@ function startAutoScan() {
             return darkCount / (w * h);
         }
 
-        const bw = 24; 
-        const tl = checkDarkness(0, 0, bw, bw);
-        const tr = checkDarkness(200 - bw, 0, bw, bw);
-        const bl = checkDarkness(0, 282 - bw, bw, bw);
-        const br = checkDarkness(200 - bw, 282 - bw, bw, bw);
+        // Khớp với tỷ lệ CSS inset của 4 góc xanh: top 2.5%, left 3.5%, width 9%
+        const startX = Math.round(200 * 0.035);
+        const startY = Math.round(282 * 0.025);
+        const bw = Math.round(200 * 0.09); // 18px
+
+        const tl = checkDarkness(startX, startY, bw, bw);
+        const tr = checkDarkness(200 - startX - bw, startY, bw, bw);
+        const bl = checkDarkness(startX, 282 - startY - bw, bw, bw);
+        const br = checkDarkness(200 - startX - bw, 282 - startY - bw, bw, bw);
 
         function isValid(val) { return val > 0.02 && val < 0.35; }
         
-        document.getElementById('cb-tl').style.background = isValid(tl) ? "rgba(0, 255, 0, 0.5)" : "rgba(0, 255, 0, 0.1)";
-        document.getElementById('cb-tr').style.background = isValid(tr) ? "rgba(0, 255, 0, 0.5)" : "rgba(0, 255, 0, 0.1)";
-        document.getElementById('cb-bl').style.background = isValid(bl) ? "rgba(0, 255, 0, 0.5)" : "rgba(0, 255, 0, 0.1)";
-        document.getElementById('cb-br').style.background = isValid(br) ? "rgba(0, 255, 0, 0.5)" : "rgba(0, 255, 0, 0.1)";
+        document.getElementById('cb-tl').style.background = isValid(tl) ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.1)";
+        document.getElementById('cb-tr').style.background = isValid(tr) ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.1)";
+        document.getElementById('cb-bl').style.background = isValid(bl) ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.1)";
+        document.getElementById('cb-br').style.background = isValid(br) ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.1)";
 
         if (isValid(tl) && isValid(tr) && isValid(bl) && isValid(br)) {
             stableFrames++;
@@ -501,7 +503,7 @@ function startAutoScan() {
             }
         } else {
             stableFrames = 0;
-            hudText.innerHTML = "Đưa 4 ô vuông đen lọt vào 4 ô vuông xanh lục";
+            hudText.innerHTML = "Đưa 4 ô đen vào đúng 4 ô vuông xanh lục";
             hudText.style.color = "#fff";
         }
     }, 250);
@@ -529,7 +531,6 @@ function manualCapture() {
 
     const rectV = video.getBoundingClientRect();
     const rectO = overlay.getBoundingClientRect();
-    
     const scaleX = sWidth / rectV.width;
     const scaleY = sHeight / rectV.height;
     
@@ -566,64 +567,25 @@ async function handleImageFiles(files) {
     }
 }
 
-// ================= LÕI NẮN TỌA ĐỘ ĐỘNG (BILINEAR INTERPOLATION) =================
+// ================= LÕI NAM CHÂM ĐỊNH VỊ BÓC TÁCH CỤC BỘ (LOCAL MAGNETIC SEARCH) =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const ctx = sourceCanvas.getContext('2d');
     const imgData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
     const data = imgData.data;
 
-    // 1. Tính ngưỡng sáng động
+    // Ngưỡng tính toán thông minh dựa vào ánh sáng cục bộ của bức ảnh
     let sumGray = 0;
     for(let i=0; i<data.length; i+=4) { sumGray += 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]; }
     let avgGray = sumGray / (WIDTH * HEIGHT);
-    let threshMarker = Math.min(140, avgGray * 0.85); // Ngưỡng tìm 4 ô vuông đen
-    let threshBubble = Math.min(130, avgGray * 0.75); // Ngưỡng tìm vết tô chì
+    let threshBubble = Math.min(135, avgGray * 0.82); 
 
-    // 2. Tìm tâm của 4 ô đen trên hình chụp (tự động fix lệch góc)
-    function findMarkerCenter(startX, startY, w, h) {
-        let sumX = 0, sumY = 0, count = 0;
-        for(let y = startY; y < startY + h; y++) {
-            for(let x = startX; x < startX + w; x++) {
-                let idx = (y * WIDTH + x) * 4;
-                let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                if (gray < threshMarker) { sumX += x; sumY += y; count++; }
-            }
-        }
-        return (count > 30) ? { x: sumX / count, y: sumY / count } : null;
-    }
-
-    let pTL = findMarkerCenter(0, 0, 150, 150) || {x: 40, y: 40};
-    let pTR = findMarkerCenter(650, 0, 150, 150) || {x: 760, y: 40};
-    let pBL = findMarkerCenter(0, 980, 150, 150) || {x: 40, y: 1090};
-    let pBR = findMarkerCenter(650, 980, 150, 150) || {x: 760, y: 1090};
-
-    // Vẽ 4 chấm Hồng báo hiệu 4 góc đã khóa chuẩn
-    ctx.fillStyle = "rgba(255, 0, 255, 0.6)";
-    ctx.beginPath(); ctx.arc(pTL.x, pTL.y, 8, 0, 2*Math.PI); ctx.fill();
-    ctx.beginPath(); ctx.arc(pTR.x, pTR.y, 8, 0, 2*Math.PI); ctx.fill();
-    ctx.beginPath(); ctx.arc(pBL.x, pBL.y, 8, 0, 2*Math.PI); ctx.fill();
-    ctx.beginPath(); ctx.arc(pBR.x, pBR.y, 8, 0, 2*Math.PI); ctx.fill();
-
-    // 3. Hàm nắn tọa độ chuẩn xác (Bilinear Mapping)
-    function mapCoord(sx, sy) {
-        let u = (sx - 40) / 720;
-        let v = (sy - 40) / 1050;
-        let ax = (1-u)*(1-v)*pTL.x + u*(1-v)*pTR.x + (1-u)*v*pBL.x + u*v*pBR.x;
-        let ay = (1-u)*(1-v)*pTL.y + u*(1-v)*pTR.y + (1-u)*v*pBL.y + u*v*pBR.y;
-        return { x: ax, y: ay };
-    }
-
-    // 4. Lõi quét bóc tách điểm chì siêu chính xác
-    function getMappedDarkness(sx, sy, w, h) {
-        let center = mapCoord(sx, sy);
-        let cx = center.x, cy = center.y;
+    function getRegionDarkness(x, y, w, h) {
         let darkCount = 0, total = 0;
-        let startX = Math.round(cx - w/2), startY = Math.round(cy - h/2);
-        for (let y = startY; y < startY + h; y++) {
-            for (let x = startX; x < startX + w; x++) {
-                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
-                let idx = (y * WIDTH + x) * 4;
+        for (let py = Math.round(y); py < Math.round(y + h); py++) {
+            for (let px = Math.round(x); px < Math.round(x + w); px++) {
+                if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
+                let idx = (py * WIDTH + px) * 4;
                 let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
                 if (gray < threshBubble) darkCount++;
                 total++;
@@ -632,37 +594,59 @@ function processImagePureJS(sourceCanvas, fileName) {
         return total > 0 ? darkCount / total : 0;
     }
 
+    // THUẬT TOÁN ĐỘT PHÁ: DÒ TÌM ĐIỂM ĐEN LÂN CẬN CHỐNG LỆCH GÓC
+    function probeSquareCell(cx, cy, cw, ch) {
+        let bestScore = 0, bestX = cx, bestY = cy;
+        // Rà quét xung quanh tâm chuẩn một vùng bán kính +/- 6 pixel
+        for (let dy = -6; dy <= 6; dy += 3) {
+            for (let dx = -6; dx <= 6; dx += 3) {
+                let score = getRegionDarkness(cx + dx - cw/2, cy + dy - ch/2, cw, ch);
+                if (score > bestScore) {
+                    bestScore = score; bestX = cx + dx; bestY = cy + dy;
+                }
+            }
+        }
+        return { score: bestScore, x: bestX, y: bestY };
+    }
+
     const minConf = parseFloat(document.getElementById('cfg-conf').value) || 0.24;
     const diemP1 = parseFloat(document.getElementById('cfg-p1').value) || 0.25;
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1').value)||0.1, parseFloat(document.getElementById('cfg-p2-2').value)||0.25, parseFloat(document.getElementById('cfg-p2-3').value)||0.5, parseFloat(document.getElementById('cfg-p2-4').value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3').value) || 0.5;
     const fallbackCode = document.getElementById('fallback-code').value.trim();
 
-    function drawMappedBubble(sx, sy, status) {
-        let pt = mapCoord(sx, sy);
+    function drawBubble(x, y, status) {
         ctx.beginPath();
-        if (status === 'correct_fill') { ctx.fillStyle = "rgba(0, 200, 0, 0.7)"; ctx.arc(pt.x, pt.y, 7, 0, 2*Math.PI); ctx.fill(); }
-        else if (status === 'wrong_fill') { ctx.fillStyle = "rgba(255, 0, 0, 0.7)"; ctx.arc(pt.x, pt.y, 7, 0, 2*Math.PI); ctx.fill(); }
-        else if (status === 'missing_key') { ctx.strokeStyle = "rgba(255, 215, 0, 0.9)"; ctx.lineWidth = 2; ctx.arc(pt.x, pt.y, 11, 0, 2*Math.PI); ctx.stroke(); }
-        else if (status === 'info_read') { ctx.fillStyle = "rgba(0, 80, 255, 0.7)"; ctx.arc(pt.x, pt.y, 7, 0, 2*Math.PI); ctx.fill(); }
+        if (status === 'correct_fill') { ctx.fillStyle = "rgba(0, 200, 0, 0.8)"; ctx.arc(x, y, 7, 0, 2*Math.PI); ctx.fill(); }
+        else if (status === 'wrong_fill') { ctx.fillStyle = "rgba(255, 0, 0, 0.8)"; ctx.arc(x, y, 7, 0, 2*Math.PI); ctx.fill(); }
+        else if (status === 'missing_key') { ctx.strokeStyle = "rgba(255, 215, 0, 0.9)"; ctx.lineWidth = 2; ctx.arc(x, y, 11, 0, 2*Math.PI); ctx.stroke(); }
+        else if (status === 'info_read') { ctx.fillStyle = "rgba(0, 80, 255, 0.8)"; ctx.arc(x, y, 7, 0, 2*Math.PI); ctx.fill(); }
     }
 
-    // --- Chấm SBD ---
+    // 1. Đọc SBD bằng Magnetic Probe
     let scannedSbd = "";
     for (let x of GRID_SPEC.sbd.x) {
-        let scores = GRID_SPEC.sbd.y.map(y => getMappedDarkness(x, y, 14, 14));
+        let probes = GRID_SPEC.sbd.y.map(y => probeSquareCell(x, y, 12, 12));
+        let scores = probes.map(p => p.score);
         let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
-        if (maxScore > minConf) { scannedSbd += maxIdx; drawMappedBubble(x, GRID_SPEC.sbd.y[maxIdx], 'info_read'); }
-        else scannedSbd += "0";
+        let sorted = [...scores].sort((a,b)=>a-b);
+        if (maxScore > minConf && (maxScore - sorted[4]) > 0.08) { 
+            scannedSbd += String(maxIdx); 
+            drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'info_read'); 
+        } else scannedSbd += "0";
     }
 
-    // --- Chấm Mã đề ---
+    // 2. Đọc Mã đề bằng Magnetic Probe
     let scannedCode = "";
     for (let x of GRID_SPEC.made.x) {
-        let scores = GRID_SPEC.made.y.map(y => getMappedDarkness(x, y, 14, 14));
+        let probes = GRID_SPEC.made.y.map(y => probeSquareCell(x, y, 12, 12));
+        let scores = probes.map(p => p.score);
         let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
-        if (maxScore > minConf) { scannedCode += maxIdx; drawMappedBubble(x, GRID_SPEC.made.y[maxIdx], 'info_read'); }
-        else scannedCode += "0";
+        let sorted = [...scores].sort((a,b)=>a-b);
+        if (maxScore > minConf && (maxScore - sorted[4]) > 0.08) { 
+            scannedCode += String(maxIdx); 
+            drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'info_read'); 
+        } else scannedCode += "0";
     }
 
     let sbd = scannedSbd, code = scannedCode, warnings = [];
@@ -674,26 +658,29 @@ function processImagePureJS(sourceCanvas, fileName) {
     let key = answerKey[code] || { p1: [], p2: [], p3: [] };
     let stuInfo = dshsDict[sbd] || { name: "", className: "" };
 
-    // --- Chấm Phần I ---
+    // 3. Chấm Phần I
     let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
     for (let i = 0; i < key.p1.length; i++) {
         let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
         if (blockIdx >= 4) break;
         let y = GRID_SPEC.p1.y[rowIdx];
         let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
-        let scores = xList.map(x => getMappedDarkness(x, y, 14, 14));
+        
+        let probes = xList.map(x => probeSquareCell(x, y, 12, 12));
+        let scores = probes.map(p => p.score);
         let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
+        
         let isFilled = maxScore > minConf;
         let corrLabel = key.p1[i], corrIdx = labelsP1.indexOf(corrLabel);
 
         if (isFilled) {
-            if (labelsP1[maxIdx] === corrLabel) { right1++; drawMappedBubble(xList[maxIdx], y, 'correct_fill'); }
-            else { drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key'); }
-        } else if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key');
+            if (labelsP1[maxIdx] === corrLabel) { right1++; drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'correct_fill'); }
+            else { drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'wrong_fill'); if (corrIdx >= 0) drawBubble(xList[corrIdx], y, 'missing_key'); }
+        } else if (corrIdx >= 0) drawBubble(xList[corrIdx], y, 'missing_key');
     }
     let scoreP1 = +(right1 * diemP1).toFixed(2);
 
-    // --- Chấm Phần II ---
+    // 4. Chấm Phần II
     let key2Str = key.p2.join(''); let student2 = ''; let scoreP2 = 0, right2Details = 0;
     for (let i = 0; i < key.p2.length; i++) {
         let blockIdx = Math.floor(i / 2); if (blockIdx >= 4) break;
@@ -701,7 +688,8 @@ function processImagePureJS(sourceCanvas, fileName) {
         let xList = (i % 2 === 1) ? [baseX + 76, baseX + 114] : [baseX, baseX + 38];
         for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
             let y = GRID_SPEC.p2.y[rowIdx];
-            let scores = xList.map(x => getMappedDarkness(x, y, 14, 14));
+            let probes = xList.map(x => probeSquareCell(x, y, 12, 12));
+            let scores = probes.map(p => p.score);
             let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
             student2 += (maxScore > minConf) ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
         }
@@ -714,7 +702,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     }
     scoreP2 = +scoreP2.toFixed(2);
 
-    // --- Chấm Phần III ---
+    // 5. Chấm Phần III
     let scoreP3 = 0, right3 = 0, validP3Count = 0; const rowChars = GRID_SPEC.p3.chars;
     for (let q = 0; q < 6; q++) {
         let cleanKey = (q < key.p3.length) ? String(key.p3[q]).trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '') : "";
@@ -723,23 +711,23 @@ function processImagePureJS(sourceCanvas, fileName) {
         let baseX = GRID_SPEC.p3.blockX[q], stuAnsStr = "", keyChars = cleanKey.split('');
         for (let colIdx = 0; colIdx < 4; colIdx++) {
             let x = baseX + GRID_SPEC.p3.offsetsX[colIdx];
-            let scores = GRID_SPEC.p3.y.map(y => getMappedDarkness(x, y, 14, 14));
+            let probes = GRID_SPEC.p3.y.map(y => probeSquareCell(x, y, 10, 10));
+            let scores = probes.map(p => p.score);
             let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
             let isFilled = maxScore > minConf;
             let filledChar = isFilled ? rowChars[maxIdx] : '', expectedChar = colIdx < keyChars.length ? keyChars[colIdx] : '';
 
             if (filledChar) {
-                if (filledChar === expectedChar) drawMappedBubble(x, GRID_SPEC.p3.y[maxIdx], 'correct_fill');
-                else { drawMappedBubble(x, GRID_SPEC.p3.y[maxIdx], 'wrong_fill'); if (expectedChar && rowChars.includes(expectedChar)) drawMappedBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key'); }
+                if (filledChar === expectedChar) drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'correct_fill');
+                else { drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'wrong_fill'); if (expectedChar && rowChars.includes(expectedChar)) drawBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key'); }
                 stuAnsStr += filledChar;
-            } else if (expectedChar && rowChars.includes(expectedChar)) drawMappedBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key');
+            } else if (expectedChar && rowChars.includes(expectedChar)) drawBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key');
         }
         if (stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
     }
     scoreP3 = +scoreP3.toFixed(2);
     let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
-    // In điểm đỏ lên ảnh
     ctx.fillStyle = "#ffffff"; ctx.fillRect(12, 85, 230, 165);
     ctx.lineWidth = 3; ctx.strokeStyle = "#dc2626"; ctx.strokeRect(12, 85, 230, 165);
     ctx.fillStyle = "#dc2626"; ctx.font = "bold 26px Arial"; ctx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
