@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - Siêu Tốc (No OpenCV)</title>
+    <title>NTMIX OMR Mobile - Đầy Đủ Camera & Định Vị 4 Góc</title>
     <!-- Thư viện đọc/xuất Excel SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Thư viện giải mã QR Code (jsQR) -->
@@ -48,9 +48,15 @@
         #qr-video { width: 100%; display: block; }
         .qr-target-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 3px solid #00ff00; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); pointer-events: none; }
 
+        /* Khung Camera trực tiếp kèm 4 ô ngắm */
         #camera-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
         #video { width: 100%; display: block; }
-        .cam-bottom-bar { padding: 10px; background: #0f172a; display: flex; gap: 8px; }
+        .cam-overlay { position: absolute; inset: 0; pointer-events: none; border: 2px dashed rgba(255,255,255,0.4); margin: 16px; border-radius: 8px; }
+        .corner { position: absolute; width: 36px; height: 36px; border: 4px solid #00ff00; }
+        .tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+        .bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+        .br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
 
         .score-dashboard { display: none; background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 12px; margin-top: 10px; box-shadow: 0 4px 10px rgba(220,38,38,0.12); }
         .score-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #fca5a5; padding-bottom: 8px; margin-bottom: 10px; }
@@ -62,9 +68,6 @@
         .part-box .p-val { font-size: 18px; font-weight: 800; color: #dc2626; margin-top: 2px; }
         .part-box .p-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
 
-        .check-inline { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #1e3a8a; margin-top: 8px; }
-        .check-inline input { width: 18px; height: 18px; }
-
         .key-summary-box { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-top: 6px; display: none; }
         #result-canvas { width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; display: none; margin-top: 10px; }
 
@@ -75,7 +78,7 @@
 
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 100; }
         .nav-item { flex: 1; padding: 10px 4px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; }
-        .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); background: #eff6ff; }
+        .nav-item.active { color: var(--primary); border-top: 3px solid (--primary); background: #eff6ff; }
         .tab-pane { display: none; }
         .tab-pane.active { display: block; }
     </style>
@@ -85,7 +88,7 @@
 <header>
     <h1>NTMIX OMR MOBILE</h1>
     <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span id="cv-status" class="badge-cv">✅ Hệ thống sẵn sàng (Siêu tốc)</span>
+    <span id="cv-status" class="badge-cv">✅ Sẵn sàng chấm bài</span>
 </header>
 
 <div class="container">
@@ -158,18 +161,34 @@
         </div>
     </div>
 
-    <!-- TAB 2: QUÉT ẢNH PHIẾU -->
+    <!-- TAB 2: QUÉT CAMERA TRỰC TIẾP HOẶC TỪ THƯ VIỆN -->
     <div id="tab-scan" class="tab-pane">
         <div class="card">
             <div class="card-title">
-                <span>Chấm Bài Bằng Ảnh Chụp / Thư Viện</span>
+                <span>Quét Phiếu Trực Tiếp Hoặc Chọn Ảnh</span>
             </div>
 
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label class="btn btn-success" style="cursor: pointer; text-align: center; padding: 14px; font-size: 16px;">
-                    📷 Chụp Ảnh Hoặc Chọn Ảnh Phiếu Từ Thư Viện
+            <div class="grid-2" style="margin-bottom: 10px;">
+                <button class="btn btn-primary" id="btn-toggle-cam" onclick="toggleCamera()">📷 Mở Camera Trực Tiếp</button>
+                <label class="btn btn-success" style="margin: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    🖼️ Chọn Ảnh Thư Viện
                     <input type="file" id="file-images" accept="image/*" multiple style="display: none;" onchange="handleImageFiles(this.files)">
                 </label>
+            </div>
+
+            <!-- Khung Camera trực tiếp kèm 4 ô vuông ngắm 4 góc -->
+            <div id="camera-wrapper">
+                <video id="video" autoplay playsinline muted></video>
+                <div class="cam-overlay">
+                    <div class="corner tl"></div>
+                    <div class="corner tr"></div>
+                    <div class="corner bl"></div>
+                    <div class="corner br"></div>
+                </div>
+                <div style="padding: 10px; background: rgba(0,0,0,0.8); text-align: center;">
+                    <p style="color: #fff; font-size: 12px; margin-bottom: 8px;">Canh 4 ô vuông đen ở 4 góc tờ phiếu lọt vào 4 góc khung xanh</p>
+                    <button class="btn btn-danger" onclick="captureAndGrade()">⚡ CHỤP & CHẤM NGAY</button>
+                </div>
             </div>
 
             <div id="scan-status" style="font-size: 14px; font-weight: 700; color: var(--primary); text-align: center; margin-bottom: 10px;"></div>
@@ -203,7 +222,8 @@
                     </div>
                 </div>
                 <div id="ui-warnings" style="margin-top: 8px; font-size: 12px; color: #d93025; font-weight: 600; text-align: center;"></div>
-                <div style="margin-top: 10px;">
+                <div class="grid-2" style="margin-top: 10px;">
+                    <button class="btn btn-primary" onclick="resumeScanning()">🔄 Chụp Phiếu Tiếp</button>
                     <button class="btn btn-secondary" onclick="downloadResultImage()">⬇️ Lưu Ảnh Đã Chấm</button>
                 </div>
             </div>
@@ -256,12 +276,14 @@ window.addEventListener('DOMContentLoaded', () => {
 let answerKey = {};
 let dshsDict = {};
 let gradedRows = [];
+let videoStream = null;
 let qrStream = null;
 let qrScanTimer = null;
 let lastGradedSbd = "Phieu";
 
 function switchTab(tabId) {
     if (tabId !== 'tab-config') stopQrScanner();
+    if (tabId !== 'tab-scan') stopCamera();
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
@@ -412,6 +434,59 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(file);
 });
 
+// Điều khiển Camera trực tiếp
+async function toggleCamera() {
+    const wrapper = document.getElementById('camera-wrapper');
+    const video = document.getElementById('video');
+    const btn = document.getElementById('btn-toggle-cam');
+    if (videoStream) {
+        stopCamera();
+        return;
+    }
+    if (Object.keys(answerKey).length === 0) {
+        alert("Vui lòng nạp đáp án trước!");
+        switchTab('tab-config');
+        return;
+    }
+    try {
+        videoStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }
+        });
+        video.srcObject = videoStream;
+        wrapper.style.display = 'block';
+        btn.textContent = "❌ Tắt Camera";
+    } catch (err) {
+        alert("Không mở được camera trực tiếp. Thầy hãy dùng nút 'Chọn Ảnh Thư Viện' bên cạnh nhé!");
+    }
+}
+
+function stopCamera() {
+    if (videoStream) {
+        videoStream.getTracks().forEach(t => t.stop());
+        videoStream = null;
+    }
+    document.getElementById('camera-wrapper').style.display = 'none';
+    document.getElementById('btn-toggle-cam').textContent = "📷 Mở Camera Trực Tiếp";
+}
+
+function captureAndGrade() {
+    const video = document.getElementById('video');
+    if (!videoStream || !video.videoWidth) return;
+    playBeep();
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    stopCamera();
+    processImagePureJS(canvas, `Cam_${Date.now()}.jpg`);
+}
+
+function resumeScanning() {
+    document.getElementById('score-dashboard').style.display = 'none';
+    document.getElementById('result-canvas').style.display = 'none';
+    toggleCamera();
+}
+
 async function handleImageFiles(files) {
     if (!files || !files.length) return;
     if (Object.keys(answerKey).length === 0) {
@@ -425,7 +500,10 @@ async function handleImageFiles(files) {
         await new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
-                processImagePureJS(img, files[i].name);
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width; canvas.height = img.height;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                processImagePureJS(canvas, files[i].name);
                 resolve();
             };
             img.src = URL.createObjectURL(files[i]);
@@ -433,18 +511,17 @@ async function handleImageFiles(files) {
     }
 }
 
-// Xử lý ảnh bằng Thuần JavaScript (Không cần OpenCV, siêu nhanh)
-function processImagePureJS(imgElement, fileName) {
+// Xử lý ảnh bằng Thuần JavaScript siêu nhanh
+function processImagePureJS(sourceCanvas, fileName) {
     const canvas = document.createElement('canvas');
     const WIDTH = 800, HEIGHT = 1130;
     canvas.width = WIDTH; canvas.height = HEIGHT;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(imgElement, 0, 0, WIDTH, HEIGHT);
+    ctx.drawImage(sourceCanvas, 0, 0, WIDTH, HEIGHT);
 
     const imgData = ctx.getImageData(0, 0, WIDTH, HEIGHT);
     const data = imgData.data;
 
-    // Hàm lấy độ đậm nhạt của một vùng pixel (trả về giá trị 0-1)
     function getRegionDarkness(x, y, w, h) {
         let darkCount = 0, total = 0;
         for (let py = Math.round(y); py < Math.round(y + h); py++) {
@@ -452,7 +529,7 @@ function processImagePureJS(imgElement, fileName) {
                 if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
                 let idx = (py * WIDTH + px) * 4;
                 let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                if (gray < 130) darkCount++; // Vết chì tối màu
+                if (gray < 130) darkCount++;
                 total++;
             }
         }
@@ -465,7 +542,7 @@ function processImagePureJS(imgElement, fileName) {
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1').value)||0.1, parseFloat(document.getElementById('cfg-p2-2').value)||0.25, parseFloat(document.getElementById('cfg-p2-3').value)||0.5, parseFloat(document.getElementById('cfg-p2-4').value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3').value) || 0.5;
 
-    // 1. Đọc SBD (8 cột x 10 hàng)
+    // 1. Đọc SBD
     const sbdXGrid = [558, 576, 594, 612, 630, 648, 666, 684];
     const headerYGrid = [83, 107, 131, 155, 179, 203, 227, 251, 275, 299];
     let scannedSbd = "";
@@ -476,7 +553,7 @@ function processImagePureJS(imgElement, fileName) {
         scannedSbd += (maxScore > minConf) ? String(maxIdx) : "0";
     }
 
-    // 2. Đọc Mã đề (4 cột x 10 hàng)
+    // 2. Đọc Mã đề
     const madeXGrid = [724, 742, 760, 778];
     let scannedCode = "";
     for (let x of madeXGrid) {
@@ -497,7 +574,7 @@ function processImagePureJS(imgElement, fileName) {
     let key = answerKey[code] || { p1: [], p2: [], p3: [] };
     let stuInfo = dshsDict[sbd] || { name: "", className: "" };
 
-    // 3. Chấm Phần I (4 khối x 10 câu x 4 ô A,B,C,D)
+    // 3. Chấm Phần I
     const p1BlockX = [71, 259, 447, 635];
     const p1XOffsets = [0, 38, 76, 114];
     const p1YGrid = [417, 435, 454, 473, 491, 510, 528, 547, 565, 584];
@@ -514,9 +591,9 @@ function processImagePureJS(imgElement, fileName) {
         let maxIdx = scores.indexOf(maxScore);
         if (maxScore > minConf && labelsP1[maxIdx] === key.p1[i]) {
             right1++;
-            ctx.fillStyle = "rgba(0, 200, 0, 0.7)"; // Khoanh xanh đúng
+            ctx.fillStyle = "rgba(0, 200, 0, 0.7)";
         } else {
-            ctx.fillStyle = "rgba(255, 0, 0, 0.7)"; // Khoanh đỏ sai
+            ctx.fillStyle = "rgba(255, 0, 0, 0.7)";
         }
         ctx.beginPath();
         ctx.arc(xList[maxIdx], y, 8, 0, 2 * Math.PI);
@@ -524,7 +601,7 @@ function processImagePureJS(imgElement, fileName) {
     }
     let scoreP1 = +(right1 * diemP1).toFixed(2);
 
-    // 4. Chấm Phần II (Đúng-Sai 8 câu x 4 ý)
+    // 4. Chấm Phần II
     const p2BlockX = [71, 259, 447, 635];
     const p2YGrid = [686, 705, 724, 743];
     let key2Str = key.p2.join('');
@@ -557,7 +634,7 @@ function processImagePureJS(imgElement, fileName) {
     }
     scoreP2 = +scoreP2.toFixed(2);
 
-    // 5. Chấm Phần III (Điền khuyết 6 câu)
+    // 5. Chấm Phần III
     const p3BlockX = [64, 184, 304, 424, 544, 664];
     const digitXOffsets = [0, 26, 52, 78];
     const p3YGridFull = [852, 871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062];
@@ -590,13 +667,11 @@ function processImagePureJS(imgElement, fileName) {
     scoreP3 = +scoreP3.toFixed(2);
     let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
-    // Hiển thị kết quả lên giao diện
     const outCanvas = document.getElementById('result-canvas');
     outCanvas.width = WIDTH; outCanvas.height = HEIGHT;
     const outCtx = outCanvas.getContext('2d');
     outCtx.drawImage(canvas, 0, 0);
 
-    // Đóng dấu bảng điểm đỏ
     outCtx.fillStyle = "#ffffff";
     outCtx.fillRect(12, 85, 230, 165);
     outCtx.lineWidth = 3;
