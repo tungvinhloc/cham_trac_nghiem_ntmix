@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - Camera Tràn Viền Tự Chụp</title>
+    <title>NTMIX OMR Mobile - Khung Ngắm Lớn</title>
     <!-- Thư viện đọc/xuất Excel và QR -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -40,7 +40,7 @@
         #qr-video { width: 100%; display: block; }
         .qr-target-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 3px solid #00ff00; border-radius: 12px; }
 
-        /* CAMERA TRÀN MÀN HÌNH */
+        /* CAMERA TRÀN MÀN HÌNH TỰ ĐỘNG CHỤP */
         #camera-fullscreen-ui {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 9999; flex-direction: column; overflow: hidden;
@@ -48,22 +48,27 @@
         #video-container { position: relative; flex: 1; width: 100%; background: #000; overflow: hidden; }
         #video { width: 100%; height: 100%; object-fit: cover; display: block; }
         
+        /* PHÓNG TO KHUNG NGẮM CAMERA GẦN KỊCH MÀN HÌNH */
         #cam-overlay { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; max-width: 450px; aspect-ratio: 800 / 1130; 
+            position: absolute; 
+            top: 47%; left: 50%; transform: translate(-50%, -50%);
+            width: 96%; /* Phóng to chiếm 96% chiều ngang màn hình */
+            max-width: 650px; 
+            aspect-ratio: 800 / 1130; 
             box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); 
-            border: 2px dashed rgba(255, 255, 255, 0.4);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
             pointer-events: none;
         }
 
+        /* 4 Ô vuông xanh định vị lề */
         .corner-box {
-            position: absolute; width: 12%; aspect-ratio: 1 / 1;
+            position: absolute; width: 10%; aspect-ratio: 1 / 1;
             border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.1); transition: background 0.2s;
         }
-        .corner-box.tl { top: 0; left: 0; }
-        .corner-box.tr { top: 0; right: 0; }
-        .corner-box.bl { bottom: 0; left: 0; }
-        .corner-box.br { bottom: 0; right: 0; }
+        .corner-box.tl { top: 2.5%; left: 3.5%; }
+        .corner-box.tr { top: 2.5%; right: 3.5%; }
+        .corner-box.bl { bottom: 2.5%; left: 3.5%; }
+        .corner-box.br { bottom: 2.5%; right: 3.5%; }
 
         .cam-controls { padding: 16px; background: #0f172a; text-align: center; }
         #hud-text { color: #fff; font-size: 14px; font-weight: bold; margin-bottom: 12px; min-height: 20px; transition: color 0.3s; }
@@ -99,7 +104,7 @@
 <header>
     <h1>NTMIX OMR MOBILE</h1>
     <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span class="badge-cv">✅ Hệ thống Sẵn Sàng</span>
+    <span class="badge-cv">✅ Hệ thống Sẵn Sàng 100%</span>
 </header>
 
 <div class="container">
@@ -128,7 +133,6 @@
                 <label>📄 Hoặc chọn file Excel Đáp án (DapAn_TNMaker.xlsx):</label>
                 <label class="btn-upload">
                     <span id="label-file-key">📁 Bấm vào đây để chọn File Excel</span>
-                    <!-- Khai báo MIME types chuẩn chống chặn trên iOS/Zalo -->
                     <input type="file" id="file-key" accept=".xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style="display: none;">
                 </label>
             </div>
@@ -305,7 +309,7 @@ function updateKeyStatusDisplay() {
     if (codes.length === 0) { box.style.display = 'none'; return; }
     const sample = answerKey[codes[0]];
     box.style.display = 'block';
-    box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề (<b>${codes.join(', ')}</b>)`;
+    box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề`;
 }
 
 function parseNtmixQrString(rawText) {
@@ -445,6 +449,7 @@ function startAutoScan() {
         const cropW = rectO.width * scaleX;
         const cropH = rectO.height * scaleY;
 
+        // Quét siêu nhỏ để kiểm tra 4 góc (200x282)
         const tmpCanvas = document.createElement('canvas');
         tmpCanvas.width = 200; tmpCanvas.height = 282;
         const ctx = tmpCanvas.getContext('2d');
@@ -454,7 +459,7 @@ function startAutoScan() {
         let sum = 0;
         for(let i=0; i<imgData.length; i+=4) { sum += 0.299*imgData[i] + 0.587*imgData[i+1] + 0.114*imgData[i+2]; }
         const avg = sum / (200*282);
-        const thresh = Math.min(125, avg * 0.7);
+        const thresh = Math.min(125, avg * 0.75);
 
         function checkDarkness(cx, cy, w, h) {
             let darkCount = 0;
@@ -468,11 +473,15 @@ function startAutoScan() {
             return darkCount / (w * h);
         }
 
-        const bw = 24; 
-        const tl = checkDarkness(0, 0, bw, bw);
-        const tr = checkDarkness(200 - bw, 0, bw, bw);
-        const bl = checkDarkness(0, 282 - bw, bw, bw);
-        const br = checkDarkness(200 - bw, 282 - bw, bw, bw);
+        // Khớp với tỷ lệ CSS inset của 4 góc xanh: top 2.5%, left 3.5%, width 10%
+        const startX = Math.round(200 * 0.035);
+        const startY = Math.round(282 * 0.025);
+        const bw = Math.round(200 * 0.10); // 20px
+
+        const tl = checkDarkness(startX, startY, bw, bw);
+        const tr = checkDarkness(200 - startX - bw, startY, bw, bw);
+        const bl = checkDarkness(startX, 282 - startY - bw, bw, bw);
+        const br = checkDarkness(200 - startX - bw, 282 - startY - bw, bw, bw);
 
         function isValid(val) { return val > 0.02 && val < 0.35; }
         
@@ -500,7 +509,7 @@ function startAutoScan() {
             }
         } else {
             stableFrames = 0;
-            hudText.innerHTML = "Đưa 4 ô vuông đen lọt vào 4 ô vuông xanh lục";
+            hudText.innerHTML = "Đưa 4 ô đen vào đúng 4 ô vuông xanh lục";
             hudText.style.color = "#fff";
         }
     }, 250);
@@ -609,7 +618,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     const diemP3 = parseFloat(document.getElementById('cfg-p3').value) || 0.5;
     const fallbackCode = document.getElementById('fallback-code').value.trim();
 
-    // SỬA ĐỔI drawBubble: Dùng fill() vẽ dấu chấm vàng đặc, loại bỏ stroke()
     function drawBubble(x, y, status) {
         ctx.beginPath();
         if (status === 'correct_fill') { 
@@ -623,7 +631,7 @@ function processImagePureJS(sourceCanvas, fileName) {
             ctx.fill(); 
         }
         else if (status === 'missing_key') { 
-            ctx.fillStyle = "rgba(255, 215, 0, 1)"; // DẤU CHẤM TRÒN VÀNG ĐẬM
+            ctx.fillStyle = "rgba(255, 215, 0, 1)"; 
             ctx.arc(x, y, 6, 0, 2*Math.PI); 
             ctx.fill(); 
         }
