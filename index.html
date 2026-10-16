@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - Chấm Lưới Ô Vuông & Quét QR Đáp Án</title>
+    <title>NTMIX OMR Mobile - Đa Năng (Local & GitHub)</title>
     <!-- Thư viện đọc/xuất Excel SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Thư viện giải mã QR Code (jsQR) -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <!-- Thư viện xử lý ảnh OpenCV.js -->
-    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady();"></script>
+    <!-- Thư viện OpenCV.js qua CDN jsDelivr siêu tốc, tương thích 100% GitHub và Local -->
+    <script async src="https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0/dist/opencv.js" onload="onOpenCvReady();"></script>
     <style>
         :root {
             --primary: #1a73e8;
@@ -47,19 +47,16 @@
         .btn-purple { background: var(--purple); }
         .btn-secondary { background: #64748b; }
 
-        /* Khung Quét QR */
         #qr-scanner-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-top: 8px; margin-bottom: 10px; }
         #qr-video { width: 100%; display: block; }
         .qr-target-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 3px solid #00ff00; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); pointer-events: none; }
 
-        /* Khung Camera OMR & Overlay 4 góc + Lưới */
         #camera-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
         #video { width: 100%; display: block; }
         #overlay-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .cam-hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; white-space: nowrap; z-index: 10; border: 1px solid rgba(255,255,255,0.2); }
         .cam-bottom-bar { padding: 10px; background: #0f172a; display: flex; gap: 8px; }
 
-        /* Bảng điểm chi tiết từng phần */
         .score-dashboard { display: none; background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 12px; margin-top: 10px; box-shadow: 0 4px 10px rgba(220,38,38,0.12); }
         .score-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #fca5a5; padding-bottom: 8px; margin-bottom: 10px; }
         .score-total-box { font-size: 22px; font-weight: 900; color: #dc2626; }
@@ -74,16 +71,13 @@
         .check-inline input { width: 18px; height: 18px; }
 
         .key-summary-box { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-top: 6px; display: none; }
-
         #result-canvas { width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; display: none; margin-top: 10px; }
 
-        /* Bảng tổng hợp */
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th, td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; text-align: center; }
         th { background: #1e3a8a; color: white; white-space: nowrap; }
 
-        /* Thanh điều hướng */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 100; }
         .nav-item { flex: 1; padding: 10px 4px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; }
         .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); background: #eff6ff; }
@@ -95,19 +89,17 @@
 
 <header>
     <h1>NTMIX OMR MOBILE</h1>
-    <p>Chấm Lưới Ô Vuông & Quét QR Đáp Án (TNMaker BGD 2025)</p>
+    <p id="env-mode-label">Đang xác định môi trường...</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải lõi OpenCV...</span>
 </header>
 
 <div class="container">
-    <!-- TAB 1: CẤU HÌNH & ĐÁP ÁN (CÓ QUÉT MÃ QR) -->
+    <!-- TAB 1: CẤU HÌNH & ĐÁP ÁN -->
     <div id="tab-config" class="tab-pane active">
         <div class="card">
-            <div class="card-title">1. Nạp Đáp Án (Mã QR hoặc Excel NTMIX)</div>
-
-            <!-- Nạp bằng Mã QR -->
+            <div class="card-title">1. Nạp Đáp Án (Mã QR hoặc Excel)</div>
             <div class="form-group">
-                <label>📲 Cách 1: Nạp nhanh bằng Mã QR Đáp án (NTMIX / TNMaker):</label>
+                <label>📲 Nạp nhanh bằng Mã QR Đáp án (Khuyên dùng):</label>
                 <div class="grid-2">
                     <button class="btn btn-purple" id="btn-qr-cam" onclick="toggleQrScanner()">📷 Quét Mã QR</button>
                     <label class="btn btn-success" style="margin: 0; cursor: pointer;">
@@ -115,41 +107,35 @@
                         <input type="file" id="file-qr-img" accept="image/*" style="display: none;" onchange="handleQrImageFile(this.files[0])">
                     </label>
                 </div>
-
-                <!-- Khung Camera quét QR -->
                 <div id="qr-scanner-wrapper">
                     <video id="qr-video" autoplay playsinline muted></video>
                     <div class="qr-target-box"></div>
-                    <div style="padding: 8px; background: #0f172a; text-align: center; color: #fff; font-size: 12px;">
-                        Đưa mã QR đáp án vào khung xanh...
-                    </div>
+                    <div style="padding: 8px; background: #0f172a; text-align: center; color: #fff; font-size: 12px;">Đưa mã QR đáp án vào khung xanh...</div>
                 </div>
             </div>
 
-            <!-- Nạp bằng File Excel -->
             <div class="form-group" style="margin-top: 12px;">
-                <label>📄 Cách 2: Chọn file Excel Đáp án gốc (DapAn_TNMaker.xlsx):</label>
+                <label>📄 Hoặc chọn file Excel Đáp án (DapAn_TNMaker.xlsx):</label>
                 <input type="file" id="file-key" accept=".xlsx,.xls">
             </div>
 
-            <!-- Hộp thông báo trạng thái Đáp án -->
             <div id="key-status-box" class="key-summary-box"></div>
 
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 12px 0;">
 
             <div class="form-group">
-                <label>👥 File Danh sách Học sinh (Tùy chọn - Cột B: SBD, C: Tên, D: Lớp):</label>
+                <label>👥 Danh sách Học sinh (Tùy chọn - Cột B: SBD, C: Tên, D: Lớp):</label>
                 <input type="file" id="file-dshs" accept=".xlsx,.xls">
                 <small id="dshs-status" style="color: var(--primary); font-weight: 600; display: block; margin-top: 4px;"></small>
             </div>
             <div class="form-group">
                 <label>🔧 Mã đề dự phòng (Nếu học sinh quên tô):</label>
-                <input type="text" id="fallback-code" placeholder="VD: 0234 (Để trống nếu không dùng)">
+                <input type="text" id="fallback-code" placeholder="VD: 0234">
             </div>
         </div>
 
         <div class="card">
-            <div class="card-title">2. Tùy chỉnh Thang điểm & Lưới</div>
+            <div class="card-title">2. Thang điểm & Cấu hình</div>
             <div class="grid-2">
                 <div class="form-group">
                     <label>Điểm Phần I (1 câu):</label>
@@ -161,7 +147,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Điểm Phần II (Đúng 1 ý | 2 ý | 3 ý | 4 ý):</label>
+                <label>Điểm Phần II (1 | 2 | 3 | 4 ý đúng):</label>
                 <div class="grid-4">
                     <input type="number" id="cfg-p2-1" step="0.05" value="0.1">
                     <input type="number" id="cfg-p2-2" step="0.05" value="0.25">
@@ -170,18 +156,18 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Ngưỡng nhận diện ô tô trong Lưới ô vuông (0.15 - 0.45):</label>
+                <label>Ngưỡng nhận diện nét chì (0.15 - 0.45):</label>
                 <input type="number" id="cfg-conf" step="0.02" value="0.24">
             </div>
             <label class="check-inline" style="margin-bottom: 12px;">
                 <input type="checkbox" id="cfg-show-grid" checked>
-                📐 Vẽ Lưới ô vuông bao phủ từng ô tròn trên ảnh chấm
+                📐 Vẽ Lưới ô vuông bao phủ trên ảnh chấm
             </label>
-            <button class="btn btn-primary" onclick="switchTab('tab-scan')">Lưu & Mở Máy Quét Phiếu ➔</button>
+            <button class="btn btn-primary" onclick="switchTab('tab-scan')">Lưu & Mở Máy Quét ➔</button>
         </div>
     </div>
 
-    <!-- TAB 2: QUÉT TỰ ĐỘNG 4 GÓC & LƯỚI Ô VUÔNG -->
+    <!-- TAB 2: QUÉT TỰ ĐỘNG -->
     <div id="tab-scan" class="tab-pane">
         <div class="card">
             <div class="card-title">
@@ -197,7 +183,6 @@
                 </label>
             </div>
 
-            <!-- Giao diện Camera kèm 4 ô vuông định vị & khung lưới -->
             <div id="camera-wrapper">
                 <div id="cam-hud" class="cam-hud">Đưa 4 ô vuông đen ở góc giấy vào 4 ô ngắm...</div>
                 <video id="video" autoplay playsinline muted></video>
@@ -210,7 +195,6 @@
 
             <div id="scan-status" style="font-size: 14px; font-weight: 700; color: var(--primary); text-align: center;"></div>
 
-            <!-- BẢNG ĐIỂM CHI TIẾT CÁC PHẦN SAU KHI CHẤM -->
             <div id="score-dashboard" class="score-dashboard">
                 <div class="score-header">
                     <div>
@@ -246,12 +230,11 @@
                 </div>
             </div>
 
-            <!-- Ảnh phiếu đã chấm kèm Lưới Ô Vuông bao phủ -->
             <canvas id="result-canvas"></canvas>
         </div>
     </div>
 
-    <!-- TAB 3: BẢNG ĐIỂM & XUẤT EXCEL -->
+    <!-- TAB 3: BẢNG ĐIỂM -->
     <div id="tab-results" class="tab-pane">
         <div class="card">
             <div class="card-title">
@@ -282,10 +265,21 @@
 <div class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('tab-config')">⚙️ Cấu hình & QR</div>
     <div class="nav-item" onclick="switchTab('tab-scan')">📷 Chấm phiếu</div>
-    <div class="nav-item" onclick="switchTab('tab-results')">📊 Bảng điểm (<span id="nav-count">0</span>)</div>
+    <div class="nav-item" onclick="switchTab('tab-results')">📊 Bảng điểm (<span id="count-graded">0</span>)</div>
 </div>
 
-<script async src="https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0/dist/opencv.js" onload="onOpenCvReady();"></script>
+<script>
+// Tự động nhận diện môi trường chạy
+window.addEventListener('DOMContentLoaded', () => {
+    const isGithub = window.location.hostname.includes('github.io');
+    const label = document.getElementById('env-mode-label');
+    if (isGithub) {
+        label.textContent = "🌐 Đang chạy trên GitHub Pages (Cơ động trực tuyến)";
+    } else {
+        label.textContent = "💻 Đang chạy trên Mạng nội bộ LAN / Localhost";
+    }
+});
+
 let cvReady = false;
 let answerKey = {};
 let dshsDict = {};
@@ -298,36 +292,12 @@ let stableFrames = 0;
 let isPausedForReview = false;
 let lastGradedSbd = "Phieu";
 
-// ==================== THÔNG SỐ MA TRẬN LƯỚI Ô VUÔNG CHUẨN 800x1130 ====================
 const GRID_SPEC = {
-    sbd: {
-        x: [558, 576, 594, 612, 630, 648, 666, 684],
-        y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299],
-        cw: 18, ch: 24
-    },
-    made: {
-        x: [724, 742, 760, 778],
-        y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299],
-        cw: 18, ch: 24
-    },
-    p1: {
-        blockX: [71, 259, 447, 635],
-        offsetsX: [0, 38, 76, 114],
-        y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584],
-        cw: 38, ch: 18.5
-    },
-    p2: {
-        blockX: [71, 259, 447, 635],
-        y: [686, 705, 724, 743],
-        cw: 38, ch: 19
-    },
-    p3: {
-        blockX: [64, 184, 304, 424, 544, 664],
-        offsetsX: [0, 26, 52, 78],
-        y: [852, 871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062],
-        cw: 26, ch: 19,
-        chars: ['-', ',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    }
+    sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 18, ch: 24 },
+    made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 18, ch: 24 },
+    p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584], cw: 38, ch: 18.5 },
+    p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743], cw: 38, ch: 19 },
+    p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], y: [852, 871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], cw: 26, ch: 19, chars: ['-', ',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
 };
 
 function onOpenCvReady() {
@@ -364,49 +334,32 @@ function playBeep() {
 function updateKeyStatusDisplay(sourceLabel) {
     const codes = Object.keys(answerKey).sort();
     const box = document.getElementById('key-status-box');
-    if (codes.length === 0) {
-        box.style.display = 'none';
-        return;
-    }
+    if (codes.length === 0) { box.style.display = 'none'; return; }
     const sample = answerKey[codes[0]];
     box.style.display = 'block';
-    box.innerHTML = `✅ <b>Đã nạp từ ${sourceLabel}:</b> ${codes.length} mã đề (<b>${codes.join(', ')}</b>)<br>
-                     📌 Cấu trúc: P.I (${sample.p1.length} câu) | P.II (${sample.p2.length} câu) | P.III (${sample.p3.length} câu)`;
+    box.innerHTML = `✅ <b>Đã nạp từ ${sourceLabel}:</b> ${codes.length} mã đề (<b>${codes.join(', ')}</b>)<br>📌 Cấu trúc: P.I (${sample.p1.length}) | P.II (${sample.p2.length}) | P.III (${sample.p3.length})`;
 }
 
-// ==================== 1A. GIẢI MÃ QR ĐÁP ÁN CHUẨN NTMIX / TNMAKER ====================
 function parseNtmixQrString(rawText) {
     try {
         const obj = JSON.parse(rawText.trim());
         const parsedKey = {};
-
         for (const [k, val] of Object.entries(obj)) {
             if (k === "success" || k === "type") continue;
             if (typeof val !== "string" || !val.includes("#")) continue;
-
             const parts = val.split("#");
-            const p1Str = (parts[0] || "").trim().toUpperCase();
-            const p2Str = (parts[1] || "").trim().toUpperCase();
-            const p3Str = (parts[2] || "").trim();
-
-            const p1 = p1Str ? p1Str.split('').filter(c => ['A', 'B', 'C', 'D'].includes(c)) : [];
-            const p2 = p2Str ? p2Str.split('_').filter(s => s.length > 0).map(s => s.replace(/D/g, 'Đ')) : [];
-            const p3 = p3Str ? p3Str.split('_').filter(s => s.length > 0) : [];
-
+            const p1 = (parts[0] || "").trim().toUpperCase().split('').filter(c => ['A', 'B', 'C', 'D'].includes(c));
+            const p2 = (parts[1] || "").trim().toUpperCase().split('_').filter(s => s.length > 0).map(s => s.replace(/D/g, 'Đ'));
+            const p3 = (parts[2] || "").trim().split('_').filter(s => s.length > 0);
             parsedKey[String(k).trim()] = { p1, p2, p3 };
         }
-
-        if (Object.keys(parsedKey).length === 0) {
-            alert("Mã QR không chứa dữ liệu đáp án hợp lệ của NTMIX!");
-            return false;
-        }
-
+        if (Object.keys(parsedKey).length === 0) { alert("Mã QR không hợp lệ!"); return false; }
         answerKey = parsedKey;
         playBeep();
         updateKeyStatusDisplay("Mã QR");
         return true;
     } catch (err) {
-        alert("Không thể đọc định dạng Mã QR này. Hãy chắc chắn đây là mã QR xuất từ NTMIX!");
+        alert("Lỗi đọc mã QR!");
         return false;
     }
 }
@@ -415,51 +368,30 @@ async function toggleQrScanner() {
     const wrapper = document.getElementById('qr-scanner-wrapper');
     const video = document.getElementById('qr-video');
     const btn = document.getElementById('btn-qr-cam');
-
-    if (qrStream) {
-        stopQrScanner();
-        return;
-    }
-    // Tắt camera chấm phiếu nếu đang bật
+    if (qrStream) { stopQrScanner(); return; }
     stopCamera();
-
     try {
-        qrStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
+        qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } } });
         video.srcObject = qrStream;
         wrapper.style.display = 'block';
         btn.textContent = "❌ Đóng Quét QR";
-
         const qrCanvas = document.createElement('canvas');
         const qrCtx = qrCanvas.getContext('2d');
-
         qrScanTimer = setInterval(() => {
             if (!qrStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
             qrCanvas.width = video.videoWidth;
             qrCanvas.height = video.videoHeight;
             qrCtx.drawImage(video, 0, 0, qrCanvas.width, qrCanvas.height);
-
             const imgData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
             const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
-
-            if (code && code.data) {
-                if (parseNtmixQrString(code.data)) {
-                    stopQrScanner();
-                }
-            }
+            if (code && code.data) { if (parseNtmixQrString(code.data)) stopQrScanner(); }
         }, 150);
-    } catch (err) {
-        alert("Không thể mở Camera quét QR. Thầy có thể dùng nút '🖼️ Chọn Ảnh QR' bên cạnh nhé!");
-    }
+    } catch (err) { alert("Không mở được camera QR!"); }
 }
 
 function stopQrScanner() {
     if (qrScanTimer) { clearInterval(qrScanTimer); qrScanTimer = null; }
-    if (qrStream) {
-        qrStream.getTracks().forEach(t => t.stop());
-        qrStream = null;
-    }
+    if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
     document.getElementById('qr-scanner-wrapper').style.display = 'none';
     document.getElementById('btn-qr-cam').textContent = "📷 Quét Mã QR";
 }
@@ -469,22 +401,17 @@ function handleQrImageFile(file) {
     const img = new Image();
     img.onload = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = img.width; canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
-        if (code && code.data) {
-            parseNtmixQrString(code.data);
-        } else {
-            alert("Không tìm thấy Mã QR trong bức ảnh đã chọn!");
-        }
+        if (code && code.data) parseNtmixQrString(code.data);
+        else alert("Không tìm thấy QR trong ảnh!");
     };
     img.src = URL.createObjectURL(file);
 }
 
-// ==================== 1B. ĐỌC FILE EXCEL ĐÁP ÁN & DSHS ====================
 document.getElementById('file-key').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -494,8 +421,6 @@ document.getElementById('file-key').addEventListener('change', function(e) {
         const wb = XLSX.read(data, {type: 'array'});
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, {header: 1, defval: ""});
-        if (rows.length < 2) { alert("File Excel đáp án không hợp lệ!"); return; }
-
         answerKey = {};
         const headerRow = rows[0];
         for (let col = 1; col < headerRow.length; col++) {
@@ -530,32 +455,19 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
         let count = 0;
         for (let r = 1; r < rows.length; r++) {
             let sbd = String(rows[r][1] || "").trim();
-            if (sbd) {
-                dshsDict[sbd] = {
-                    name: String(rows[r][2] || "").trim(),
-                    className: String(rows[r][3] || "").trim()
-                };
-                count++;
-            }
+            if (sbd) { dshsDict[sbd] = { name: String(rows[r][2] || "").trim(), className: String(rows[r][3] || "").trim() }; count++; }
         }
         document.getElementById('dshs-status').textContent = `✅ Đã nạp ${count} học sinh`;
     };
     reader.readAsArrayBuffer(file);
 });
 
-// ==================== 2. HỆ THỐNG ĐỊNH VỊ 4 GÓC & KHUNG LƯỚI TRÊN CAMERA ====================
 function getTargetBoxes(w, h) {
     const targetAspect = 800 / 1130;
-    let gw = w * 0.84;
-    let gh = gw / targetAspect;
-    if (gh > h * 0.84) {
-        gh = h * 0.84;
-        gw = gh * targetAspect;
-    }
-    const left = (w - gw) / 2;
-    const top = (h - gh) / 2;
+    let gw = w * 0.84, gh = gw / targetAspect;
+    if (gh > h * 0.84) { gh = h * 0.84; gw = gh * targetAspect; }
+    const left = (w - gw) / 2, top = (h - gh) / 2;
     const boxSize = Math.round(gw * 0.16);
-
     return {
         frame: { left, top, gw, gh },
         corners: [
@@ -571,49 +483,29 @@ async function toggleCamera() {
     const wrapper = document.getElementById('camera-wrapper');
     const video = document.getElementById('video');
     const btn = document.getElementById('btn-toggle-cam');
-
-    if (videoStream) {
-        stopCamera();
-        return;
-    }
-    if (Object.keys(answerKey).length === 0) {
-        alert("Thầy vui lòng Quét Mã QR hoặc chọn File Excel Đáp án ở Bước 1 trước khi mở Camera nhé!");
-        switchTab('tab-config');
-        return;
-    }
+    if (videoStream) { stopCamera(); return; }
+    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án trước!"); switchTab('tab-config'); return; }
     try {
-        videoStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }
-        });
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } });
         video.srcObject = videoStream;
         wrapper.style.display = 'block';
         btn.textContent = "❌ Tắt Camera";
-        isPausedForReview = false;
-        stableFrames = 0;
-
-        video.onloadedmetadata = () => {
-            startAutoCornerScanner();
-        };
-    } catch (err) {
-        alert("Không thể mở Camera trực tiếp. Thầy hãy kiểm tra quyền Camera hoặc dùng nút 'Chọn Ảnh Phiếu'!");
-    }
+        isPausedForReview = false; stableFrames = 0;
+        video.onloadedmetadata = () => { startAutoCornerScanner(); };
+    } catch (err) { alert("Không mở được camera chấm bài!"); }
 }
 
 function stopCamera() {
     if (autoScanTimer) { clearInterval(autoScanTimer); autoScanTimer = null; }
-    if (videoStream) {
-        videoStream.getTracks().forEach(t => t.stop());
-        videoStream = null;
-    }
+    if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
     document.getElementById('camera-wrapper').style.display = 'none';
     document.getElementById('btn-toggle-cam').textContent = "📷 Bật Camera Tự Chụp";
 }
 
 function resumeScanning() {
-    isPausedForReview = false;
-    stableFrames = 0;
+    isPausedForReview = false; stableFrames = 0;
     document.getElementById('camera-wrapper').style.display = 'block';
-    document.getElementById('cam-hud').textContent = "Đưa 4 ô vuông đen ở góc giấy vào 4 ô ngắm...";
+    document.getElementById('cam-hud').textContent = "Đưa 4 ô vuông đen vào khung ngắm...";
     document.getElementById('camera-wrapper').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -626,67 +518,44 @@ function startAutoCornerScanner() {
 
     autoScanTimer = setInterval(() => {
         if (!cvReady || !videoStream || !video.videoWidth || isPausedForReview) return;
-
-        overlay.width = video.videoWidth;
-        overlay.height = video.videoHeight;
+        overlay.width = video.videoWidth; overlay.height = video.videoHeight;
         const octx = overlay.getContext('2d');
         octx.clearRect(0, 0, overlay.width, overlay.height);
 
         const scale = 400 / video.videoWidth;
-        const sw = 400;
-        const sh = Math.round(video.videoHeight * scale);
-        workCanvas.width = sw;
-        workCanvas.height = sh;
+        const sw = 400, sh = Math.round(video.videoHeight * scale);
+        workCanvas.width = sw; workCanvas.height = sh;
         workCanvas.getContext('2d').drawImage(video, 0, 0, sw, sh);
 
         const targetSmall = getTargetBoxes(sw, sh);
         const targetFull = getTargetBoxes(overlay.width, overlay.height);
-        const boxesSmall = targetSmall.corners;
-        const boxesFull = targetFull.corners;
+        const boxesSmall = targetSmall.corners, boxesFull = targetFull.corners;
 
-        let src = cv.imread(workCanvas);
-        let gray = new cv.Mat();
-        let blur = new cv.Mat();
-        let thresh = new cv.Mat();
+        let src = cv.imread(workCanvas), gray = new cv.Mat(), blur = new cv.Mat(), thresh = new cv.Mat();
         cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
         cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
         cv.adaptiveThreshold(blur, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 31, 10);
 
         let foundCorners = [];
-
         for (let idx = 0; idx < 4; idx++) {
-            let b = boxesSmall[idx];
-            let bf = boxesFull[idx];
+            let b = boxesSmall[idx], bf = boxesFull[idx];
             let roiRect = new cv.Rect(b.x, b.y, b.size, b.size);
             let roi = thresh.roi(roiRect);
-
-            let cnts = new cv.MatVector();
-            let hier = new cv.Mat();
+            let cnts = new cv.MatVector(), hier = new cv.Mat();
             cv.findContours(roi, cnts, hier, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-            let bestMarker = null;
-            let bestArea = 0;
-            const minMarkerArea = (b.size * b.size) * 0.03;
-            const maxMarkerArea = (b.size * b.size) * 0.65;
-
+            let bestMarker = null, bestArea = 0;
             for (let c = 0; c < cnts.size(); c++) {
-                let cnt = cnts.get(c);
-                let area = cv.contourArea(cnt);
-                if (area > minMarkerArea && area < maxMarkerArea) {
+                let cnt = cnts.get(c), area = cv.contourArea(cnt);
+                if (area > (b.size*b.size)*0.03 && area < (b.size*b.size)*0.65) {
                     let r = cv.boundingRect(cnt);
-                    let ar = r.width / r.height;
-                    if (ar >= 0.65 && ar <= 1.4) {
-                        let hull = new cv.Mat();
-                        cv.convexHull(cnt, hull, false, true);
-                        let hullArea = cv.contourArea(hull);
-                        let solidity = hullArea > 0 ? area / hullArea : 0;
+                    if (r.width/r.height >= 0.65 && r.width/r.height <= 1.4) {
+                        let hull = new cv.Mat(); cv.convexHull(cnt, hull, false, true);
+                        let solidity = cv.contourArea(hull) > 0 ? area / cv.contourArea(hull) : 0;
                         hull.delete();
                         if (solidity > 0.75 && area > bestArea) {
                             bestArea = area;
-                            bestMarker = {
-                                x: (b.x + r.x + r.width / 2) / scale,
-                                y: (b.y + r.y + r.height / 2) / scale
-                            };
+                            bestMarker = { x: (b.x + r.x + r.width/2)/scale, y: (b.y + r.y + r.height/2)/scale };
                         }
                     }
                 }
@@ -696,36 +565,16 @@ function startAutoCornerScanner() {
             octx.lineWidth = Math.max(4, Math.round(overlay.width * 0.006));
             if (bestMarker) {
                 foundCorners.push(bestMarker);
-                octx.strokeStyle = "#00ff00";
-                octx.fillStyle = "rgba(0, 255, 0, 0.18)";
-                octx.fillRect(bf.x, bf.y, bf.size, bf.size);
-                octx.strokeRect(bf.x, bf.y, bf.size, bf.size);
-                octx.beginPath();
-                octx.arc(bestMarker.x, bestMarker.y, 10, 0, Math.PI * 2);
-                octx.fillStyle = "#00ff00";
-                octx.fill();
+                octx.strokeStyle = "#00ff00"; octx.fillStyle = "rgba(0, 255, 0, 0.18)";
+                octx.fillRect(bf.x, bf.y, bf.size, bf.size); octx.strokeRect(bf.x, bf.y, bf.size, bf.size);
+                octx.beginPath(); octx.arc(bestMarker.x, bestMarker.y, 10, 0, Math.PI*2); octx.fillStyle = "#00ff00"; octx.fill();
             } else {
-                octx.strokeStyle = "#ff3b30";
-                octx.fillStyle = "rgba(255, 59, 48, 0.10)";
-                octx.fillRect(bf.x, bf.y, bf.size, bf.size);
-                octx.strokeRect(bf.x, bf.y, bf.size, bf.size);
+                octx.strokeStyle = "#ff3b30"; octx.fillStyle = "rgba(255, 59, 48, 0.10)";
+                octx.fillRect(bf.x, bf.y, bf.size, bf.size); octx.strokeRect(bf.x, bf.y, bf.size, bf.size);
             }
-
-            octx.fillStyle = "#ffffff";
-            octx.font = `bold ${Math.round(bf.size * 0.22)}px Arial`;
-            octx.fillText(bf.name, bf.x + 8, bf.y + Math.round(bf.size * 0.26));
+            octx.fillStyle = "#ffffff"; octx.font = `bold ${Math.round(bf.size*0.22)}px Arial`;
+            octx.fillText(bf.name, bf.x + 8, bf.y + Math.round(bf.size*0.26));
         }
-
-        const fr = targetFull.frame;
-        octx.strokeStyle = foundCorners.length === 4 ? "#00ff00" : "rgba(56, 189, 248, 0.65)";
-        octx.lineWidth = 2;
-        const mapX = (x800) => fr.left + (x800 / 800) * fr.gw;
-        const mapY = (y1130) => fr.top + (y1130 / 1130) * fr.gh;
-        octx.strokeRect(mapX(549), mapY(71), (144 / 800) * fr.gw, (240 / 1130) * fr.gh);
-        octx.strokeRect(mapX(715), mapY(71), (72 / 800) * fr.gw, (240 / 1130) * fr.gh);
-        octx.strokeRect(mapX(52), mapY(408), (716 / 800) * fr.gw, (185 / 1130) * fr.gh);
-        octx.strokeRect(mapX(52), mapY(676), (716 / 800) * fr.gw, (76 / 1130) * fr.gh);
-        octx.strokeRect(mapX(51), mapY(842), (704 / 800) * fr.gw, (230 / 1130) * fr.gh);
 
         document.getElementById('corner-counter').textContent = `${foundCorners.length}/4 Góc`;
         document.getElementById('corner-counter').style.color = foundCorners.length === 4 ? "var(--success)" : "var(--danger)";
@@ -733,16 +582,12 @@ function startAutoCornerScanner() {
         if (foundCorners.length === 4) {
             stableFrames++;
             hud.style.background = "rgba(15, 157, 88, 0.9)";
-            hud.textContent = `🎯 Đã khớp Lưới Ô Vuông! Giữ yên... (${stableFrames}/4)`;
+            hud.textContent = `🎯 Đã khóa 4 góc! Giữ yên... (${stableFrames}/4)`;
             if (stableFrames >= 4) {
-                stableFrames = 0;
-                isPausedForReview = true;
-                playBeep();
-                hud.textContent = "⚡ ĐÃ CHỤP TỰ ĐỘNG! Đang quét Lưới ô vuông...";
-
+                stableFrames = 0; isPausedForReview = true; playBeep();
+                hud.textContent = "⚡ ĐÃ CHỤP TỰ ĐỘNG!";
                 const fullCanvas = document.createElement('canvas');
-                fullCanvas.width = video.videoWidth;
-                fullCanvas.height = video.videoHeight;
+                fullCanvas.width = video.videoWidth; fullCanvas.height = video.videoHeight;
                 fullCanvas.getContext('2d').drawImage(video, 0, 0);
                 document.getElementById('camera-wrapper').style.display = 'none';
                 processImageCanvas(fullCanvas, `AutoCam_${Date.now()}.jpg`, foundCorners);
@@ -750,9 +595,8 @@ function startAutoCornerScanner() {
         } else {
             stableFrames = 0;
             hud.style.background = "rgba(0, 0, 0, 0.75)";
-            hud.textContent = `Đưa 4 ô đen vào 4 khung ngắm (${foundCorners.length}/4 góc)...`;
+            hud.textContent = `Đưa 4 ô vuông đen vào khung ngắm (${foundCorners.length}/4)...`;
         }
-
         src.delete(); gray.delete(); blur.delete(); thresh.delete();
     }, 110);
 }
@@ -760,11 +604,9 @@ function startAutoCornerScanner() {
 function manualCapture() {
     const video = document.getElementById('video');
     if (!videoStream || !video.videoWidth) return;
-    isPausedForReview = true;
-    playBeep();
+    isPausedForReview = true; playBeep();
     const fullCanvas = document.createElement('canvas');
-    fullCanvas.width = video.videoWidth;
-    fullCanvas.height = video.videoHeight;
+    fullCanvas.width = video.videoWidth; fullCanvas.height = video.videoHeight;
     fullCanvas.getContext('2d').drawImage(video, 0, 0);
     document.getElementById('camera-wrapper').style.display = 'none';
     processImageCanvas(fullCanvas, `Cam_${Date.now()}.jpg`, null);
@@ -773,13 +615,12 @@ function manualCapture() {
 async function handleImageFiles(files) {
     if (!files || !files.length) return;
     for (let i = 0; i < files.length; i++) {
-        document.getElementById('scan-status').textContent = `Đang chấm ảnh ${i+1}/${files.length}: ${files[i].name}...`;
+        document.getElementById('scan-status').textContent = `Đang chấm ảnh ${i+1}/${files.length}...`;
         await new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
                 const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = img.width;
-                tempCanvas.height = img.height;
+                tempCanvas.width = img.width; tempCanvas.height = img.height;
                 tempCanvas.getContext('2d').drawImage(img, 0, 0);
                 processImageCanvas(tempCanvas, files[i].name, null);
                 resolve();
@@ -789,72 +630,40 @@ async function handleImageFiles(files) {
     }
 }
 
-// ==================== 3. THUẬT TOÁN QUÉT LƯỚI Ô VUÔNG BAO PHỦ (SQUARE CELL PROBING) ====================
 function processImageCanvas(sourceCanvas, fileName, lockedCorners = null) {
-    if (!cvReady) { alert("OpenCV chưa tải xong, vui lòng đợi 2 giây!"); return; }
-    if (Object.keys(answerKey).length === 0) {
-        alert("Vui lòng Quét Mã QR hoặc chọn file Excel Đáp án ở tab Cấu hình trước!");
-        switchTab('tab-config');
-        return;
-    }
-
+    if (!cvReady) { alert("OpenCV chưa sẵn sàng!"); return; }
     const diemP1 = parseFloat(document.getElementById('cfg-p1').value) || 0.25;
-    const diemP2 = [
-        parseFloat(document.getElementById('cfg-p2-1').value) || 0.1,
-        parseFloat(document.getElementById('cfg-p2-2').value) || 0.25,
-        parseFloat(document.getElementById('cfg-p2-3').value) || 0.5,
-        parseFloat(document.getElementById('cfg-p2-4').value) || 1.0
-    ];
+    const diemP2 = [parseFloat(document.getElementById('cfg-p2-1').value)||0.1, parseFloat(document.getElementById('cfg-p2-2').value)||0.25, parseFloat(document.getElementById('cfg-p2-3').value)||0.5, parseFloat(document.getElementById('cfg-p2-4').value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3').value) || 0.5;
     const minConf = parseFloat(document.getElementById('cfg-conf').value) || 0.24;
     const showSquareGrid = document.getElementById('cfg-show-grid').checked;
     const fallbackCode = document.getElementById('fallback-code').value.trim();
 
-    let src = cv.imread(sourceCanvas);
-    let gray = new cv.Mat();
+    let src = cv.imread(sourceCanvas), gray = new cv.Mat();
     cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
     let tl, tr, br, bl;
-
     if (lockedCorners && lockedCorners.length === 4) {
-        tl = lockedCorners[0];
-        tr = lockedCorners[1];
-        br = lockedCorners[2];
-        bl = lockedCorners[3];
+        tl = lockedCorners[0]; tr = lockedCorners[1]; br = lockedCorners[2]; bl = lockedCorners[3];
     } else {
-        let blur = new cv.Mat();
-        let threshMarker = new cv.Mat();
+        let blur = new cv.Mat(), threshMarker = new cv.Mat();
         cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
         cv.adaptiveThreshold(blur, threshMarker, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 12);
-
-        let contours = new cv.MatVector();
-        let hierarchy = new cv.Mat();
+        let contours = new cv.MatVector(), hierarchy = new cv.Mat();
         cv.findContours(threshMarker, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
         let markers = [];
-        let maxArea = src.rows * src.cols * 0.05;
         for (let i = 0; i < contours.size(); i++) {
-            let cnt = contours.get(i);
-            let area = cv.contourArea(cnt);
-            let rect = cv.boundingRect(cnt);
-            let ar = rect.width / rect.height;
-            if (area > 80 && area < maxArea && ar >= 0.65 && ar <= 1.35) {
-                let hull = new cv.Mat();
-                cv.convexHull(cnt, hull, false, true);
-                let hullArea = cv.contourArea(hull);
-                if (hullArea > 0 && (area / hullArea) > 0.78) {
-                    markers.push({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 });
+            let cnt = contours.get(i), area = cv.contourArea(cnt), rect = cv.boundingRect(cnt);
+            if (area > 80 && area < src.rows*src.cols*0.05 && rect.width/rect.height >= 0.65 && rect.width/rect.height <= 1.35) {
+                let hull = new cv.Mat(); cv.convexHull(cnt, hull, false, true);
+                if (cv.contourArea(hull) > 0 && area/cv.contourArea(hull) > 0.78) {
+                    markers.push({ x: rect.x + rect.width/2, y: rect.y + rect.height/2 });
                 }
                 hull.delete();
             }
         }
         blur.delete(); threshMarker.delete(); contours.delete(); hierarchy.delete();
-
-        if (markers.length < 4) {
-            document.getElementById('scan-status').textContent = `❌ ${fileName}: Không tìm thấy đủ 4 ô vuông góc phiếu!`;
-            src.delete(); gray.delete();
-            return;
-        }
+        if (markers.length < 4) { alert("Không tìm thấy đủ 4 góc!"); src.delete(); gray.delete(); return; }
         tl = markers.reduce((a, b) => (a.x + a.y < b.x + b.y ? a : b));
         br = markers.reduce((a, b) => (a.x + a.y > b.x + b.y ? a : b));
         tr = markers.reduce((a, b) => (a.x - a.y > b.x - b.y ? a : b));
@@ -864,46 +673,25 @@ function processImageCanvas(sourceCanvas, fileName, lockedCorners = null) {
     const WIDTH = 800, HEIGHT = 1130;
     let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [tl.x, tl.y, tr.x, tr.y, br.x, br.y, bl.x, bl.y]);
     let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, WIDTH - 1, 0, WIDTH - 1, HEIGHT - 1, 0, HEIGHT - 1]);
-    let M = cv.getPerspectiveTransform(srcTri, dstTri);
-
-    let warpedGray = new cv.Mat();
+    let M = cv.getPerspectiveTransform(srcTri, dstTri), warpedGray = new cv.Mat();
     cv.warpPerspective(gray, warpedGray, M, new cv.Size(WIDTH, HEIGHT));
 
-    let blurScore = new cv.Mat();
-    let scoreThresh = new cv.Mat();
+    let blurScore = new cv.Mat(), scoreThresh = new cv.Mat();
     cv.GaussianBlur(warpedGray, blurScore, new cv.Size(5, 5), 0);
     cv.adaptiveThreshold(blurScore, scoreThresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 41, 10);
-
-    let imgDraw = new cv.Mat();
-    cv.cvtColor(warpedGray, imgDraw, cv.COLOR_GRAY2RGBA);
-
+    let imgDraw = new cv.Mat(); cv.cvtColor(warpedGray, imgDraw, cv.COLOR_GRAY2RGBA);
     const R = 9;
 
     function probeSquareCell(cx, cy, cw, ch) {
-        const coreHalf = 4;
-        const maxShiftX = Math.min(4, Math.floor((cw - 10) / 2));
-        const maxShiftY = Math.min(4, Math.floor((ch - 10) / 2));
-
-        let bestScore = 0;
-        let bestX = cx, bestY = cy;
-
-        for (let dy = -maxShiftY; dy <= maxShiftY; dy += 2) {
-            for (let dx = -maxShiftX; dx <= maxShiftX; dx += 2) {
-                let x1 = Math.max(0, Math.round(cx + dx - coreHalf));
-                let y1 = Math.max(0, Math.round(cy + dy - coreHalf));
-                let x2 = Math.min(WIDTH, Math.round(cx + dx + coreHalf + 1));
-                let y2 = Math.min(HEIGHT, Math.round(cy + dy + coreHalf + 1));
-                if (x2 <= x1 || y2 <= y1) continue;
-
+        let bestScore = 0, bestX = cx, bestY = cy;
+        for (let dy = -4; dy <= 4; dy += 2) {
+            for (let dx = -4; dx <= 4; dx += 2) {
+                let x1 = Math.max(0, cx + dx - 4), y1 = Math.max(0, cy + dy - 4);
+                let x2 = Math.min(WIDTH, cx + dx + 5), y2 = Math.min(HEIGHT, cy + dy + 5);
                 let roi = scoreThresh.roi(new cv.Rect(x1, y1, x2 - x1, y2 - y1));
                 let sc = cv.countNonZero(roi) / (roi.rows * roi.cols);
                 roi.delete();
-
-                if (sc > bestScore) {
-                    bestScore = sc;
-                    bestX = Math.round(cx + dx);
-                    bestY = Math.round(cy + dy);
-                }
+                if (sc > bestScore) { bestScore = sc; bestX = cx + dx; bestY = cy + dy; }
             }
         }
         return { score: bestScore, x: bestX, y: bestY };
@@ -911,245 +699,152 @@ function processImageCanvas(sourceCanvas, fileName, lockedCorners = null) {
 
     function drawSquareCellBox(cx, cy, cw, ch) {
         if (!showSquareGrid) return;
-        let p1 = new cv.Point(Math.round(cx - cw / 2), Math.round(cy - ch / 2));
-        let p2 = new cv.Point(Math.round(cx + cw / 2), Math.round(cy + ch / 2));
-        cv.rectangle(imgDraw, p1, p2, [2, 132, 199, 200], 1);
+        cv.rectangle(imgDraw, new cv.Point(cx - cw/2, cy - ch/2), new cv.Point(cx + cw/2, cy + ch/2), [2, 132, 199, 200], 1);
     }
 
     function drawBubble(x, y, status) {
         let center = new cv.Point(Math.round(x), Math.round(y));
-        if (status === 'correct_fill') cv.circle(imgDraw, center, Math.floor(R * 0.82), [0, 200, 0, 255], -1);
-        else if (status === 'wrong_fill') cv.circle(imgDraw, center, Math.floor(R * 0.82), [255, 0, 0, 255], -1);
-        else if (status === 'missing_key') cv.circle(imgDraw, center, Math.floor(R * 1.45), [255, 215, 0, 255], 2);
-        else if (status === 'info_read') cv.circle(imgDraw, center, Math.floor(R * 0.82), [0, 80, 255, 255], -1);
+        if (status === 'correct_fill') cv.circle(imgDraw, center, Math.floor(R*0.82), [0, 200, 0, 255], -1);
+        else if (status === 'wrong_fill') cv.circle(imgDraw, center, Math.floor(R*0.82), [255, 0, 0, 255], -1);
+        else if (status === 'missing_key') cv.circle(imgDraw, center, Math.floor(R*1.45), [255, 215, 0, 255], 2);
+        else if (status === 'info_read') cv.circle(imgDraw, center, Math.floor(R*0.82), [0, 80, 255, 255], -1);
     }
 
     function evaluateSquareCellRow(xList, y, cw, ch, labels, correctLabels) {
-        let probes = xList.map(x => {
-            drawSquareCellBox(x, y, cw, ch);
-            return probeSquareCell(x, y, cw, ch);
-        });
+        let probes = xList.map(x => { drawSquareCellBox(x, y, cw, ch); return probeSquareCell(x, y, cw, ch); });
         let scores = probes.map(p => p.score);
-        let minBg = Math.min(...scores);
-        let order = scores.map((s, idx) => idx).sort((a, b) => scores[b] - scores[a]);
-
+        let minBg = Math.min(...scores), order = scores.map((s, idx) => idx).sort((a, b) => scores[b] - scores[a]);
         let topScore = scores[order[0]];
         let isFilledTop = (topScore > minConf) && ((topScore - minBg) > 0.10 || topScore > minConf * 1.3);
         let isDup = isFilledTop && order.length > 1 && scores[order[1]] >= topScore * 0.76 && scores[order[1]] > minConf;
-
-        let filledIdx = [];
-        if (isFilledTop) {
-            filledIdx.push(order[0]);
-            if (isDup) filledIdx.push(order[1]);
-        }
+        let filledIdx = isFilledTop ? [order[0], ...(isDup ? [order[1]] : [])] : [];
 
         for (let i = 0; i < labels.length; i++) {
-            let isCorrectKey = correctLabels.includes(labels[i]);
-            let isFilled = filledIdx.includes(i);
+            let isCorrectKey = correctLabels.includes(labels[i]), isFilled = filledIdx.includes(i);
             if (isFilled) {
                 if (isCorrectKey && !isDup) drawBubble(probes[i].x, probes[i].y, 'correct_fill');
-                else {
-                    drawBubble(probes[i].x, probes[i].y, 'wrong_fill');
-                    if (isCorrectKey) drawBubble(xList[i], y, 'missing_key');
-                }
-            } else if (isCorrectKey) {
-                drawBubble(xList[i], y, 'missing_key');
-            }
+                else { drawBubble(probes[i].x, probes[i].y, 'wrong_fill'); if (isCorrectKey) drawBubble(xList[i], y, 'missing_key'); }
+            } else if (isCorrectKey) { drawBubble(xList[i], y, 'missing_key'); }
         }
         if (isDup) return { val: '', warn: 'Tô đúp' };
         if (filledIdx.length === 0) return { val: '', warn: 'Trống' };
         return { val: labels[order[0]], warn: '' };
     }
 
-    // ==================== 1. QUÉT LƯỚI Ô VUÔNG SBD (8x10) & MÃ ĐỀ (4x10) ====================
     let scannedSbd = "";
     for (let x of GRID_SPEC.sbd.x) {
-        let probes = GRID_SPEC.sbd.y.map(y => {
-            drawSquareCellBox(x, y, GRID_SPEC.sbd.cw, GRID_SPEC.sbd.ch);
-            return probeSquareCell(x, y, GRID_SPEC.sbd.cw, GRID_SPEC.sbd.ch);
-        });
-        let scores = probes.map(p => p.score);
-        let sortedScores = [...scores].sort((a, b) => a - b);
-        let medianBg = sortedScores[4];
-        let maxIdx = scores.indexOf(Math.max(...scores));
-
-        if (scores[maxIdx] > minConf && (scores[maxIdx] - medianBg) > 0.10) {
-            scannedSbd += String(maxIdx);
-            drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'info_read');
-        } else scannedSbd += "?";
+        let probes = GRID_SPEC.sbd.y.map(y => { drawSquareCellBox(x, y, GRID_SPEC.sbd.cw, GRID_SPEC.sbd.ch); return probeSquareCell(x, y, GRID_SPEC.sbd.cw, GRID_SPEC.sbd.ch); });
+        let scores = probes.map(p => p.score), maxIdx = scores.indexOf(Math.max(...scores));
+        let sorted = [...scores].sort((a,b)=>a-b);
+        if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.10) { scannedSbd += maxIdx; drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'info_read'); }
+        else scannedSbd += "?";
     }
 
     let scannedCode = "";
     for (let x of GRID_SPEC.made.x) {
-        let probes = GRID_SPEC.made.y.map(y => {
-            drawSquareCellBox(x, y, GRID_SPEC.made.cw, GRID_SPEC.made.ch);
-            return probeSquareCell(x, y, GRID_SPEC.made.cw, GRID_SPEC.made.ch);
-        });
-        let scores = probes.map(p => p.score);
-        let sortedScores = [...scores].sort((a, b) => a - b);
-        let medianBg = sortedScores[4];
-        let maxIdx = scores.indexOf(Math.max(...scores));
-
-        if (scores[maxIdx] > minConf && (scores[maxIdx] - medianBg) > 0.10) {
-            scannedCode += String(maxIdx);
-            drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'info_read');
-        } else scannedCode += "?";
+        let probes = GRID_SPEC.made.y.map(y => { drawSquareCellBox(x, y, GRID_SPEC.made.cw, GRID_SPEC.made.ch); return probeSquareCell(x, y, GRID_SPEC.made.cw, GRID_SPEC.made.ch); });
+        let scores = probes.map(p => p.score), maxIdx = scores.indexOf(Math.max(...scores));
+        let sorted = [...scores].sort((a,b)=>a-b);
+        if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.10) { scannedCode += maxIdx; drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'info_read'); }
+        else scannedCode += "?";
     }
 
-    let sbd = scannedSbd.replace(/\?/g, '0');
-    let code = scannedCode.replace(/\?/g, '0');
+    let sbd = scannedSbd.replace(/\?/g, '0'), code = scannedCode.replace(/\?/g, '0');
     let warnings = [];
     if (!answerKey[code]) {
         if (fallbackCode && answerKey[fallbackCode]) code = fallbackCode;
-        else warnings.push(`Mã đề ${scannedCode} không có trong đáp án`);
+        else warnings.push(`Mã đề ${scannedCode} không có`);
     }
-    if (scannedSbd.includes('?') || scannedCode.includes('?')) warnings.push("Tô mờ/thiếu SBD hoặc Mã đề");
+    if (scannedSbd.includes('?') || scannedCode.includes('?')) warnings.push("SBD/Mã đề mờ");
 
     let key = answerKey[code] || { p1: [], p2: [], p3: [] };
     let stuInfo = dshsDict[sbd] || { name: "", className: "" };
 
-    // ==================== 2. QUÉT LƯỚI Ô VUÔNG PHẦN I ====================
     let right1 = 0;
     for (let i = 0; i < key.p1.length; i++) {
         let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
         if (blockIdx >= 4) break;
         let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
-        let y = GRID_SPEC.p1.y[rowIdx];
-        let res = evaluateSquareCellRow(xList, y, GRID_SPEC.p1.cw, GRID_SPEC.p1.ch, ['A', 'B', 'C', 'D'], [key.p1[i]]);
+        let res = evaluateSquareCellRow(xList, GRID_SPEC.p1.y[rowIdx], GRID_SPEC.p1.cw, GRID_SPEC.p1.ch, ['A', 'B', 'C', 'D'], [key.p1[i]]);
         if (res.val === key.p1[i]) right1++;
     }
     let scoreP1 = +(right1 * diemP1).toFixed(2);
 
-    // ==================== 3. QUÉT LƯỚI Ô VUÔNG PHẦN II ====================
-    let key2Str = key.p2.join('');
-    let student2 = '';
-    let scoreP2 = 0, right2Details = 0;
-
+    let key2Str = key.p2.join(''), student2 = '', scoreP2 = 0, right2Details = 0;
     for (let i = 0; i < key.p2.length; i++) {
-        let blockIdx = Math.floor(i / 2);
-        if (blockIdx >= 4) break;
-        let baseX = GRID_SPEC.p2.blockX[blockIdx];
+        let blockIdx = Math.floor(i / 2), baseX = GRID_SPEC.p2.blockX[blockIdx];
         let xList = (i % 2 === 1) ? [baseX + 76, baseX + 114] : [baseX, baseX + 38];
         for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
-            let gIdx = i * 4 + rowIdx;
-            let corr = gIdx < key2Str.length ? [key2Str[gIdx]] : [];
+            let gIdx = i * 4 + rowIdx, corr = gIdx < key2Str.length ? [key2Str[gIdx]] : [];
             let res = evaluateSquareCellRow(xList, GRID_SPEC.p2.y[rowIdx], GRID_SPEC.p2.cw, GRID_SPEC.p2.ch, ['Đ', 'S'], corr);
             student2 += (res.val || 'X');
         }
     }
     for (let i = 0; i < key2Str.length; i += 4) {
-        let stuQ = student2.slice(i, i + 4), keyQ = key2Str.slice(i, i + 4);
-        let cCount = 0;
-        for (let j = 0; j < Math.min(stuQ.length, keyQ.length); j++) {
-            if (stuQ[j] === keyQ[j] && stuQ[j] !== 'X') cCount++;
-        }
+        let stuQ = student2.slice(i, i + 4), keyQ = key2Str.slice(i, i + 4), cCount = 0;
+        for (let j = 0; j < Math.min(stuQ.length, keyQ.length); j++) { if (stuQ[j] === keyQ[j] && stuQ[j] !== 'X') cCount++; }
         right2Details += cCount;
         if (cCount >= 1 && cCount <= 4) scoreP2 += diemP2[cCount - 1];
     }
     scoreP2 = +scoreP2.toFixed(2);
 
-    // ==================== 4. QUÉT LƯỚI Ô VUÔNG PHẦN III (6 CÂU x 4 CỘT x 12 DÒNG) ====================
     let scoreP3 = 0, right3 = 0, validP3Count = 0;
     const rowChars = GRID_SPEC.p3.chars;
-
     for (let q = 0; q < 6; q++) {
         let rawKey = (q < key.p3.length) ? String(key.p3[q]) : "";
         let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
         if (!cleanKey) continue;
         validP3Count++;
-
-        let baseX = GRID_SPEC.p3.blockX[q];
-        let stuAnsStr = "";
-        let keyChars = cleanKey.split('');
-
+        let baseX = GRID_SPEC.p3.blockX[q], stuAnsStr = "", keyChars = cleanKey.split('');
         for (let colIdx = 0; colIdx < 4; colIdx++) {
-            let x = baseX + GRID_SPEC.p3.offsetsX[colIdx];
-            let expectedChar = colIdx < keyChars.length ? keyChars[colIdx] : '';
-
-            let probes = GRID_SPEC.p3.y.map(y => {
-                drawSquareCellBox(x, y, GRID_SPEC.p3.cw, GRID_SPEC.p3.ch);
-                return probeSquareCell(x, y, GRID_SPEC.p3.cw, GRID_SPEC.p3.ch);
-            });
-            let scores = probes.map(p => p.score);
-            let sortedScores = [...scores].sort((a, b) => a - b);
-            let medianBg = sortedScores[5];
-            let maxIdx = scores.indexOf(Math.max(...scores));
-
-            let isFilled = scores[maxIdx] > minConf && (scores[maxIdx] - medianBg) > 0.10;
+            let x = baseX + GRID_SPEC.p3.offsetsX[colIdx], expectedChar = colIdx < keyChars.length ? keyChars[colIdx] : '';
+            let probes = GRID_SPEC.p3.y.map(y => { drawSquareCellBox(x, y, GRID_SPEC.p3.cw, GRID_SPEC.p3.ch); return probeSquareCell(x, y, GRID_SPEC.p3.cw, GRID_SPEC.p3.ch); });
+            let scores = probes.map(p => p.score), maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
+            let isFilled = scores[maxIdx] > minConf && (scores[maxIdx] - sorted[5]) > 0.10;
             let filledChar = isFilled ? rowChars[maxIdx] : '';
-
             if (filledChar) {
-                if (filledChar === expectedChar) {
-                    drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'correct_fill');
-                } else {
-                    drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'wrong_fill');
-                    if (expectedChar && rowChars.includes(expectedChar)) {
-                        drawBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key');
-                    }
-                }
+                if (filledChar === expectedChar) drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'correct_fill');
+                else { drawBubble(probes[maxIdx].x, probes[maxIdx].y, 'wrong_fill'); if (expectedChar && rowChars.includes(expectedChar)) drawBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key'); }
                 stuAnsStr += filledChar;
-            } else if (expectedChar && rowChars.includes(expectedChar)) {
-                drawBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key');
-            }
+            } else if (expectedChar && rowChars.includes(expectedChar)) { drawBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key'); }
         }
-        if (stuAnsStr === cleanKey) {
-            right3++;
-            scoreP3 += diemP3;
-        }
+        if (stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
     }
     scoreP3 = +scoreP3.toFixed(2);
     let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
-    // ==================== VẼ BẢNG ĐIỂM ĐỎ LÊN PHIẾU & HIỂN THỊ UI ====================
     const outCanvas = document.getElementById('result-canvas');
     cv.imshow(outCanvas, imgDraw);
     const ctx = outCanvas.getContext('2d');
+    ctx.font = "bold 18px Arial"; ctx.fillStyle = "#0033cc";
+    ctx.fillText(`SBD: ${sbd}`, 550, 68); ctx.fillText(`Mã: ${code}`, 710, 68);
 
-    ctx.font = "bold 18px Arial";
-    ctx.fillStyle = "#0033cc";
-    ctx.fillText(`SBD: ${sbd}`, 550, 68);
-    ctx.fillText(`Mã: ${code}`, 710, 68);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(12, 85, 226, 165);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "#dc2626";
-    ctx.strokeRect(12, 85, 226, 165);
-
-    ctx.fillStyle = "#dc2626";
-    ctx.font = "bold 26px Arial";
-    ctx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(12, 85, 226, 165);
+    ctx.lineWidth = 3; ctx.strokeStyle = "#dc2626"; ctx.strokeRect(12, 85, 226, 165);
+    ctx.fillStyle = "#dc2626"; ctx.font = "bold 26px Arial"; ctx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
     ctx.font = "bold 19px Arial";
     ctx.fillText(`P.I:   ${scoreP1}đ`, 28, 162);
     ctx.fillText(`P.II:  ${scoreP2}đ`, 28, 195);
     ctx.fillText(`P.III: ${scoreP3}đ`, 28, 228);
 
-    outCanvas.style.display = 'block';
-    lastGradedSbd = `${sbd}_${code}`;
+    outCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
 
     document.getElementById('score-dashboard').style.display = 'block';
     document.getElementById('ui-total').textContent = `${totalScore}đ`;
     document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
     document.getElementById('ui-sbd-made').textContent = `SBD: ${sbd} | Mã đề: ${code}`;
     document.getElementById('ui-p1-score').textContent = `${scoreP1}đ`;
-    document.getElementById('ui-p1-detail').textContent = `Đúng ${right1}/${key.p1.length} câu`;
+    document.getElementById('ui-p1-detail').textContent = `Đúng ${right1}/${key.p1.length}`;
     document.getElementById('ui-p2-score').textContent = `${scoreP2}đ`;
-    document.getElementById('ui-p2-detail').textContent = `Đúng ${right2Details}/${key2Str.length} ý`;
+    document.getElementById('ui-p2-detail').textContent = `Đúng ${right2Details}/${key2Str.length}`;
     document.getElementById('ui-p3-score').textContent = `${scoreP3}đ`;
-    document.getElementById('ui-p3-detail').textContent = `Đúng ${right3}/${validP3Count} câu`;
+    document.getElementById('ui-p3-detail').textContent = `Đúng ${right3}/${validP3Count}`;
     document.getElementById('ui-warnings').textContent = warnings.length ? `⚠️ ${warnings.join(' | ')}` : "";
 
-    document.getElementById('scan-status').textContent = `✅ Đã chấm xong phiếu SBD: ${sbd}`;
-
-    gradedRows.push({
-        sbd, name: stuInfo.name, className: stuInfo.className, code,
-        scoreP1, scoreP2, scoreP3, totalScore,
-        warnings: warnings.join('; '), file: fileName
-    });
+    gradedRows.push({ sbd, name: stuInfo.name, className: stuInfo.className, code, scoreP1, scoreP2, scoreP3, totalScore, warnings: warnings.join('; '), file: fileName });
     updateResultsTable();
 
-    src.delete(); gray.delete(); srcTri.delete(); dstTri.delete();
-    M.delete(); warpedGray.delete(); blurScore.delete(); scoreThresh.delete(); imgDraw.delete();
+    src.delete(); gray.delete(); srcTri.delete(); dstTri.delete(); M.delete(); warpedGray.delete(); blurScore.delete(); scoreThresh.delete(); imgDraw.delete();
 }
 
 function downloadResultImage() {
@@ -1179,15 +874,15 @@ function updateResultsTable() {
 }
 
 function exportResultsExcel() {
-    if (!gradedRows.length) { alert("Chưa có phiếu nào được chấm!"); return; }
+    if (!gradedRows.length) { alert("Chưa có phiếu nào!"); return; }
     const data = [
-        ["STT", "Họ và tên", "Lớp", "SBD", "Mã Đề", "Điểm P.I", "Điểm P.II", "Điểm P.III", "TỔNG ĐIỂM", "Cảnh báo/Lỗi", "Tên File"],
+        ["STT", "Họ và tên", "Lớp", "SBD", "Mã Đề", "Điểm P.I", "Điểm P.II", "Điểm P.III", "TỔNG ĐIỂM", "Cảnh báo", "File"],
         ...gradedRows.map((r, i) => [i + 1, r.name, r.className, r.sbd, r.code, r.scoreP1, r.scoreP2, r.scoreP3, r.totalScore, r.warnings, r.file])
     ];
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "BangDiem_OMR_Mobile");
-    XLSX.writeFile(wb, `BangDiem_NTMIX_Mobile_${Date.now()}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, "BangDiem");
+    XLSX.writeFile(wb, `BangDiem_NTMIX_${Date.now()}.xlsx`);
 }
 </script>
 </body>
