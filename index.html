@@ -285,7 +285,7 @@
     <div class="nav-item" onclick="switchTab('tab-results')">📊 Bảng điểm (<span id="nav-count">0</span>)</div>
 </div>
 
-<script>
+<script async src="https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0/dist/opencv.js" onload="onOpenCvReady();"></script>
 let cvReady = false;
 let answerKey = {};
 let dshsDict = {};
