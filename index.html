@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - Tự Động Chụp (Pure JS)</title>
+    <title>NTMIX OMR Mobile - Camera Tràn Viền Tự Chụp</title>
+    <!-- Thư viện đọc/xuất Excel và QR -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
         :root { --primary: #1a73e8; --success: #0f9d58; --danger: #d93025; --purple: #7c3aed; --dark: #1e293b; --bg: #f1f5f9; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: var(--bg); color: var(--dark); padding-bottom: 75px; }
-        header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 12px 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 12px 16px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
         header h1 { font-size: 18px; font-weight: 800; }
         header p { font-size: 12px; opacity: 0.9; margin-top: 2px; }
-        .badge-cv { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; background: var(--success); color: #fff; margin-top: 4px; border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .badge-cv { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; background: var(--success); color: #fff; margin-top: 4px; }
 
         .container { max-width: 600px; margin: 0 auto; padding: 10px; }
         .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
@@ -32,38 +33,44 @@
         .btn-purple { background: var(--purple); }
         .btn-secondary { background: #64748b; }
 
+        /* Khung quét QR */
         #qr-scanner-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-top: 8px; margin-bottom: 10px; }
         #qr-video { width: 100%; display: block; }
         .qr-target-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border: 3px solid #00ff00; border-radius: 12px; }
 
-        /* KHUNG CAMERA CHUẨN 4 GÓC TỰ ĐỘNG CHỤP */
-        #camera-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        #video-container { position: relative; width: 100%; display: flex; justify-content: center; align-items: center; background: #111; aspect-ratio: 3/4; overflow: hidden; }
-        #video { width: 100%; height: 100%; object-fit: cover; }
-        
-        #cam-overlay { 
-            position: absolute; 
-            width: 85%; 
-            aspect-ratio: 800 / 1130; 
-            pointer-events: none; 
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); 
-            border: 1px dashed rgba(255,255,255,0.4);
-            z-index: 5;
+        /* ================= CAMERA TRÀN MÀN HÌNH ================= */
+        #camera-fullscreen-ui {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #000; z-index: 9999; flex-direction: column; overflow: hidden;
         }
+        #video-container { position: relative; flex: 1; width: 100%; background: #000; overflow: hidden; }
+        #video { width: 100%; height: 100%; object-fit: cover; display: block; }
         
+        /* Vùng cắt chuẩn 800x1130 ở giữa màn hình */
+        #cam-overlay { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90%; max-width: 450px; aspect-ratio: 800 / 1130; 
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); /* Làm tối vùng ngoài */
+            border: 2px dashed rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+        }
+
+        /* 4 ô vuông xanh định vị */
         .corner-box {
-            position: absolute;
-            width: 15%; 
-            aspect-ratio: 1 / 1;
-            border: 3px solid #00ff00;
-            background: rgba(0, 255, 0, 0.1);
-            transition: background 0.2s;
+            position: absolute; width: 12%; aspect-ratio: 1 / 1;
+            border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.1); transition: background 0.2s;
         }
         .corner-box.tl { top: 0; left: 0; }
         .corner-box.tr { top: 0; right: 0; }
         .corner-box.bl { bottom: 0; left: 0; }
         .corner-box.br { bottom: 0; right: 0; }
 
+        /* Bảng điều khiển Camera */
+        .cam-controls { padding: 16px; background: #0f172a; text-align: center; }
+        #hud-text { color: #fff; font-size: 14px; font-weight: bold; margin-bottom: 12px; min-height: 20px; transition: color 0.3s; }
+        .cam-btn-group { display: flex; gap: 10px; justify-content: center; }
+
+        /* Bảng điểm kết quả */
         .score-dashboard { display: none; background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 12px; margin-top: 10px; box-shadow: 0 4px 10px rgba(220,38,38,0.12); }
         .score-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #fca5a5; padding-bottom: 8px; margin-bottom: 10px; }
         .score-total-box { font-size: 22px; font-weight: 900; color: #dc2626; }
@@ -82,7 +89,7 @@
         th, td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; text-align: center; }
         th { background: #1e3a8a; color: white; white-space: nowrap; }
 
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 100; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 50; }
         .nav-item { flex: 1; padding: 10px 4px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; }
         .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); background: #eff6ff; }
         .tab-pane { display: none; }
@@ -94,50 +101,46 @@
 <header>
     <h1>NTMIX OMR MOBILE</h1>
     <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span class="badge-cv">✅ Hệ thống Sẵn Sàng 100%</span>
+    <span class="badge-cv">✅ Hệ thống Sẵn Sàng</span>
 </header>
 
 <div class="container">
     <!-- TAB 1: CẤU HÌNH & ĐÁP ÁN -->
     <div id="tab-config" class="tab-pane active">
         <div class="card">
-            <div class="card-title">1. Nạp Đáp Án (Mã QR hoặc Excel)</div>
+            <div class="card-title">1. Nạp Đáp Án (Mã QR / Excel)</div>
             <div class="form-group">
-                <label>📲 Nạp nhanh bằng Mã QR Đáp án:</label>
                 <div class="grid-2">
                     <button class="btn btn-purple" id="btn-qr-cam" onclick="toggleQrScanner()">📷 Quét Mã QR</button>
                     <label class="btn btn-success" style="margin: 0; cursor: pointer;">
-                        🖼️ Chọn Ảnh QR
+                        🖼️ Ảnh QR
                         <input type="file" id="file-qr-img" accept="image/*" style="display: none;" onchange="handleQrImageFile(this.files[0])">
                     </label>
                 </div>
                 <div id="qr-scanner-wrapper">
                     <video id="qr-video" autoplay playsinline muted></video>
                     <div class="qr-target-box"></div>
-                    <div style="padding: 8px; background: #0f172a; text-align: center; color: #fff; font-size: 12px;">Đưa mã QR đáp án vào khung xanh...</div>
                 </div>
             </div>
-
             <div class="form-group" style="margin-top: 12px;">
-                <label>📄 Hoặc chọn file Excel Đáp án (DapAn_TNMaker.xlsx):</label>
+                <label>📄 Hoặc file Excel Đáp án (DapAn_TNMaker.xlsx):</label>
                 <input type="file" id="file-key" accept=".xlsx,.xls">
             </div>
-
             <div id="key-status-box" class="key-summary-box"></div>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 12px 0;">
             <div class="form-group">
-                <label>👥 Danh sách Học sinh (Cột B: SBD, C: Tên, D: Lớp):</label>
+                <label>👥 File Danh sách Học sinh (B: SBD, C: Tên, D: Lớp):</label>
                 <input type="file" id="file-dshs" accept=".xlsx,.xls">
                 <small id="dshs-status" style="color: var(--primary); font-weight: 600; display: block; margin-top: 4px;"></small>
             </div>
             <div class="form-group">
-                <label>🔧 Mã đề dự phòng (Nếu HS quên tô):</label>
+                <label>🔧 Mã đề dự phòng (Khi HS không tô):</label>
                 <input type="text" id="fallback-code" placeholder="VD: 0234">
             </div>
         </div>
 
         <div class="card">
-            <div class="card-title">2. Thang điểm & Cấu hình</div>
+            <div class="card-title">2. Cấu hình chấm</div>
             <div class="grid-2">
                 <div class="form-group"><label>Điểm Phần I:</label><input type="number" id="cfg-p1" step="0.05" value="0.25"></div>
                 <div class="form-group"><label>Điểm Phần III:</label><input type="number" id="cfg-p3" step="0.05" value="0.5"></div>
@@ -155,44 +158,25 @@
                 <label>Ngưỡng nhận diện chì (0.15 - 0.45):</label>
                 <input type="number" id="cfg-conf" step="0.02" value="0.24">
             </div>
-            <button class="btn btn-primary" onclick="switchTab('tab-scan')">Lưu & Mở Máy Quét ➔</button>
+            <button class="btn btn-primary" onclick="switchTab('tab-scan')">Lưu & Mở Giao Diện Chấm ➔</button>
         </div>
     </div>
 
-    <!-- TAB 2: QUÉT MÁY CHẤM THƯ VIỆN & CAMERA TRỰC TIẾP -->
+    <!-- TAB 2: CHẤM BÀI -->
     <div id="tab-scan" class="tab-pane">
         <div class="card">
-            <div class="card-title">
-                <span>Máy Quét Tự Động Chụp</span>
-            </div>
-
+            <div class="card-title">Chấm Phiếu Trực Tiếp</div>
             <div class="grid-2" style="margin-bottom: 10px;">
-                <button class="btn btn-primary" id="btn-toggle-cam" onclick="toggleCamera()">📷 Bật Máy Quét</button>
+                <button class="btn btn-primary" onclick="openFullscreenCamera()">📷 Mở Máy Quét</button>
                 <label class="btn btn-success" style="margin: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     🖼️ Chọn Từ Máy
-                    <input type="file" id="file-images" accept="image/*" capture="environment" multiple style="display: none;" onchange="handleImageFiles(this.files)">
+                    <input type="file" accept="image/*" capture="environment" multiple style="display: none;" onchange="handleImageFiles(this.files)">
                 </label>
-            </div>
-
-            <!-- Khung ngắm Camera trực tiếp 4 góc xanh -->
-            <div id="camera-wrapper">
-                <div id="video-container">
-                    <video id="video" autoplay playsinline muted></video>
-                    <div id="cam-overlay">
-                        <div class="corner-box tl"></div>
-                        <div class="corner-box tr"></div>
-                        <div class="corner-box bl"></div>
-                        <div class="corner-box br"></div>
-                    </div>
-                </div>
-                <div style="padding: 12px; background: #0f172a; text-align: center; position: relative; z-index: 10;">
-                    <p id="hud-text" style="color: #fff; font-size: 13px; font-weight: bold; margin-bottom: 10px; min-height: 18px;">Đưa 4 ô vuông đen của phiếu lọt vào 4 ô xanh lục</p>
-                    <button class="btn btn-danger" onclick="captureAndGrade()" style="padding: 8px; font-size: 13px; background: #64748b;">📸 Chụp Thủ Công (Nếu cần)</button>
-                </div>
             </div>
 
             <div id="scan-status" style="font-size: 14px; font-weight: 700; color: var(--primary); text-align: center; margin-bottom: 10px;"></div>
 
+            <!-- BẢNG ĐIỂM KẾT QUẢ -->
             <div id="score-dashboard" class="score-dashboard">
                 <div class="score-header">
                     <div>
@@ -211,7 +195,7 @@
                 </div>
                 <div id="ui-warnings" style="margin-top: 8px; font-size: 12px; color: #d93025; font-weight: 600; text-align: center;"></div>
                 <div class="grid-2" style="margin-top: 10px;">
-                    <button class="btn btn-primary" onclick="resumeScanning()">🔄 Quét Tờ Khác</button>
+                    <button class="btn btn-primary" onclick="openFullscreenCamera()">🔄 Quét Tờ Khác</button>
                     <button class="btn btn-secondary" onclick="downloadResultImage()">⬇️ Lưu Ảnh Chấm</button>
                 </div>
             </div>
@@ -237,6 +221,26 @@
     </div>
 </div>
 
+<!-- GIAO DIỆN CAMERA TRÀN MÀN HÌNH CHỤP TỰ ĐỘNG -->
+<div id="camera-fullscreen-ui">
+    <div id="video-container">
+        <video id="video" autoplay playsinline muted></video>
+        <div id="cam-overlay">
+            <div class="corner-box tl" id="cb-tl"></div>
+            <div class="corner-box tr" id="cb-tr"></div>
+            <div class="corner-box bl" id="cb-bl"></div>
+            <div class="corner-box br" id="cb-br"></div>
+        </div>
+    </div>
+    <div class="cam-controls">
+        <p id="hud-text">Đưa 4 ô vuông đen của phiếu lọt vào 4 ô xanh lục</p>
+        <div class="cam-btn-group">
+            <button class="btn btn-danger" style="flex: 2;" onclick="manualCapture()">📸 Chụp (Bằng Tay)</button>
+            <button class="btn btn-secondary" style="flex: 1;" onclick="closeFullscreenCamera()">❌ Đóng</button>
+        </div>
+    </div>
+</div>
+
 <div class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('tab-config')">⚙️ Cấu hình</div>
     <div class="nav-item" onclick="switchTab('tab-scan')">📷 Máy Quét</div>
@@ -246,7 +250,7 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
     const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 Chạy trên GitHub (Auto Scan)" : "💻 Chạy nội bộ LAN (Auto Scan)";
+    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 Chạy trên GitHub (Auto-Capture)" : "💻 Chạy nội bộ LAN (Auto-Capture)";
 });
 
 let answerKey = {}; let dshsDict = {}; let gradedRows = [];
@@ -254,7 +258,6 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
-// THÔNG SỐ TỌA ĐỘ CHUẨN (800x1130) BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -265,7 +268,6 @@ const GRID_SPEC = {
 
 function switchTab(tabId) {
     if (tabId !== 'tab-config') stopQrScanner();
-    if (tabId !== 'tab-scan') stopCamera();
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
@@ -290,7 +292,7 @@ function updateKeyStatusDisplay() {
     if (codes.length === 0) { box.style.display = 'none'; return; }
     const sample = answerKey[codes[0]];
     box.style.display = 'block';
-    box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề (<b>${codes.join(', ')}</b>)`;
+    box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề`;
 }
 
 function parseNtmixQrString(rawText) {
@@ -314,7 +316,6 @@ async function toggleQrScanner() {
     const wrapper = document.getElementById('qr-scanner-wrapper'); const video = document.getElementById('qr-video');
     const btn = document.getElementById('btn-qr-cam');
     if (qrStream) { stopQrScanner(); return; }
-    stopCamera();
     try {
         qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } } });
         video.srcObject = qrStream; wrapper.style.display = 'block'; btn.textContent = "❌ Đóng Quét QR";
@@ -335,19 +336,6 @@ function stopQrScanner() {
     if (qrStream) qrStream.getTracks().forEach(t => t.stop());
     qrStream = null; document.getElementById('qr-scanner-wrapper').style.display = 'none';
     document.getElementById('btn-qr-cam').textContent = "📷 Quét Mã QR";
-}
-
-function handleQrImageFile(file) {
-    if (!file) return;
-    const img = new Image();
-    img.onload = () => {
-        const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
-        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
-        if (code && code.data) parseNtmixQrString(code.data); else alert("Không thấy QR trong ảnh!");
-    };
-    img.src = URL.createObjectURL(file);
 }
 
 document.getElementById('file-key').addEventListener('change', function(e) {
@@ -373,49 +361,26 @@ document.getElementById('file-key').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(file);
 });
 
-document.getElementById('file-dshs').addEventListener('change', function(e) {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-        const wb = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1, defval: ""});
-        dshsDict = {}; let count = 0;
-        for (let r = 1; r < rows.length; r++) {
-            let sbd = String(rows[r][1] || "").trim();
-            if (sbd) { dshsDict[sbd] = { name: String(rows[r][2] || "").trim(), className: String(rows[r][3] || "").trim() }; count++; }
-        }
-        document.getElementById('dshs-status').textContent = `✅ Đã nạp ${count} học sinh`;
-    };
-    reader.readAsArrayBuffer(file);
-});
-
-// ================= GIAO DIỆN TỰ ĐỘNG CHỤP MÁY QUÉT 4 GÓC =================
-async function toggleCamera() {
-    const wrapper = document.getElementById('camera-wrapper');
+// ================= CAMERA TRÀN MÀN HÌNH TỰ ĐỘNG CHỤP =================
+async function openFullscreenCamera() {
+    const ui = document.getElementById('camera-fullscreen-ui');
     const video = document.getElementById('video');
-    const btn = document.getElementById('btn-toggle-cam');
-    
-    if (videoStream) { stopCamera(); return; }
-    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab 1 trước!"); switchTab('tab-config'); return; }
+    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước!"); switchTab('tab-config'); return; }
     
     try {
         videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 } } });
         video.srcObject = videoStream;
-        wrapper.style.display = 'block';
-        btn.textContent = "❌ Tắt Máy Quét";
-        document.getElementById('score-dashboard').style.display = 'none';
-        document.getElementById('result-canvas').style.display = 'none';
+        ui.style.display = 'flex';
         
-        // Khởi động luồng quét tự động nhận diện 4 góc
-        video.onloadeddata = () => { startAutoScan(); };
-    } catch (err) { alert("Trình duyệt chặn Camera nội bộ, hãy dùng nút 'Chọn / Chụp Camera Gốc' bên cạnh!"); }
+        // Khởi động luồng quét tự động khi video đã nạp
+        video.onloadedmetadata = () => { video.play(); startAutoScan(); };
+    } catch (err) { alert("Trình duyệt chặn Camera nội bộ, hãy dùng nút 'Chọn Từ Máy' !"); }
 }
 
-function stopCamera() {
+function closeFullscreenCamera() {
     if (autoScanTimer) clearInterval(autoScanTimer);
     if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
-    document.getElementById('camera-wrapper').style.display = 'none';
-    document.getElementById('btn-toggle-cam').textContent = "📷 Bật Máy Quét";
+    document.getElementById('camera-fullscreen-ui').style.display = 'none';
 }
 
 function startAutoScan() {
@@ -426,20 +391,34 @@ function startAutoScan() {
     stableFrames = 0;
 
     autoScanTimer = setInterval(() => {
-        if (!videoStream || !video.videoWidth) return;
+        if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+        // Tính toán thuật toán object-fit: cover để lấy chính xác tọa độ cắt ảnh
+        const videoRatio = video.videoWidth / video.videoHeight;
+        const elementRatio = video.clientWidth / video.clientHeight;
+        let sWidth, sHeight, sx, sy;
+
+        if (videoRatio > elementRatio) {
+            sHeight = video.videoHeight; sWidth = sHeight * elementRatio;
+            sx = (video.videoWidth - sWidth) / 2; sy = 0;
+        } else {
+            sWidth = video.videoWidth; sHeight = sWidth / elementRatio;
+            sx = 0; sy = (video.videoHeight - sHeight) / 2;
+        }
 
         const rectV = video.getBoundingClientRect();
         const rectO = overlay.getBoundingClientRect();
-        if (rectV.width === 0 || rectO.width === 0) return;
-
-        const scaleX = video.videoWidth / rectV.width;
-        const scaleY = video.videoHeight / rectV.height;
-        const cropX = (rectO.left - rectV.left) * scaleX;
-        const cropY = (rectO.top - rectV.top) * scaleY;
+        
+        // Tọa độ overlay trên hiển thị -> tọa độ thực trên video
+        const scaleX = sWidth / rectV.width;
+        const scaleY = sHeight / rectV.height;
+        
+        const cropX = sx + (rectO.left - rectV.left) * scaleX;
+        const cropY = sy + (rectO.top - rectV.top) * scaleY;
         const cropW = rectO.width * scaleX;
         const cropH = rectO.height * scaleY;
 
-        // Vẽ vùng quét ra canvas siêu nhỏ (200x282) để kiểm tra cho mượt
+        // Quét siêu nhỏ (200x282) để kiểm tra 4 góc
         const tmpCanvas = document.createElement('canvas');
         tmpCanvas.width = 200; tmpCanvas.height = 282;
         const ctx = tmpCanvas.getContext('2d');
@@ -447,16 +426,14 @@ function startAutoScan() {
 
         const imgData = ctx.getImageData(0, 0, 200, 282).data;
         let sum = 0;
-        for(let i=0; i<imgData.length; i+=4) {
-            sum += 0.299*imgData[i] + 0.587*imgData[i+1] + 0.114*imgData[i+2];
-        }
+        for(let i=0; i<imgData.length; i+=4) { sum += 0.299*imgData[i] + 0.587*imgData[i+1] + 0.114*imgData[i+2]; }
         const avg = sum / (200*282);
-        const thresh = Math.min(130, avg * 0.75); // Lấy ngưỡng đen thông minh
+        const thresh = Math.min(125, avg * 0.7); // Ngưỡng điểm đen
 
-        function checkDarkness(sx, sy, w, h) {
+        function checkDarkness(cx, cy, w, h) {
             let darkCount = 0;
-            for(let y = sy; y < sy+h; y++) {
-                for(let x = sx; x < sx+w; x++) {
+            for(let y = cy; y < cy+h; y++) {
+                for(let x = cx; x < cx+w; x++) {
                     let i = (y * 200 + x) * 4;
                     let gray = 0.299*imgData[i] + 0.587*imgData[i+1] + 0.114*imgData[i+2];
                     if (gray < thresh) darkCount++;
@@ -465,67 +442,86 @@ function startAutoScan() {
             return darkCount / (w * h);
         }
 
-        // Ô vuông xanh chiếm 15% bề rộng (30px trên canvas nhỏ)
-        const bw = 30;
+        // Kích thước ô vuông kiểm tra (12% của khung)
+        const bw = 24; 
         const tl = checkDarkness(0, 0, bw, bw);
         const tr = checkDarkness(200 - bw, 0, bw, bw);
         const bl = checkDarkness(0, 282 - bw, bw, bw);
         const br = checkDarkness(200 - bw, 282 - bw, bw, bw);
 
-        // Kiểm tra xem mật độ điểm đen có lọt chuẩn (từ 1.5% đến 25%) ô xanh hay không
-        function isValid(val) { return val > 0.015 && val < 0.25; }
+        // Mật độ đen lọt vào phải từ 3% đến 35%
+        function isValid(val) { return val > 0.03 && val < 0.35; }
+        
+        // Đổi màu các ô ngắm để phản hồi
+        document.getElementById('cb-tl').style.background = isValid(tl) ? "rgba(0, 255, 0, 0.5)" : "rgba(0, 255, 0, 0.1)";
+        document.getElementById('cb-tr').style.background = isValid(tr) ? "rgba(0, 255, 0, 0.5)" : "rgba(0, 255, 0, 0.1)";
+        document.getElementById('cb-bl').style.background = isValid(bl) ? "rgba(0, 255, 0, 0.5)" : "rgba(0, 255, 0, 0.1)";
+        document.getElementById('cb-br').style.background = isValid(br) ? "rgba(0, 255, 0, 0.5)" : "rgba(0, 255, 0, 0.1)";
 
         if (isValid(tl) && isValid(tr) && isValid(bl) && isValid(br)) {
             stableFrames++;
             hudText.innerHTML = `🎯 Đã khóa mục tiêu! Giữ yên... (${stableFrames}/3)`;
             hudText.style.color = "#00ff00";
-            document.querySelectorAll('.corner-box').forEach(el => el.style.background = "rgba(0, 255, 0, 0.4)");
 
             if (stableFrames >= 3) {
                 clearInterval(autoScanTimer);
                 hudText.innerHTML = "⚡ ĐÃ CHỤP TỰ ĐỘNG!";
-                captureAndGrade(); // Kích hoạt chụp
+                
+                // Trích xuất hình ảnh phân giải cao
+                const hiResCanvas = document.createElement('canvas');
+                hiResCanvas.width = 800; hiResCanvas.height = 1130;
+                hiResCanvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
+                
+                closeFullscreenCamera();
+                playBeep();
+                processImagePureJS(hiResCanvas, `Cam_${Date.now()}.jpg`);
             }
         } else {
             stableFrames = 0;
-            hudText.innerHTML = "Đưa 4 ô vuông đen của phiếu lọt vào 4 ô xanh lục";
+            hudText.innerHTML = "Đưa 4 ô vuông đen lọt vào 4 ô vuông xanh lục";
             hudText.style.color = "#fff";
-            document.querySelectorAll('.corner-box').forEach(el => el.style.background = "rgba(0, 255, 0, 0.1)");
         }
-    }, 300); // Quét liên tục 3 lần/giây
+    }, 250); // Quét 4 lần/giây
 }
 
-function captureAndGrade() {
+// Chụp thủ công (Trong trường hợp tự động không bắt được do bóng râm)
+function manualCapture() {
     const video = document.getElementById('video');
     const overlay = document.getElementById('cam-overlay');
     if (!videoStream || !video.videoWidth) return;
     
-    playBeep();
     if (autoScanTimer) clearInterval(autoScanTimer);
+    playBeep();
     
+    const videoRatio = video.videoWidth / video.videoHeight;
+    const elementRatio = video.clientWidth / video.clientHeight;
+    let sWidth, sHeight, sx, sy;
+
+    if (videoRatio > elementRatio) {
+        sHeight = video.videoHeight; sWidth = sHeight * elementRatio;
+        sx = (video.videoWidth - sWidth) / 2; sy = 0;
+    } else {
+        sWidth = video.videoWidth; sHeight = sWidth / elementRatio;
+        sx = 0; sy = (video.videoHeight - sHeight) / 2;
+    }
+
     const rectV = video.getBoundingClientRect();
     const rectO = overlay.getBoundingClientRect();
-    const scaleX = video.videoWidth / rectV.width;
-    const scaleY = video.videoHeight / rectV.height;
     
-    const cropX = (rectO.left - rectV.left) * scaleX;
-    const cropY = (rectO.top - rectV.top) * scaleY;
+    const scaleX = sWidth / rectV.width;
+    const scaleY = sHeight / rectV.height;
+    
+    const cropX = sx + (rectO.left - rectV.left) * scaleX;
+    const cropY = sy + (rectO.top - rectV.top) * scaleY;
     const cropW = rectO.width * scaleX;
     const cropH = rectO.height * scaleY;
 
     const canvas = document.createElement('canvas');
     canvas.width = 800; canvas.height = 1130;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
+    canvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
     
-    stopCamera();
+    closeFullscreenCamera();
     processImagePureJS(canvas, `Cam_${Date.now()}.jpg`);
-}
-
-function resumeScanning() {
-    document.getElementById('score-dashboard').style.display = 'none';
-    document.getElementById('result-canvas').style.display = 'none';
-    toggleCamera();
 }
 
 async function handleImageFiles(files) {
@@ -548,7 +544,7 @@ async function handleImageFiles(files) {
     }
 }
 
-// ================= LÕI CHẤM OMR PURE JS =================
+// ================= LÕI CHẤM OMR PURE JS (KHÔNG OPENCV) =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const ctx = sourceCanvas.getContext('2d');
