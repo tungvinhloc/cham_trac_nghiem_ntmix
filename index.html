@@ -8,8 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Thư viện giải mã QR Code (jsQR) -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <!-- Thư viện OpenCV.js qua CDN jsDelivr siêu tốc, tương thích 100% GitHub và Local -->
-    <script async src="https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0/dist/opencv.js" onload="onOpenCvReady();"></script>
     <style>
         :root {
             --primary: #1a73e8;
@@ -268,18 +266,52 @@
     <div class="nav-item" onclick="switchTab('tab-results')">📊 Bảng điểm (<span id="count-graded">0</span>)</div>
 </div>
 
+<!-- TẢI OPENCV BẰNG SCRIPT ĐỘNG AN TOÀN CHỐNG TREO -->
 <script>
-// Tự động nhận diện môi trường chạy
-window.addEventListener('DOMContentLoaded', () => {
-    const isGithub = window.location.hostname.includes('github.io');
-    const label = document.getElementById('env-mode-label');
-    if (isGithub) {
-        label.textContent = "🌐 Đang chạy trên GitHub Pages (Cơ động trực tuyến)";
-    } else {
-        label.textContent = "💻 Đang chạy trên Mạng nội bộ LAN / Localhost";
-    }
-});
+    window.addEventListener('DOMContentLoaded', () => {
+        const isGithub = window.location.hostname.includes('github.io');
+        const label = document.getElementById('env-mode-label');
+        if (isGithub) {
+            label.textContent = "🌐 Đang chạy trên GitHub Pages (Cơ động trực tuyến)";
+        } else {
+            label.textContent = "💻 Đang chạy trên Mạng nội bộ LAN / Localhost";
+        }
 
+        // Tải động script OpenCV để tránh kẹt sự kiện onload của trình duyệt di động
+        const script = document.createElement('script');
+        script.src = "https://docs.opencv.org/4.8.0/opencv.js";
+        script.async = true;
+        script.onload = () => {
+            if (typeof cv !== 'undefined') {
+                if (cv.Mat) {
+                    onOpenCvReady();
+                } else {
+                    cv.onRuntimeInitialized = () => {
+                        onOpenCvReady();
+                    };
+                }
+            }
+        };
+        script.onerror = () => {
+            // Fallback sang CDN dự phòng nếu CDN chính lỗi
+            const backupScript = document.createElement('script');
+            backupScript.src = "https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.9.0/dist/opencv.js";
+            backupScript.async = true;
+            backupScript.onload = () => { onOpenCvReady(); };
+            document.head.appendChild(backupScript);
+        };
+        document.head.appendChild(script);
+    });
+
+    // Phòng hờ thêm bộ đếm thời gian 5 giây tự động ép mở khóa nếu mạng quá chậm
+    setTimeout(() => {
+        if (!cvReady && typeof cv !== 'undefined') {
+            onOpenCvReady();
+        }
+    }, 5000);
+</script>
+
+<script>
 let cvReady = false;
 let answerKey = {};
 let dshsDict = {};
@@ -291,13 +323,6 @@ let qrScanTimer = null;
 let stableFrames = 0;
 let isPausedForReview = false;
 let lastGradedSbd = "Phieu";
-
-// Bộ định thời gian phòng hờ (Fallback Timeout): Tự động mở khóa OpenCV sau 3 giây nếu sự kiện onload bị kẹt mạng
-setTimeout(() => {
-    if (!cvReady && typeof cv !== 'undefined') {
-        onOpenCvReady();
-    }
-}, 3000);
 
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 18, ch: 24 },
