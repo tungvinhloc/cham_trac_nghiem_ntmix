@@ -292,6 +292,13 @@ let stableFrames = 0;
 let isPausedForReview = false;
 let lastGradedSbd = "Phieu";
 
+// Bộ định thời gian phòng hờ (Fallback Timeout): Tự động mở khóa OpenCV sau 3 giây nếu sự kiện onload bị kẹt mạng
+setTimeout(() => {
+    if (!cvReady && typeof cv !== 'undefined') {
+        onOpenCvReady();
+    }
+}, 3000);
+
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 18, ch: 24 },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 18, ch: 24 },
@@ -301,10 +308,13 @@ const GRID_SPEC = {
 };
 
 function onOpenCvReady() {
+    if (cvReady) return;
     cvReady = true;
     const badge = document.getElementById('cv-status');
-    badge.textContent = "✅ Lõi OMR Lưới Ô Vuông đã sẵn sàng";
-    badge.classList.add('ready');
+    if (badge) {
+        badge.textContent = "✅ Lõi OMR Lưới Ô Vuông đã sẵn sàng";
+        badge.classList.add('ready');
+    }
 }
 
 function switchTab(tabId) {
