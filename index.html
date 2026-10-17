@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - V12 Hoàn Thiện</title>
+    <title>NTMIX OMR Mobile - V13 Tọa Độ Chuẩn</title>
     <!-- Thư viện siêu nhẹ, thuần JS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -58,13 +58,23 @@
 
         #grid-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
+        /* 4 Ô VUÔNG XANH ĐƯỢC LÀM TO RA (15%) ĐỂ DỄ NGẮM HƠN */
+        .corner-box {
+            position: absolute; width: 15%; aspect-ratio: 1 / 1;
+            border: 4px solid #00ff00; background: rgba(0, 255, 0, 0.1); transition: background 0.2s;
+        }
+        .corner-box.tl { top: 1%; left: 1%; }
+        .corner-box.tr { top: 1%; right: 1%; }
+        .corner-box.bl { bottom: 1%; left: 1%; }
+        .corner-box.br { bottom: 1%; right: 1%; }
+
         .cam-controls { 
             position: absolute; bottom: 0; left: 0; width: 100%; 
             padding: 15px 10px 25px 10px; 
             background: linear-gradient(transparent, rgba(0,0,0,0.95)); 
             text-align: center; z-index: 20; 
         }
-        #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 10px; min-height: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        #hud-text { color: #fff; font-size: 16px; font-weight: bold; margin-bottom: 10px; min-height: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .cam-btn-group { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
         .speed-select { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 8px; border-radius: 8px; font-weight: bold; outline: none; }
         .speed-select option { color: black; }
@@ -77,7 +87,7 @@
         .part-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 8px 4px; }
         .part-box .p-title { font-size: 12px; font-weight: 700; color: #991b1b; }
         .part-box .p-val { font-size: 18px; font-weight: 800; color: #dc2626; margin-top: 2px; }
-        .part-box .p-sub { font-size: 11px; color: #64748b; margin-top: 2px; } /* Đã khôi phục CSS cho phần chi tiết điểm */
+        .part-box .p-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
 
         .key-summary-box { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-top: 6px; display: none; }
         #result-canvas { width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; display: none; margin-top: 10px; }
@@ -99,7 +109,7 @@
 <header>
     <h1>NTMIX OMR MOBILE</h1>
     <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span class="badge-cv">✅ V12 - Fix UI & Phần III Hoàn Hảo</span>
+    <span class="badge-cv">✅ V13 - Đồng bộ Tọa độ Python</span>
 </header>
 
 <div class="container">
@@ -147,14 +157,14 @@
                 <div class="grid-2">
                     <div>
                         <span style="font-size: 11px; color: #64748b;">Dịch Ngang (X)</span>
-                        <input type="number" id="cfg-offset-x" value="-3" onchange="drawVirtualGrid()" style="color: #dc2626;">
+                        <input type="number" id="cfg-offset-x" value="0" onchange="drawVirtualGrid()" style="color: #dc2626;">
                     </div>
                     <div>
                         <span style="font-size: 11px; color: #64748b;">Dịch Dọc (Y)</span>
-                        <input type="number" id="cfg-offset-y" value="-3" onchange="drawVirtualGrid()" style="color: #dc2626;">
+                        <input type="number" id="cfg-offset-y" value="0" onchange="drawVirtualGrid()" style="color: #dc2626;">
                     </div>
                 </div>
-                <p style="font-size: 11px; color: #64748b; margin-top: 4px; font-style: italic;">* Mặc định (-3, -3) tinh chỉnh nét chấm lọt giữa ô tròn.</p>
+                <p style="font-size: 11px; color: #64748b; margin-top: 4px; font-style: italic;">* V13 đã lấy đúng tọa độ từ file Python của thầy. Khả năng cao không cần bù trừ nữa.</p>
             </div>
 
             <div class="grid-2">
@@ -214,7 +224,6 @@
                         <div id="ui-sbd-made">SBD: --- | Mã đề: ---</div>
                     </div>
                 </div>
-                <!-- ĐÃ KHÔI PHỤC CSS VÀ HTML CHI TIẾT CÂU ĐÚNG ĐỂ FIX LỖI UI = 0đ -->
                 <div class="score-parts-grid">
                     <div class="part-box"><div class="p-title">PHẦN I</div><div class="p-val" id="ui-p1-score">0.00đ</div><div class="p-sub" id="ui-p1-detail">0/0 câu</div></div>
                     <div class="part-box"><div class="p-title">PHẦN II</div><div class="p-val" id="ui-p2-score">0.00đ</div><div class="p-sub" id="ui-p2-detail">0/0 ý đúng</div></div>
@@ -248,16 +257,20 @@
     </div>
 </div>
 
-<!-- GIAO DIỆN CAMERA TRÀN MÀN HÌNH TÍCH HỢP LƯỚI ẢO -->
+<!-- GIAO DIỆN CAMERA TRÀN MÀN HÌNH -->
 <div id="camera-fullscreen-ui">
     <div id="video-container">
         <video id="video" autoplay playsinline muted></video>
         <div id="cam-overlay">
             <canvas id="grid-preview"></canvas>
+            <div class="corner-box tl" id="cb-tl"></div>
+            <div class="corner-box tr" id="cb-tr"></div>
+            <div class="corner-box bl" id="cb-bl"></div>
+            <div class="corner-box br" id="cb-br"></div>
         </div>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Khớp các ô tròn trên giấy vào lưới mờ để chụp chuẩn</p>
+        <p id="hud-text">Căn 4 góc đen của giấy khớp vào 4 ô xanh lục</p>
         <div class="cam-btn-group">
             <select id="cam-speed-select" class="speed-select">
                 <option value="4">Lấy nét: Nhanh</option>
@@ -279,7 +292,7 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
     const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V12 - Lõi Hoàn Thiện P3" : "💻 V12 - Lõi Hoàn Thiện P3";
+    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V13 - Đồng bộ Tọa độ Python" : "💻 V13 - Đồng bộ Tọa độ Python";
     drawVirtualGrid(); 
 });
 
@@ -288,12 +301,15 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
+// =========================================================================
+// TỌA ĐỘ CHUẨN ĐƯỢC TRÍCH XUẤT CHÍNH XÁC TỪ FILE PYTHON main_2.py CỦA THẦY
+// =========================================================================
 const GRID_SPEC = {
-    sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
-    made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
-    p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584] },
-    p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743] },
-    p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], digitChars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
+    sbd: { x: [588, 604, 620, 636, 652, 668, 684, 700], y: [113, 136, 160, 183, 206, 230, 253, 276, 300, 324], cw: 16, ch: 22 },
+    made: { x: [716, 732, 748, 764], y: [113, 136, 160, 183, 206, 230, 253, 276, 300, 324], cw: 16, ch: 22 },
+    p1: { blockX: [65, 256, 448, 640], offsetsX: [0, 33, 68, 102], y: [414, 434, 454, 474, 493, 513, 533, 553, 573, 594], cw: 33, ch: 19 },
+    p2: { blockX: [40, 230, 423, 614], offsetsX_odd: [86, 119], offsetsX_even: [25, 58], y: [695, 715, 735, 755], cw: 33, ch: 19 },
+    p3: { blockX: [60, 183, 305, 428, 550, 672], offsetsX: [0, 21, 41, 61], yMinus: 846, yComma: 868, yDigit: [890, 912, 935, 957, 979, 1001, 1023, 1046, 1068, 1090], cw: 21, ch: 19, chars: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
 };
 
 function drawVirtualGrid() {
@@ -303,7 +319,7 @@ function drawVirtualGrid() {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, 800, 1130);
     
-    ctx.strokeStyle = "rgba(100, 149, 237, 0.5)"; 
+    ctx.strokeStyle = "rgba(100, 149, 237, 0.4)"; 
     ctx.lineWidth = 2;
     const radius = 9;
 
@@ -315,13 +331,20 @@ function drawVirtualGrid() {
     GRID_SPEC.sbd.x.forEach(x => { GRID_SPEC.sbd.y.forEach(y => drawCircle(x, y)); });
     GRID_SPEC.made.x.forEach(x => { GRID_SPEC.made.y.forEach(y => drawCircle(x, y)); });
     GRID_SPEC.p1.blockX.forEach(bx => { GRID_SPEC.p1.offsetsX.forEach(offX => { GRID_SPEC.p1.y.forEach(y => drawCircle(bx + offX, y)); }); });
-    GRID_SPEC.p2.blockX.forEach(bx => { let offsets = [0, 38, 76, 114]; offsets.forEach(offX => { GRID_SPEC.p2.y.forEach(y => drawCircle(bx + offX, y)); }); });
     
+    // P2 có offset riêng biệt chẵn lẻ theo tọa độ Python
+    GRID_SPEC.p2.blockX.forEach(bx => { 
+        GRID_SPEC.p2.offsetsX_even.forEach(offX => { GRID_SPEC.p2.y.forEach(y => drawCircle(bx + offX, y)); }); 
+        GRID_SPEC.p2.offsetsX_odd.forEach(offX => { GRID_SPEC.p2.y.forEach(y => drawCircle(bx + offX, y)); }); 
+    });
+    
+    // P3 vẽ đúng chuẩn Python (yMinus, yComma)
     GRID_SPEC.p3.blockX.forEach(bx => { 
+        drawCircle(bx, GRID_SPEC.p3.yMinus); // Ô dấu âm ở đầu cột
         GRID_SPEC.p3.offsetsX.forEach(offX => { 
-            GRID_SPEC.p3.yDigit.forEach(y => drawCircle(bx + offX, y)); 
+            drawCircle(bx + offX, GRID_SPEC.p3.yComma); // Dấu phẩy ở 4 cột
+            GRID_SPEC.p3.yDigit.forEach(y => drawCircle(bx + offX, y)); // Chữ số
         }); 
-        drawCircle(bx, GRID_SPEC.p3.yMinus); // Ô dấu âm
     });
 
     ctx.fillStyle = "rgba(0, 255, 0, 0.4)";
@@ -442,7 +465,6 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(file);
 });
 
-// ================= TỰ ĐỘNG CHỤP BẰNG CAMERA =================
 async function openFullscreenCamera() {
     const ui = document.getElementById('camera-fullscreen-ui');
     const video = document.getElementById('video');
@@ -502,19 +524,20 @@ function startAutoScan() {
         ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 200, 282);
 
         const imgData = ctx.getImageData(0, 0, 200, 282).data;
-
+        
         function checkDarkness(cx, cy, w, h) {
             let darkCount = 0;
             for(let y = cy; y < cy+h; y++) {
                 for(let x = cx; x < cx+w; x++) {
                     let i = (y * 200 + x) * 4;
-                    if (imgData[i+1] < 100) darkCount++; 
+                    if (imgData[i+1] < 100) darkCount++; // Lấy kênh Xanh lá
                 }
             }
             return darkCount / (w * h);
         }
 
-        const startX = 0; const startY = 0; const bw = Math.round(200 * 0.10);
+        // Tọa độ quét 4 góc
+        const startX = 0; const startY = 0; const bw = Math.round(200 * 0.15); // Khung 15% diện tích
         const tl = checkDarkness(startX, startY, bw, bw);
         const tr = checkDarkness(200 - bw, startY, bw, bw);
         const bl = checkDarkness(startX, 282 - bw, bw, bw);
@@ -524,7 +547,7 @@ function startAutoScan() {
         
         if (isValid(tl) && isValid(tr) && isValid(bl) && isValid(br)) {
             stableFrames++;
-            hudText.innerHTML = `🎯 Khớp lưới! Giữ yên tay... (${stableFrames}/${requiredFrames})`;
+            hudText.innerHTML = `🎯 Đang lấy nét... Giữ yên (${stableFrames}/${requiredFrames})`;
             hudText.style.color = "#00ff00";
 
             if (stableFrames >= requiredFrames) {
@@ -541,7 +564,7 @@ function startAutoScan() {
             }
         } else {
             stableFrames = 0;
-            hudText.innerHTML = "Hãy căn 4 góc giấy lọt vào 4 ô vuông xanh lục";
+            hudText.innerHTML = "Hãy căn 4 góc đen lọt vào 4 ô vuông xanh lục";
             hudText.style.color = "#fff";
         }
     }, 250);
@@ -605,7 +628,7 @@ async function handleImageFiles(files) {
     }
 }
 
-// ================= LÕI PURE JS - THUẬT TOÁN AI HALO + OFFSET (TỶ LỆ V8 CHUẨN) =================
+// ================= LÕI PURE JS =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -625,7 +648,13 @@ function processImagePureJS(sourceCanvas, fileName) {
     const diemP3 = parseFloat(document.getElementById('cfg-p3').value) || 0.5;
     const fallbackCode = document.getElementById('fallback-code').value.trim();
     const showSquareGrid = document.getElementById('cfg-show-grid').checked;
-    
+
+    let sumGray = 0;
+    for(let i=0; i<data.length; i+=4) { sumGray += 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]; }
+    let avgGray = sumGray / (WIDTH * HEIGHT);
+    let threshBubble = Math.min(145, avgGray * 0.85); 
+
+    // TÌM 4 GÓC ĐEN (Bằng Vầng Sáng Halo để loại bỏ mép bàn)
     function findDarkestSolidPatch(startX, startY, w, h) {
         let bestScore = Infinity;
         let bestX = startX + w/2;
@@ -662,24 +691,21 @@ function processImagePureJS(sourceCanvas, fileName) {
                 if (innerAvg > 160) continue; 
                 let score = innerAvg - haloAvg; 
 
-                if (score < bestScore) {
-                    bestScore = score; bestX = x; bestY = y;
-                }
+                if (score < bestScore) { bestScore = score; bestX = x; bestY = y; }
             }
         }
         return {x: bestX, y: bestY};
     }
 
-    let searchW = 150, searchH = 150;
+    let searchW = 180, searchH = 180;
     let pTL = findDarkestSolidPatch(0, 0, searchW, searchH);
     let pTR = findDarkestSolidPatch(WIDTH - searchW, 0, searchW, searchH);
     let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
     let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
-    // MAPPING TỌA ĐỘ VÀ BÙ TRỪ OFFSET
     function mapCoord(sx, sy) {
-        let u = (sx + ox) / 800;
-        let v = (sy + oy) / 1130;
+        let u = (sx + ox - 40) / 720;
+        let v = (sy + oy - 40) / 1050;
         let ax = (1-u)*(1-v)*pTL.x + u*(1-v)*pTR.x + (1-u)*v*pBL.x + u*v*pBR.x;
         let ay = (1-u)*(1-v)*pTL.y + u*(1-v)*pTR.y + (1-u)*v*pBL.y + u*v*pBR.y;
         return { x: ax, y: ay };
@@ -799,7 +825,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     let key2Str = key.p2.join(''), student2 = '', scoreP2 = 0, right2Details = 0;
     for (let i = 0; i < key.p2.length; i++) {
         let blockIdx = Math.floor(i / 2), baseX = GRID_SPEC.p2.blockX[blockIdx];
-        let xList = (i % 2 === 1) ? [baseX + 76, baseX + 114] : [baseX, baseX + 38];
+        let xList = (i % 2 === 1) ? [baseX + 86, baseX + 119] : [baseX + 25, baseX + 58]; // Sửa offset P2 theo Python
         for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
             let y = GRID_SPEC.p2.y[rowIdx];
             let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
@@ -830,9 +856,9 @@ function processImagePureJS(sourceCanvas, fileName) {
     }
     scoreP2 = +scoreP2.toFixed(2);
 
-    // ================= SỬA LỖI P3 TÁCH RỜI =================
+    // ================= PHẦN III ĐƯỢC CHỈNH SỬA =================
     let scoreP3 = 0, right3 = 0, validP3Count = 0; 
-
+    
     for (let q = 0; q < 6; q++) {
         let rawKey = (q < key.p3.length) ? String(key.p3[q]) : "";
         let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
@@ -842,7 +868,7 @@ function processImagePureJS(sourceCanvas, fileName) {
         let baseX = GRID_SPEC.p3.blockX[q];
         let stuAnsStr = "";
         
-        // KIỂM TRA DẤU ÂM RIÊNG BIỆT (Ở vị trí bx, y=852)
+        // KIỂM TRA DẤU ÂM
         let expectedMinus = cleanKey.includes('-');
         let minusScore = getBestMappedDarkness(baseX, GRID_SPEC.p3.yMinus, 14, 14);
         let filledMinus = minusScore > minConf;
@@ -859,25 +885,46 @@ function processImagePureJS(sourceCanvas, fileName) {
         
         for (let colIdx = 0; colIdx < 4; colIdx++) {
             let x = baseX + GRID_SPEC.p3.offsetsX[colIdx];
-            let expectedChar = colIdx < keyChars.length ? keyChars[colIdx] : '';
+            let expectedChar = colIdx < keyChars.length ? keyChars[colIdx] : ''; // Nếu đáp án chỉ có 2 chữ số thì 2 cột cuối là rỗng
             
-            let scores = GRID_SPEC.p3.yDigit.map(y => getBestMappedDarkness(x, y, 14, 14));
-            let maxScore = Math.max(...scores);
-            let maxIdx = scores.indexOf(maxScore);
-            let filledChar = (maxScore > minConf) ? GRID_SPEC.p3.digitChars[maxIdx] : '';
+            let scoreComma = getBestMappedDarkness(x, GRID_SPEC.p3.yComma, 14, 14);
+            let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestMappedDarkness(x, y, 14, 14));
+            
+            let maxDigitScore = Math.max(...scoresDigits);
+            let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
+            
+            let isFilled = false;
+            let filledChar = '';
+            
+            // So sánh xem điểm nào đậm nhất: Phẩy hay Chữ Số
+            if (scoreComma > minConf && scoreComma > maxDigitScore) {
+                isFilled = true;
+                filledChar = ',';
+            } else if (maxDigitScore > minConf) {
+                isFilled = true;
+                filledChar = GRID_SPEC.p3.chars[maxDigitIdx];
+            }
 
-            if (filledChar) {
+            if (isFilled) {
+                // Có tô
+                let fillY = (filledChar === ',') ? GRID_SPEC.p3.yComma : GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(filledChar)];
+                
                 if (filledChar === expectedChar) {
-                    drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxIdx], 'correct_fill');
+                    drawMappedBubble(x, fillY, 'correct_fill');
                 } else { 
-                    drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxIdx], 'wrong_fill'); 
-                    if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
-                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key'); 
+                    drawMappedBubble(x, fillY, 'wrong_fill'); 
+                    
+                    // Vẽ chấm vàng cho vị trí đáng ra phải tô
+                    if (expectedChar) {
+                        let expY = (expectedChar === ',') ? GRID_SPEC.p3.yComma : GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)];
+                        drawMappedBubble(x, expY, 'missing_key'); 
                     }
                 }
                 stuAnsStr += filledChar;
-            } else if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
-                drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
+            } else if (expectedChar) {
+                // Không tô nhưng đáp án yêu cầu tô
+                let expY = (expectedChar === ',') ? GRID_SPEC.p3.yComma : GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)];
+                drawMappedBubble(x, expY, 'missing_key');
             }
         }
         if (stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
@@ -886,7 +933,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     scoreP3 = +scoreP3.toFixed(2);
     let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
-    // In điểm đỏ lên Canvas
     sCtx.fillStyle = "#ffffff"; sCtx.fillRect(12, 85, 230, 165);
     sCtx.lineWidth = 3; sCtx.strokeStyle = "#dc2626"; sCtx.strokeRect(12, 85, 230, 165);
     sCtx.fillStyle = "#dc2626"; sCtx.font = "bold 26px Arial"; sCtx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
@@ -897,7 +943,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     outCanvas.getContext('2d').drawImage(scaledCanvas, 0, 0);
     outCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
 
-    // Fix lỗi hiển thị điểm UI bằng thẻ <div class="p-sub">
     document.getElementById('score-dashboard').style.display = 'block';
     document.getElementById('ui-total').textContent = `${totalScore}đ`;
     document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
