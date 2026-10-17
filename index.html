@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - Khung Ngắm Tràn Viền</title>
+    <title>NTMIX OMR Mobile - Tràn Viền 100%</title>
     <!-- Thư viện đọc/xuất Excel và QR -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -47,33 +47,37 @@
         #video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; }
         #video { width: 100%; height: 100%; object-fit: cover; display: block; }
         
-        /* KHUNG NGẮM TRÀN VIỀN CHIỀU RỘNG (96%) */
+        /* KHUNG NGẮM TRÀN 100% CHIỀU RỘNG */
         #cam-overlay { 
             position: absolute; 
             top: 45%; left: 50%; transform: translate(-50%, -50%);
-            width: 96vw; /* Tràn ra sát hai mép màn hình */
-            max-width: 600px; 
+            width: 100vw; /* Tràn ra sát hai mép màn hình 100% */
+            max-width: 800px; 
             aspect-ratio: 800 / 1130; 
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); 
-            border: 2px dashed rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.75); 
+            border-top: 2px dashed rgba(255, 255, 255, 0.5);
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.5);
+            border-left: none; /* Bỏ viền 2 bên để thoáng màn hình */
+            border-right: none;
             pointer-events: none;
             z-index: 10;
         }
 
+        /* Đẩy lùi ô vuông 4 góc vào trong 2% để không bị lẹm viền điện thoại */
         .corner-box {
             position: absolute; width: 10%; aspect-ratio: 1 / 1;
             border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.1); transition: background 0.2s;
         }
-        .corner-box.tl { top: 2.5%; left: 3.5%; }
-        .corner-box.tr { top: 2.5%; right: 3.5%; }
-        .corner-box.bl { bottom: 2.5%; left: 3.5%; }
-        .corner-box.br { bottom: 2.5%; right: 3.5%; }
+        .corner-box.tl { top: 2.5%; left: 2%; }
+        .corner-box.tr { top: 2.5%; right: 2%; }
+        .corner-box.bl { bottom: 2.5%; left: 2%; }
+        .corner-box.br { bottom: 2.5%; right: 2%; }
 
         /* Bảng điều khiển nổi lên trên video ở cạnh dưới */
         .cam-controls { 
             position: absolute; bottom: 0; left: 0; width: 100%; 
             padding: 20px 16px 30px 16px; 
-            background: linear-gradient(transparent, rgba(0,0,0,0.9)); 
+            background: linear-gradient(transparent, rgba(0,0,0,0.95)); 
             text-align: center; z-index: 20; 
         }
         #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 14px; min-height: 20px; transition: color 0.3s; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
@@ -256,7 +260,7 @@
     <div class="cam-controls">
         <p id="hud-text">Đưa 4 ô vuông đen của phiếu lọt vào 4 ô xanh lục</p>
         <div class="cam-btn-group">
-            <button class="btn btn-danger" style="flex: 2; font-size: 16px;" onclick="manualCapture()">📸 Chụp Ngay</button>
+            <button class="btn btn-danger" style="flex: 2; font-size: 16px;" onclick="manualCapture()">📸 Chụp (Bằng Tay)</button>
             <button class="btn btn-secondary" style="flex: 1; font-size: 16px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
         </div>
     </div>
@@ -271,7 +275,7 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
     const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 Dò Tâm Tự Động (Tràn viền)" : "💻 Dò Tâm Tự Động (Tràn viền)";
+    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 Dò Tâm Tự Động (Tràn Viền 100%)" : "💻 Dò Tâm Tự Động (Tràn Viền 100%)";
 });
 
 let answerKey = {}; let dshsDict = {}; let gradedRows = [];
@@ -311,6 +315,7 @@ function updateKeyStatusDisplay() {
     const codes = Object.keys(answerKey).sort();
     const box = document.getElementById('key-status-box');
     if (codes.length === 0) { box.style.display = 'none'; return; }
+    const sample = answerKey[codes[0]];
     box.style.display = 'block';
     box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề`;
 }
@@ -476,8 +481,8 @@ function startAutoScan() {
             return darkCount / (w * h);
         }
 
-        // Tỷ lệ góc 3.5%, kích thước 10%
-        const startX = Math.round(200 * 0.035);
+        // Tọa độ quét được cập nhật theo CSS: left 2% (4px), top 2.5% (7px), size 10% (20px)
+        const startX = Math.round(200 * 0.02);
         const startY = Math.round(282 * 0.025);
         const bw = Math.round(200 * 0.10);
 
@@ -576,7 +581,7 @@ async function handleImageFiles(files) {
     }
 }
 
-// ================= LÕI NAM CHÂM ĐỊNH VỊ BÓC TÁCH CỤC BỘ (LOCAL MAGNETIC SEARCH) =================
+// ================= LÕI NAM CHÂM ĐỊNH VỊ BÓC TÁCH CỤC BỘ =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const ctx = sourceCanvas.getContext('2d');
