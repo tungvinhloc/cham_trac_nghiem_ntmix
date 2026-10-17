@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - V6 Khóa Tọa Độ</title>
-    <!-- Thư viện siêu nhẹ, không dùng OpenCV -->
+    <title>NTMIX OMR Mobile - Thuật Toán Khóa Khối Đen</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
@@ -62,24 +61,22 @@
         }
 
         .corner-box {
-            position: absolute; width: 8%; aspect-ratio: 1 / 1;
+            position: absolute; width: 10%; aspect-ratio: 1 / 1;
             border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.1); transition: background 0.2s;
         }
-        .corner-box.tl { top: 1%; left: 1%; }
-        .corner-box.tr { top: 1%; right: 1%; }
-        .corner-box.bl { bottom: 1%; left: 1%; }
-        .corner-box.br { bottom: 1%; right: 1%; }
+        .corner-box.tl { top: 2%; left: 2%; }
+        .corner-box.tr { top: 2%; right: 2%; }
+        .corner-box.bl { bottom: 2%; left: 2%; }
+        .corner-box.br { bottom: 2%; right: 2%; }
 
         .cam-controls { 
             position: absolute; bottom: 0; left: 0; width: 100%; 
-            padding: 15px 10px 25px 10px; 
+            padding: 15px 16px 25px 16px; 
             background: linear-gradient(transparent, rgba(0,0,0,0.95)); 
             text-align: center; z-index: 20; 
         }
         #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 10px; min-height: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .cam-btn-group { display: flex; gap: 10px; justify-content: center; align-items: center; }
-        .speed-select { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 8px; border-radius: 8px; font-weight: bold; outline: none; }
-        .speed-select option { color: black; }
 
         .score-dashboard { display: none; background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 12px; margin-top: 10px; box-shadow: 0 4px 10px rgba(220,38,38,0.12); }
         .score-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #fca5a5; padding-bottom: 8px; margin-bottom: 10px; }
@@ -110,7 +107,7 @@
 <header>
     <h1>NTMIX OMR MOBILE</h1>
     <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span class="badge-cv">✅ V6 - Lõi Khóa Tọa Độ (100% Chống Lệch Bàn)</span>
+    <span class="badge-cv">✅ Lõi Khóa Khối Đen 100% Chống Lệch</span>
 </header>
 
 <div class="container">
@@ -152,6 +149,15 @@
 
         <div class="card">
             <div class="card-title">2. Cấu hình Máy Quét & Chấm</div>
+            <!-- Trả lại nút Chọn tốc độ về Tab Cấu hình -->
+            <div class="form-group">
+                <label>🎯 Tốc độ tự chụp (Lấy nét Camera):</label>
+                <select id="cfg-scan-speed">
+                    <option value="4">Nhanh (~1 giây)</option>
+                    <option value="6" selected>Vừa (~1.5 giây)</option>
+                    <option value="12">Chậm (~3 giây)</option>
+                </select>
+            </div>
             <div class="grid-2">
                 <div class="form-group"><label>Điểm Phần I:</label><input type="number" id="cfg-p1" step="0.05" value="0.25"></div>
                 <div class="form-group"><label>Điểm Phần III:</label><input type="number" id="cfg-p3" step="0.05" value="0.5"></div>
@@ -257,13 +263,8 @@
     <div class="cam-controls">
         <p id="hud-text">Khớp các ô tròn trên giấy vào lưới mờ để chụp chuẩn</p>
         <div class="cam-btn-group">
-            <select id="cam-speed-select" class="speed-select">
-                <option value="4">Lấy nét: Nhanh</option>
-                <option value="6" selected>Lấy nét: Vừa</option>
-                <option value="12">Lấy nét: Chậm</option>
-            </select>
-            <button class="btn btn-danger" style="padding: 10px 15px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Mẫu</button>
-            <button class="btn btn-secondary" style="padding: 10px 15px; font-size: 15px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
+            <button class="btn btn-danger" style="flex: 2; font-size: 16px; padding: 12px;" onclick="manualCapture()">📸 Chụp Ngay</button>
+            <button class="btn btn-secondary" style="flex: 1; font-size: 16px; padding: 12px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
         </div>
     </div>
 </div>
@@ -277,7 +278,7 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
     const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V6 - Khóa Tọa Độ Tuyệt Đối" : "💻 V6 - Khóa Tọa Độ Tuyệt Đối";
+    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 Khóa Khối Đen (Chống Lệch)" : "💻 Khóa Khối Đen (Chống Lệch)";
     drawVirtualGrid(); 
 });
 
@@ -286,7 +287,7 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
-// TỌA ĐỘ CHUẨN (800x1130) BGD 2025
+// TỌA ĐỘ CHUẨN TÂM CÁC Ô TRÒN (800x1130) BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -295,7 +296,7 @@ const GRID_SPEC = {
     p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], y: [852, 871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: ['-', ',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
 };
 
-// VẼ LƯỚI ẢO LÊN MÀN HÌNH CAMERA ĐỂ NGƯỜI DÙNG CANH GIẤY
+// VẼ LƯỚI ẢO LÊN MÀN HÌNH CAMERA 
 function drawVirtualGrid() {
     const canvas = document.getElementById('grid-preview');
     canvas.width = 800; canvas.height = 1130;
@@ -425,7 +426,7 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(file);
 });
 
-// ================= TỰ ĐỘNG CHỤP BẰNG CAMERA TRỰC TIẾP =================
+// ================= TỰ ĐỘNG CHỤP BẰNG CAMERA =================
 async function openFullscreenCamera() {
     const ui = document.getElementById('camera-fullscreen-ui');
     const video = document.getElementById('video');
@@ -455,7 +456,7 @@ function startAutoScan() {
     autoScanTimer = setInterval(() => {
         if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
         
-        const requiredFrames = parseInt(document.getElementById('cam-speed-select').value) || 6;
+        const requiredFrames = parseInt(document.getElementById('cfg-scan-speed').value) || 6;
 
         const videoRatio = video.videoWidth / video.videoHeight;
         const elementRatio = video.clientWidth / video.clientHeight;
@@ -505,7 +506,7 @@ function startAutoScan() {
 
         const startX = Math.round(200 * 0.01);
         const startY = Math.round(282 * 0.01);
-        const bw = Math.round(200 * 0.08);
+        const bw = Math.round(200 * 0.12);
 
         const tl = checkDarkness(startX, startY, bw, bw);
         const tr = checkDarkness(200 - startX - bw, startY, bw, bw);
@@ -529,8 +530,8 @@ function startAutoScan() {
                 hudText.innerHTML = "⚡ ĐÃ CHỤP TỰ ĐỘNG!";
                 
                 const hiResCanvas = document.createElement('canvas');
-                hiResCanvas.width = 1200; hiResCanvas.height = 1695;
-                hiResCanvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 1200, 1695);
+                hiResCanvas.width = 800; hiResCanvas.height = 1130;
+                hiResCanvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
                 
                 closeFullscreenCamera();
                 playBeep();
@@ -575,8 +576,8 @@ function manualCapture() {
     const cropH = rectO.height * scaleY;
 
     const canvas = document.createElement('canvas');
-    canvas.width = 1200; canvas.height = 1695;
-    canvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 1200, 1695);
+    canvas.width = 800; canvas.height = 1130;
+    canvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
     
     closeFullscreenCamera();
     processImagePureJS(canvas, `Cam_${Date.now()}.jpg`);
@@ -602,7 +603,7 @@ async function handleImageFiles(files) {
     }
 }
 
-// ================= LÕI PURE JS - KHÓA TỌA ĐỘ NGHIÊM NGẶT (STRICT BOUNDARY) =================
+// ================= LÕI PURE JS - KHÓA TỌA ĐỘ VÀ BẮT TÂM KHỐI ĐEN TUYỆT ĐỐI =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     
@@ -618,7 +619,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     for(let i=0; i<data.length; i+=4) { sumGray += 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]; }
     let avgGray = sumGray / (WIDTH * HEIGHT);
     
-    // Nới lỏng ngưỡng nhận diện chì thêm một chút để bắt các nét tô mờ
     let threshBubble = Math.min(145, avgGray * 0.85); 
 
     const minConf = parseFloat(document.getElementById('cfg-conf').value) || 0.24;
@@ -628,38 +628,40 @@ function processImagePureJS(sourceCanvas, fileName) {
     const fallbackCode = document.getElementById('fallback-code').value.trim();
     const showSquareGrid = document.getElementById('cfg-show-grid').checked;
 
-    // THUẬT TOÁN TÌM 4 GÓC ĐEN TRONG PHẠM VI HẸP (60x60 pixel)
-    // Chống tuyệt đối việc nhận nhầm mặt bàn đen thành mép giấy
-    function findMarkerCenterStrict(startX, startY, w, h) {
-        let pixels = [];
-        for(let y = startY; y < startY + h; y++) {
-            for(let x = startX; x < startX + w; x++) {
-                if(x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
-                let idx = (y * WIDTH + x) * 4;
-                let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                pixels.push({x: x, y: y, g: gray});
+    // THUẬT TOÁN TÌM 4 GÓC: Tìm "Khối Đen Dày Đặc Nhất" có kích thước 24x24 px
+    // Thuật toán này quét qua mọi vị trí và tìm ra khối đen 24x24 thực sự, không sợ nhiễu lốm đốm.
+    function findDarkestSolidPatch(startX, startY, w, h) {
+        let bestSum = Infinity;
+        let bestX = startX + w/2;
+        let bestY = startY + h/2;
+        let patch = 24; 
+        
+        for(let y = startY; y <= startY + h - patch; y+=2) {
+            for(let x = startX; x <= startX + w - patch; x+=2) {
+                let sum = 0;
+                for(let dy=0; dy<patch; dy+=3) {
+                    for(let dx=0; dx<patch; dx+=3) {
+                        let idx = ((y+dy)*WIDTH + (x+dx))*4;
+                        // Chỉ dùng kênh Đỏ (Red) vì đen là đen ở mọi kênh, tối ưu tốc độ
+                        sum += data[idx]; 
+                    }
+                }
+                if(sum < bestSum) {
+                    bestSum = sum;
+                    bestX = x + patch/2;
+                    bestY = y + patch/2;
+                }
             }
         }
-        pixels.sort((a,b) => a.g - b.g); // Từ đen nhất tới sáng nhất
-        let topN = Math.floor(pixels.length * 0.05); // Chỉ lấy 5% điểm tối nhất trong ô 60x60
-        
-        let sumX = 0, sumY = 0;
-        for(let i=0; i<topN; i++) { sumX += pixels[i].x; sumY += pixels[i].y; }
-        let avgX = sumX/topN;
-        let avgY = sumY/topN;
-        
-        // Nếu 5% điểm tối nhất đó vẫn sáng hơn nền trung bình (nghĩa là không có ô đen nào ở đây), trả về false
-        let avgDarkestGray = pixels.slice(0, topN).reduce((sum, p) => sum + p.g, 0) / topN;
-        if (avgDarkestGray > avgGray * 0.8) return null; 
-        
-        return { x: avgX, y: avgY };
+        return {x: bestX, y: bestY};
     }
 
-    // TỌA ĐỘ KIỂM TRA BỊ KHÓA CHẶT QUANH VỊ TRÍ 4 Ô XANH LỤC
-    let pTL = findMarkerCenterStrict(10, 10, 60, 60) || {x: 40, y: 40};
-    let pTR = findMarkerCenterStrict(730, 10, 60, 60) || {x: 760, y: 40};
-    let pBL = findMarkerCenterStrict(10, 1060, 60, 60) || {x: 40, y: 1090};
-    let pBR = findMarkerCenterStrict(730, 1060, 60, 60) || {x: 760, y: 1090};
+    // TỌA ĐỘ TÌM KIẾM 4 GÓC: Vùng tìm kiếm rộng 120x120px ở 4 góc
+    let searchW = 120, searchH = 120;
+    let pTL = findDarkestSolidPatch(0, 0, searchW, searchH);
+    let pTR = findDarkestSolidPatch(WIDTH - searchW, 0, searchW, searchH);
+    let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
+    let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
     function mapCoord(sx, sy) {
         let u = (sx - 40) / 720;
@@ -712,11 +714,11 @@ function processImagePureJS(sourceCanvas, fileName) {
         else if (status === 'info_read') { sCtx.fillStyle = "rgba(0, 80, 255, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
     }
 
-    sCtx.fillStyle = "rgba(255, 0, 255, 0.6)";
-    sCtx.beginPath(); sCtx.arc(pTL.x, pTL.y, 8, 0, 2*Math.PI); sCtx.fill();
-    sCtx.beginPath(); sCtx.arc(pTR.x, pTR.y, 8, 0, 2*Math.PI); sCtx.fill();
-    sCtx.beginPath(); sCtx.arc(pBL.x, pBL.y, 8, 0, 2*Math.PI); sCtx.fill();
-    sCtx.beginPath(); sCtx.arc(pBR.x, pBR.y, 8, 0, 2*Math.PI); sCtx.fill();
+    sCtx.fillStyle = "rgba(255, 0, 255, 1)";
+    sCtx.beginPath(); sCtx.arc(pTL.x, pTL.y, 6, 0, 2*Math.PI); sCtx.fill();
+    sCtx.beginPath(); sCtx.arc(pTR.x, pTR.y, 6, 0, 2*Math.PI); sCtx.fill();
+    sCtx.beginPath(); sCtx.arc(pBL.x, pBL.y, 6, 0, 2*Math.PI); sCtx.fill();
+    sCtx.beginPath(); sCtx.arc(pBR.x, pBR.y, 6, 0, 2*Math.PI); sCtx.fill();
 
     let scannedSbd = "";
     for (let x of GRID_SPEC.sbd.x) {
@@ -865,7 +867,7 @@ function downloadResultImage() {
 function updateResultsTable() {
     document.getElementById('count-graded').textContent = gradedRows.length;
     document.getElementById('nav-count').textContent = gradedRows.length;
-    document.getElementById('results-tbody').innerHTML = gradedRows.map((r, i) => `<tr><td>${i+1}</td><td><b>${r.sbd}</b></td><td style="text-align:left;">${r.name}</td><td>${r.code}</td><td><b style="color:#dc2626;">${r.totalScore}</b></td></tr>`).join('');
+    document.getElementById('results-tbody').innerHTML = gradedRows.map((r, i) => `<tr><td>${i+1}</td><td><b>${r.sbd}</b></td><td>${r.name}</td><td>${r.code}</td><td><b style="color:#dc2626;">${r.totalScore}</b></td></tr>`).join('');
 }
 
 function exportResultsExcel() {
