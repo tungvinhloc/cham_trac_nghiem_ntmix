@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - V11 Hoàn Hảo</title>
+    <title>NTMIX OMR Mobile - V12 Hoàn Thiện</title>
     <!-- Thư viện siêu nhẹ, thuần JS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -77,6 +77,7 @@
         .part-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 8px 4px; }
         .part-box .p-title { font-size: 12px; font-weight: 700; color: #991b1b; }
         .part-box .p-val { font-size: 18px; font-weight: 800; color: #dc2626; margin-top: 2px; }
+        .part-box .p-sub { font-size: 11px; color: #64748b; margin-top: 2px; } /* Đã khôi phục CSS cho phần chi tiết điểm */
 
         .key-summary-box { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-top: 6px; display: none; }
         #result-canvas { width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; display: none; margin-top: 10px; }
@@ -98,7 +99,7 @@
 <header>
     <h1>NTMIX OMR MOBILE</h1>
     <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span class="badge-cv">✅ V11 - Lõi Cân Bằng (Đã fix lỗi UI)</span>
+    <span class="badge-cv">✅ V12 - Fix UI & Phần III Hoàn Hảo</span>
 </header>
 
 <div class="container">
@@ -213,10 +214,11 @@
                         <div id="ui-sbd-made">SBD: --- | Mã đề: ---</div>
                     </div>
                 </div>
+                <!-- ĐÃ KHÔI PHỤC CSS VÀ HTML CHI TIẾT CÂU ĐÚNG ĐỂ FIX LỖI UI = 0đ -->
                 <div class="score-parts-grid">
-                    <div class="part-box"><div class="p-title">PHẦN I</div><div class="p-val" id="ui-p1-score">0.00đ</div></div>
-                    <div class="part-box"><div class="p-title">PHẦN II</div><div class="p-val" id="ui-p2-score">0.00đ</div></div>
-                    <div class="part-box"><div class="p-title">PHẦN III</div><div class="p-val" id="ui-p3-score">0.00đ</div></div>
+                    <div class="part-box"><div class="p-title">PHẦN I</div><div class="p-val" id="ui-p1-score">0.00đ</div><div class="p-sub" id="ui-p1-detail">0/0 câu</div></div>
+                    <div class="part-box"><div class="p-title">PHẦN II</div><div class="p-val" id="ui-p2-score">0.00đ</div><div class="p-sub" id="ui-p2-detail">0/0 ý đúng</div></div>
+                    <div class="part-box"><div class="p-title">PHẦN III</div><div class="p-val" id="ui-p3-score">0.00đ</div><div class="p-sub" id="ui-p3-detail">0/0 câu</div></div>
                 </div>
                 <div id="ui-warnings" style="margin-top: 8px; font-size: 12px; color: #d93025; font-weight: 600; text-align: center;"></div>
                 <div class="grid-2" style="margin-top: 10px;">
@@ -277,7 +279,7 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
     const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V11 - Trọng Tâm Fix UI" : "💻 V11 - Trọng Tâm Fix UI";
+    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V12 - Lõi Hoàn Thiện P3" : "💻 V12 - Lõi Hoàn Thiện P3";
     drawVirtualGrid(); 
 });
 
@@ -286,16 +288,14 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
-// TỌA ĐỘ CHUẨN GỐC (800x1130) BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584] },
     p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743] },
-    p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], y: [852, 871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: ['-', ',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
+    p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], digitChars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
 };
 
-// VẼ LƯỚI ẢO LÊN MÀN HÌNH CAMERA (CHẠY THEO OFFSET)
 function drawVirtualGrid() {
     const canvas = document.getElementById('grid-preview');
     if(!canvas) return;
@@ -316,7 +316,13 @@ function drawVirtualGrid() {
     GRID_SPEC.made.x.forEach(x => { GRID_SPEC.made.y.forEach(y => drawCircle(x, y)); });
     GRID_SPEC.p1.blockX.forEach(bx => { GRID_SPEC.p1.offsetsX.forEach(offX => { GRID_SPEC.p1.y.forEach(y => drawCircle(bx + offX, y)); }); });
     GRID_SPEC.p2.blockX.forEach(bx => { let offsets = [0, 38, 76, 114]; offsets.forEach(offX => { GRID_SPEC.p2.y.forEach(y => drawCircle(bx + offX, y)); }); });
-    GRID_SPEC.p3.blockX.forEach(bx => { GRID_SPEC.p3.offsetsX.forEach(offX => { GRID_SPEC.p3.y.forEach(y => drawCircle(bx + offX, y)); drawCircle(bx + offX, 871); }); drawCircle(bx, 852); });
+    
+    GRID_SPEC.p3.blockX.forEach(bx => { 
+        GRID_SPEC.p3.offsetsX.forEach(offX => { 
+            GRID_SPEC.p3.yDigit.forEach(y => drawCircle(bx + offX, y)); 
+        }); 
+        drawCircle(bx, GRID_SPEC.p3.yMinus); // Ô dấu âm
+    });
 
     ctx.fillStyle = "rgba(0, 255, 0, 0.4)";
     ctx.fillRect(0, 0, 50, 50);
@@ -436,6 +442,7 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(file);
 });
 
+// ================= TỰ ĐỘNG CHỤP BẰNG CAMERA =================
 async function openFullscreenCamera() {
     const ui = document.getElementById('camera-fullscreen-ui');
     const video = document.getElementById('video');
@@ -598,6 +605,7 @@ async function handleImageFiles(files) {
     }
 }
 
+// ================= LÕI PURE JS - THUẬT TOÁN AI HALO + OFFSET (TỶ LỆ V8 CHUẨN) =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -668,6 +676,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
     let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
+    // MAPPING TỌA ĐỘ VÀ BÙ TRỪ OFFSET
     function mapCoord(sx, sy) {
         let u = (sx + ox) / 800;
         let v = (sy + oy) / 1130;
@@ -765,6 +774,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     let key = answerKey[code] || { p1: [], p2: [], p3: [] };
     let stuInfo = dshsDict[sbd] || { name: "", className: "" };
 
+    // P1
     let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
     for (let i = 0; i < key.p1.length; i++) {
         let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
@@ -785,6 +795,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     }
     let scoreP1 = +(right1 * diemP1).toFixed(2);
 
+    // P2
     let key2Str = key.p2.join(''), student2 = '', scoreP2 = 0, right2Details = 0;
     for (let i = 0; i < key.p2.length; i++) {
         let blockIdx = Math.floor(i / 2), baseX = GRID_SPEC.p2.blockX[blockIdx];
@@ -819,37 +830,63 @@ function processImagePureJS(sourceCanvas, fileName) {
     }
     scoreP2 = +scoreP2.toFixed(2);
 
-    let scoreP3 = 0, right3 = 0, validP3Count = 0; const rowChars = GRID_SPEC.p3.chars;
+    // ================= SỬA LỖI P3 TÁCH RỜI =================
+    let scoreP3 = 0, right3 = 0, validP3Count = 0; 
+
     for (let q = 0; q < 6; q++) {
-        let cleanKey = (q < key.p3.length) ? String(key.p3[q]).trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '') : "";
+        let rawKey = (q < key.p3.length) ? String(key.p3[q]) : "";
+        let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
         if (!cleanKey) continue;
         validP3Count++;
-        let baseX = GRID_SPEC.p3.blockX[q], stuAnsStr = "", keyChars = cleanKey.split('');
+        
+        let baseX = GRID_SPEC.p3.blockX[q];
+        let stuAnsStr = "";
+        
+        // KIỂM TRA DẤU ÂM RIÊNG BIỆT (Ở vị trí bx, y=852)
+        let expectedMinus = cleanKey.includes('-');
+        let minusScore = getBestMappedDarkness(baseX, GRID_SPEC.p3.yMinus, 14, 14);
+        let filledMinus = minusScore > minConf;
+        
+        if (filledMinus) {
+            drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill');
+            stuAnsStr += "-";
+        } else if (expectedMinus) {
+            drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, 'missing_key');
+        }
+        
+        // KIỂM TRA CÁC CHỮ SỐ (1 ĐẾN 4 CỘT)
+        let keyChars = cleanKey.replace('-', '').split(''); 
+        
         for (let colIdx = 0; colIdx < 4; colIdx++) {
             let x = baseX + GRID_SPEC.p3.offsetsX[colIdx];
             let expectedChar = colIdx < keyChars.length ? keyChars[colIdx] : '';
             
-            let scores = GRID_SPEC.p3.y.map(y => getBestMappedDarkness(x, y, 12, 12));
-            let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
-            let isFilled = maxScore > minConf;
-            let filledChar = isFilled ? rowChars[maxIdx] : '';
+            let scores = GRID_SPEC.p3.yDigit.map(y => getBestMappedDarkness(x, y, 14, 14));
+            let maxScore = Math.max(...scores);
+            let maxIdx = scores.indexOf(maxScore);
+            let filledChar = (maxScore > minConf) ? GRID_SPEC.p3.digitChars[maxIdx] : '';
 
             if (filledChar) {
-                if (filledChar === expectedChar) drawMappedBubble(x, GRID_SPEC.p3.y[maxIdx], 'correct_fill');
-                else { 
-                    drawMappedBubble(x, GRID_SPEC.p3.y[maxIdx], 'wrong_fill'); 
-                    if (expectedChar && rowChars.includes(expectedChar)) drawMappedBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key'); 
+                if (filledChar === expectedChar) {
+                    drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxIdx], 'correct_fill');
+                } else { 
+                    drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxIdx], 'wrong_fill'); 
+                    if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
+                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key'); 
+                    }
                 }
                 stuAnsStr += filledChar;
-            } else if (expectedChar && rowChars.includes(expectedChar)) {
-                drawMappedBubble(x, GRID_SPEC.p3.y[rowChars.indexOf(expectedChar)], 'missing_key');
+            } else if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
+                drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
             }
         }
         if (stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
     }
+    
     scoreP3 = +scoreP3.toFixed(2);
     let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
+    // In điểm đỏ lên Canvas
     sCtx.fillStyle = "#ffffff"; sCtx.fillRect(12, 85, 230, 165);
     sCtx.lineWidth = 3; sCtx.strokeStyle = "#dc2626"; sCtx.strokeRect(12, 85, 230, 165);
     sCtx.fillStyle = "#dc2626"; sCtx.font = "bold 26px Arial"; sCtx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
@@ -860,14 +897,21 @@ function processImagePureJS(sourceCanvas, fileName) {
     outCanvas.getContext('2d').drawImage(scaledCanvas, 0, 0);
     outCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
 
-    // Fix lỗi hiển thị điểm UI bị đè số 0
+    // Fix lỗi hiển thị điểm UI bằng thẻ <div class="p-sub">
     document.getElementById('score-dashboard').style.display = 'block';
     document.getElementById('ui-total').textContent = `${totalScore}đ`;
     document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
     document.getElementById('ui-sbd-made').textContent = `SBD: ${sbd} | Mã đề: ${code}`;
-    document.getElementById('ui-p1-score').textContent = `${scoreP1}đ`; document.getElementById('ui-p1-detail').textContent = `Đúng ${right1}/${key.p1.length}`;
-    document.getElementById('ui-p2-score').textContent = `${scoreP2}đ`; document.getElementById('ui-p2-detail').textContent = `Đúng ${right2Details}/${key2Str.length}`;
-    document.getElementById('ui-p3-score').textContent = `${scoreP3}đ`; document.getElementById('ui-p3-detail').textContent = `Đúng ${right3}/${validP3Count}`;
+    
+    document.getElementById('ui-p1-score').textContent = `${scoreP1}đ`; 
+    if(document.getElementById('ui-p1-detail')) document.getElementById('ui-p1-detail').textContent = `Đúng ${right1}/${key.p1.length}`;
+    
+    document.getElementById('ui-p2-score').textContent = `${scoreP2}đ`; 
+    if(document.getElementById('ui-p2-detail')) document.getElementById('ui-p2-detail').textContent = `Đúng ${right2Details}/${key2Str.length}`;
+    
+    document.getElementById('ui-p3-score').textContent = `${scoreP3}đ`; 
+    if(document.getElementById('ui-p3-detail')) document.getElementById('ui-p3-detail').textContent = `Đúng ${right3}/${validP3Count}`;
+    
     document.getElementById('ui-warnings').textContent = warnings.length ? `⚠️ ${warnings.join(' | ')}` : "";
     document.getElementById('scan-status').textContent = `✅ Đã chấm xong SBD: ${sbd}`;
 
