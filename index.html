@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - V10 Hoàn Hảo</title>
+    <title>NTMIX OMR Mobile - V11 Hoàn Hảo</title>
     <!-- Thư viện siêu nhẹ, thuần JS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -98,7 +98,7 @@
 <header>
     <h1>NTMIX OMR MOBILE</h1>
     <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span class="badge-cv">✅ V10 - Lõi Cân Bằng Hoàn Hảo (Chính Xác 100%)</span>
+    <span class="badge-cv">✅ V11 - Lõi Cân Bằng (Đã fix lỗi UI)</span>
 </header>
 
 <div class="container">
@@ -146,14 +146,14 @@
                 <div class="grid-2">
                     <div>
                         <span style="font-size: 11px; color: #64748b;">Dịch Ngang (X)</span>
-                        <input type="number" id="cfg-offset-x" value="0" onchange="drawVirtualGrid()" style="color: #dc2626;">
+                        <input type="number" id="cfg-offset-x" value="-3" onchange="drawVirtualGrid()" style="color: #dc2626;">
                     </div>
                     <div>
                         <span style="font-size: 11px; color: #64748b;">Dịch Dọc (Y)</span>
-                        <input type="number" id="cfg-offset-y" value="0" onchange="drawVirtualGrid()" style="color: #dc2626;">
+                        <input type="number" id="cfg-offset-y" value="-3" onchange="drawVirtualGrid()" style="color: #dc2626;">
                     </div>
                 </div>
-                <p style="font-size: 11px; color: #64748b; margin-top: 4px; font-style: italic;">* Thuật toán V10 đã trả về tỷ lệ 800x1130 chuẩn. Hãy test 1 tờ trước khi chỉnh offset!</p>
+                <p style="font-size: 11px; color: #64748b; margin-top: 4px; font-style: italic;">* Mặc định (-3, -3) tinh chỉnh nét chấm lọt giữa ô tròn.</p>
             </div>
 
             <div class="grid-2">
@@ -252,14 +252,10 @@
         <video id="video" autoplay playsinline muted></video>
         <div id="cam-overlay">
             <canvas id="grid-preview"></canvas>
-            <div class="corner-box tl" id="cb-tl"></div>
-            <div class="corner-box tr" id="cb-tr"></div>
-            <div class="corner-box bl" id="cb-bl"></div>
-            <div class="corner-box br" id="cb-br"></div>
         </div>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Hãy căn cho các ô tròn lọt vào lưới màu xanh nhé!</p>
+        <p id="hud-text">Khớp các ô tròn trên giấy vào lưới mờ để chụp chuẩn</p>
         <div class="cam-btn-group">
             <select id="cam-speed-select" class="speed-select">
                 <option value="4">Lấy nét: Nhanh</option>
@@ -281,7 +277,7 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
     const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V10 - Tỷ Lệ Hoàn Hảo" : "💻 V10 - Tỷ Lệ Hoàn Hảo";
+    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V11 - Trọng Tâm Fix UI" : "💻 V11 - Trọng Tâm Fix UI";
     drawVirtualGrid(); 
 });
 
@@ -290,6 +286,7 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
+// TỌA ĐỘ CHUẨN GỐC (800x1130) BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -298,6 +295,7 @@ const GRID_SPEC = {
     p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], y: [852, 871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: ['-', ',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
 };
 
+// VẼ LƯỚI ẢO LÊN MÀN HÌNH CAMERA (CHẠY THEO OFFSET)
 function drawVirtualGrid() {
     const canvas = document.getElementById('grid-preview');
     if(!canvas) return;
@@ -503,7 +501,7 @@ function startAutoScan() {
             for(let y = cy; y < cy+h; y++) {
                 for(let x = cx; x < cx+w; x++) {
                     let i = (y * 200 + x) * 4;
-                    if (imgData[i+1] < 100) darkCount++;
+                    if (imgData[i+1] < 100) darkCount++; 
                 }
             }
             return darkCount / (w * h);
@@ -527,8 +525,8 @@ function startAutoScan() {
                 hudText.innerHTML = "⚡ ĐÃ CHỤP TỰ ĐỘNG!";
                 
                 const hiResCanvas = document.createElement('canvas');
-                hiResCanvas.width = 1200; hiResCanvas.height = 1695;
-                hiResCanvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 1200, 1695);
+                hiResCanvas.width = 800; hiResCanvas.height = 1130;
+                hiResCanvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
                 
                 closeFullscreenCamera();
                 playBeep();
@@ -600,7 +598,6 @@ async function handleImageFiles(files) {
     }
 }
 
-// ================= LÕI PURE JS - THUẬT TOÁN AI HALO + OFFSET (TỶ LỆ V8 CHUẨN) =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -671,7 +668,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
     let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
-    // MAPPING TỌA ĐỘ VÀ BÙ TRỪ OFFSET (CHUẨN V8)
     function mapCoord(sx, sy) {
         let u = (sx + ox) / 800;
         let v = (sy + oy) / 1130;
@@ -864,6 +860,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     outCanvas.getContext('2d').drawImage(scaledCanvas, 0, 0);
     outCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
 
+    // Fix lỗi hiển thị điểm UI bị đè số 0
     document.getElementById('score-dashboard').style.display = 'block';
     document.getElementById('ui-total').textContent = `${totalScore}đ`;
     document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
