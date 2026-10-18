@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>App chấm trắc nghiệm NTMIX</title>
-    <!-- Thư viện cơ bản -->
+    <title>V1.2 App chấm trắc nghiệm NTMIX</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <!-- Thư viện hỗ trợ đóng gói thư mục ZIP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
@@ -49,22 +47,20 @@
         #video-container { position: relative; flex: 1; width: 100%; background: #000; overflow: hidden; }
         #video { width: 100%; height: 100%; object-fit: cover; display: block; }
         
-        /* GIAO DIỆN CAMERA MÔ PHỎNG TNMAKER */
         #cam-overlay { 
             position: absolute; 
             top: 45%; left: 50%; transform: translate(-50%, -50%);
             width: 96vw; max-width: 650px; 
             aspect-ratio: 800 / 1130; 
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); /* Nền xám mờ giống TNMaker */
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
             pointer-events: none;
             z-index: 10;
         }
 
         #grid-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* 4 Ô VUÔNG TRẮNG LỚN Ở GÓC GIỐNG TNMAKER */
         .tn-corner {
-            position: absolute; width: 15%; aspect-ratio: 1 / 1;
+            position: absolute; width: 12%; aspect-ratio: 1 / 1;
             background: rgba(255, 255, 255, 0.9);
             box-shadow: 0px 0px 5px rgba(0,0,0,0.5);
             transition: background 0.2s;
@@ -119,9 +115,9 @@
 <body>
 
 <header>
-    <h1>App chấm trắc nghiệm NTMIX</h1>
+    <h1>V1.2 App chấm trắc nghiệm NTMIX</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">Camera TNMaker & Mở Rộng Hút Điểm</span>
+    <span class="badge-cv">Bản Chính Thức - Khôi phục lõi V1.0</span>
 </header>
 
 <div class="container">
@@ -196,7 +192,7 @@
             </div>
             <div class="form-group">
                 <label class="check-inline" style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #1e3a8a; cursor: pointer;">
-                    <input type="checkbox" id="cfg-show-grid" style="width: 18px; height: 18px;" checked>
+                    <input type="checkbox" id="cfg-show-square-grid" style="width: 18px; height: 18px;">
                     📐 Vẽ ô vuông mờ phủ lên bong bóng (như TNMaker)
                 </label>
             </div>
@@ -267,7 +263,6 @@
         <video id="video" autoplay playsinline muted></video>
         <div id="cam-overlay">
             <canvas id="grid-preview"></canvas>
-            <!-- 4 GÓC MÀU TRẮNG LỚN (GIỐNG TNMAKER) -->
             <div class="tn-corner tl" id="cb-tl"></div>
             <div class="tn-corner tr" id="cb-tr"></div>
             <div class="tn-corner bl" id="cb-bl"></div>
@@ -305,6 +300,7 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
+// Sử dụng bộ tọa độ chuẩn xác của V1.0 (đã chạy rất tốt trước đó)
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -326,7 +322,7 @@ function drawVirtualGrid() {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, 800, 1130);
     
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)"; 
+    ctx.strokeStyle = "rgba(100, 149, 237, 0.4)"; 
     ctx.lineWidth = 2;
     const radius = 9;
 
@@ -530,7 +526,8 @@ function startAutoScan() {
             return darkCount / (w * h);
         }
 
-        const startX = 0; const startY = 0; const bw = Math.round(200 * 0.15); // Khớp kích thước ô TNMaker
+        // KHÔI PHỤC LẠI THUẬT TOÁN BẮT GÓC CỦA BẢN V1.0 ĐỂ CAMERA NHẠY LẠI
+        const startX = 0; const startY = 0; const bw = Math.round(200 * 0.10);
         const tl = checkDarkness(startX, startY, bw, bw);
         const tr = checkDarkness(200 - bw, startY, bw, bw);
         const bl = checkDarkness(startX, 282 - bw, bw, bw);
@@ -538,10 +535,10 @@ function startAutoScan() {
 
         function isValid(val) { return val > 0.05 && val < 0.60; }
         
-        document.getElementById('cb-tl').style.background = isValid(tl) ? "rgba(0, 255, 0, 0.4)" : "rgba(255, 255, 255, 0.9)";
-        document.getElementById('cb-tr').style.background = isValid(tr) ? "rgba(0, 255, 0, 0.4)" : "rgba(255, 255, 255, 0.9)";
-        document.getElementById('cb-bl').style.background = isValid(bl) ? "rgba(0, 255, 0, 0.4)" : "rgba(255, 255, 255, 0.9)";
-        document.getElementById('cb-br').style.background = isValid(br) ? "rgba(0, 255, 0, 0.4)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-tl').style.background = isValid(tl) ? "rgba(0, 255, 0, 0.6)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-tr').style.background = isValid(tr) ? "rgba(0, 255, 0, 0.6)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-bl').style.background = isValid(bl) ? "rgba(0, 255, 0, 0.6)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-br').style.background = isValid(br) ? "rgba(0, 255, 0, 0.6)" : "rgba(255, 255, 255, 0.9)";
 
         if (isValid(tl) && isValid(tr) && isValid(bl) && isValid(br)) {
             stableFrames++;
@@ -680,8 +677,9 @@ function processImagePureJS(sourceCanvas, fileName) {
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
     const fallbackCode = document.getElementById('fallback-code')?.value.trim() || "";
-    const showSquareGridCheckbox = document.getElementById('cfg-show-grid');
-    const showSquareGrid = showSquareGridCheckbox ? showSquareGridCheckbox.checked : true;
+    
+    const showSquareGridCheckbox = document.getElementById('cfg-show-square-grid');
+    const showSquareGrid = showSquareGridCheckbox ? showSquareGridCheckbox.checked : false;
 
     function findDarkestSolidPatch(startX, startY, w, h) {
         let bestScore = Infinity;
@@ -744,17 +742,9 @@ function processImagePureJS(sourceCanvas, fileName) {
         let cx = Math.round(center.x);
         let cy = Math.round(center.y);
 
-        if (showSquareGrid) {
-            // MÔ PHỎNG VIỀN TRẮNG CỦA TNMAKER
-            sCtx.strokeStyle = "rgba(255, 255, 255, 0.7)"; 
-            sCtx.lineWidth = 1;
-            sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(h/2), w, h);
-        }
-
         let bestScore = 0;
-        // BÁN KÍNH NAM CHÂM ĐƯỢC TĂNG LÊN THÀNH 9 ĐỂ BẮT LỆCH IN ẤN TỐT HƠN
-        for (let dy = -9; dy <= 9; dy += 3) {
-            for (let dx = -9; dx <= 9; dx += 3) {
+        for (let dy = -6; dy <= 6; dy += 3) {
+            for (let dx = -6; dx <= 6; dx += 3) {
                 let startX = (cx + dx) - Math.floor(w/2);
                 let startY = (cy + dy) - Math.floor(h/2);
                 
@@ -790,10 +780,20 @@ function processImagePureJS(sourceCanvas, fileName) {
     function drawMappedBubble(sx, sy, status) {
         let pt = mapCoord(sx, sy);
         sCtx.beginPath();
-        if (status === 'correct_fill') { sCtx.fillStyle = "rgba(0, 200, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
-        else if (status === 'wrong_fill') { sCtx.fillStyle = "rgba(255, 0, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
-        else if (status === 'missing_key') { sCtx.fillStyle = "rgba(255, 215, 0, 1)"; sCtx.arc(pt.x, pt.y, 6, 0, 2*Math.PI); sCtx.fill(); }
-        else if (status === 'info_read') { sCtx.fillStyle = "rgba(0, 80, 255, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+        
+        if (showSquareGrid) {
+            // Vẽ viền vuông như TNMaker
+            if (status === 'correct_fill') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.8)"; sCtx.lineWidth = 2; sCtx.strokeRect(pt.x-7, pt.y-7, 14, 14); }
+            else if (status === 'wrong_fill') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.8)"; sCtx.lineWidth = 2; sCtx.strokeRect(pt.x-7, pt.y-7, 14, 14); }
+            else if (status === 'missing_key') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.lineWidth = 2; sCtx.strokeRect(pt.x-6, pt.y-6, 12, 12); }
+            else if (status === 'info_read') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.8)"; sCtx.lineWidth = 2; sCtx.strokeRect(pt.x-7, pt.y-7, 14, 14); }
+        } else {
+            // Vẽ chấm tròn mặc định
+            if (status === 'correct_fill') { sCtx.fillStyle = "rgba(0, 200, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+            else if (status === 'wrong_fill') { sCtx.fillStyle = "rgba(255, 0, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+            else if (status === 'missing_key') { sCtx.fillStyle = "rgba(255, 215, 0, 1)"; sCtx.arc(pt.x, pt.y, 6, 0, 2*Math.PI); sCtx.fill(); }
+            else if (status === 'info_read') { sCtx.fillStyle = "rgba(0, 80, 255, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+        }
     }
 
     sCtx.fillStyle = "rgba(255, 0, 255, 1)";
