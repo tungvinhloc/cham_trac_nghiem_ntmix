@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - V16 Fix Phần III</title>
+    <title>V1.0-App chấm trắc nghiệm NTMIX</title>
+    <!-- Thư viện cơ bản -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <!-- Thư viện hỗ trợ đóng gói thư mục ZIP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
     <style>
         :root { --primary: #1a73e8; --success: #0f9d58; --danger: #d93025; --purple: #7c3aed; --dark: #1e293b; --bg: #f1f5f9; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: var(--bg); color: var(--dark); padding-bottom: 75px; }
         header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 12px 16px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
         header h1 { font-size: 18px; font-weight: 800; }
-        header p { font-size: 12px; opacity: 0.9; margin-top: 2px; }
-        .badge-cv { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold; background: var(--success); color: #fff; margin-top: 4px; border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        header p { font-size: 13px; font-weight: 600; opacity: 0.95; margin-top: 4px; color: #fbbf24; }
+        .badge-cv { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: bold; background: rgba(255,255,255,0.2); color: #fff; margin-top: 6px; border: 1px solid rgba(255,255,255,0.4); }
 
         .container { max-width: 600px; margin: 0 auto; padding: 10px; }
         .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
@@ -24,11 +29,12 @@
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 
-        .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; color: white; cursor: pointer; transition: 0.2s; gap: 6px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; color: white; cursor: pointer; transition: 0.2s; gap: 6px; }
         .btn:active { transform: scale(0.98); }
         .btn-primary { background: var(--primary); }
         .btn-success { background: var(--success); }
         .btn-danger { background: var(--danger); }
+        .btn-warning { background: #f59e0b; color: white; }
         .btn-purple { background: var(--purple); }
         .btn-secondary { background: #64748b; }
         .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; transition: 0.2s; }
@@ -104,9 +110,9 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR MOBILE</h1>
-    <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span class="badge-cv">✅ V16 - Chuẩn Hóa Lõi Phần III</span>
+    <h1>V1.0 App chấm trắc nghiệm NTMIX</h1>
+    <p>Tác giả: Nguyễn Thanh Tùng</p>
+    <span class="badge-cv">Bản Chính Thức - Tích hợp xuất file ZIP</span>
 </header>
 
 <div class="container">
@@ -179,12 +185,6 @@
                     <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
                 </div>
             </div>
-            <div class="form-group">
-                <label class="check-inline" style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #1e3a8a; cursor: pointer;">
-                    <input type="checkbox" id="cfg-show-grid" style="width: 18px; height: 18px;" checked>
-                    📐 Vẽ lưới định vị xanh lam bao phủ ô tròn
-                </label>
-            </div>
             <div class="form-group" style="margin-top: 12px;"><label>🔧 Mã đề dự phòng (Khi HS quên tô):</label><input type="text" id="fallback-code" placeholder="VD: 0234"></div>
             <button class="btn btn-primary" onclick="switchTab('tab-scan')" style="margin-top: 10px;">Lưu & Mở Giao Diện Chấm ➔</button>
         </div>
@@ -219,7 +219,7 @@
                 <div id="ui-warnings" style="margin-top: 8px; font-size: 12px; color: #d93025; font-weight: 600; text-align: center;"></div>
                 <div class="grid-2" style="margin-top: 10px;">
                     <button class="btn btn-primary" onclick="openFullscreenCamera()">🔄 Quét Tờ Khác</button>
-                    <button class="btn btn-secondary" onclick="downloadResultImage()">⬇️ Lưu Ảnh Chấm</button>
+                    <button class="btn btn-secondary" onclick="downloadResultImage()">⬇️ Lưu Ảnh Đang Hiện</button>
                 </div>
             </div>
             <canvas id="result-canvas" style="width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; display: none; margin-top: 10px;"></canvas>
@@ -230,8 +230,13 @@
         <div class="card">
             <div class="card-title">
                 <span>Danh sách đã chấm (<span id="count-graded">0</span>)</span>
-                <button class="btn btn-success" style="width: auto; padding: 6px 12px; font-size: 13px;" onclick="exportResultsExcel()">📥 Xuất Excel</button>
             </div>
+            <!-- Cụm Nút chức năng Bảng điểm và Lưu ZIP -->
+            <div class="grid-2" style="margin-bottom: 12px;">
+                <button class="btn btn-success" onclick="exportResultsExcel()">📥 Xuất Excel Điểm</button>
+                <button class="btn btn-warning" onclick="downloadAllImagesZip()">📦 Tải Tất Cả Ảnh (ZIP)</button>
+            </div>
+            
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>STT</th><th>SBD</th><th>Tên</th><th>Mã</th><th>TỔNG</th></tr></thead>
@@ -275,12 +280,11 @@
 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
-    const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V16 - Chuẩn Hóa Lõi Phần III" : "💻 V16 - Chuẩn Hóa Lõi Phần III";
     drawVirtualGrid(); 
 });
 
 let answerKey = {}; let dshsDict = {}; let gradedRows = [];
+let gradedImagesData = []; // Mảng lưu trữ toàn bộ file ảnh base64 để tải ZIP
 let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
@@ -606,7 +610,7 @@ async function handleImageFiles(files) {
     }
 }
 
-// ================= LÕI XỬ LÝ OMR =================
+// ================= LÕI XỬ LÝ OMR CHÍNH QUY =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -827,7 +831,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     }
     scoreP2 = +scoreP2.toFixed(2);
 
-    // ================= XỬ LÝ PHẦN III ĐÃ SỬA LỖI Ô DẤU TRỪ =================
     let scoreP3 = 0, right3 = 0, validP3Count = 0; 
     
     for (let q = 0; q < 6; q++) {
@@ -839,7 +842,6 @@ function processImagePureJS(sourceCanvas, fileName) {
         let baseX = GRID_SPEC.p3.blockX[q];
         let stuAnsStr = "";
         
-        // KIỂM TRA DẤU ÂM VỚI NGƯỠNG RIÊNG (minConfMinus) ĐỂ KHÔNG NHẬN NHẦM NÉT MỰC IN
         let expectedMinus = cleanKey.startsWith('-');
         let minusScore = getBestMappedDarkness(baseX, GRID_SPEC.p3.yMinus, 10, 10);
         let filledMinus = minusScore > minConfMinus;
@@ -851,7 +853,6 @@ function processImagePureJS(sourceCanvas, fileName) {
             drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, 'missing_key');
         }
         
-        // KIỂM TRA CÁC KÝ TỰ (Chữ số và dấu phẩy)
         let expectedCols = cleanKey.replace(/^-/, '').split(''); 
         
         for (let colIdx = 0; colIdx < 4; colIdx++) {
@@ -863,7 +864,7 @@ function processImagePureJS(sourceCanvas, fileName) {
             let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
             
             let sortedScores = [...scoresDigits].sort((a,b) => a - b);
-            let contrast = maxDigitScore - sortedScores[5]; // Độ chênh lệch giữa ô tối nhất và các ô trống
+            let contrast = maxDigitScore - sortedScores[5]; 
             
             let isFilled = (maxDigitScore > minConf) && (contrast > 0.08);
             let filledChar = isFilled ? GRID_SPEC.p3.digitChars[maxDigitIdx] : '';
@@ -900,6 +901,9 @@ function processImagePureJS(sourceCanvas, fileName) {
     outCanvas.getContext('2d').drawImage(scaledCanvas, 0, 0);
     outCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
 
+    // Lưu ảnh vào mảng bộ nhớ (Dùng định dạng JPEG để giảm dung lượng file ZIP)
+    gradedImagesData.push({ filename: `${sbd}_${code}.jpg`, base64: outCanvas.toDataURL('image/jpeg', 0.85).split(',')[1] });
+
     document.getElementById('score-dashboard').style.display = 'block';
     document.getElementById('ui-total').textContent = `${totalScore}đ`;
     document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
@@ -923,8 +927,8 @@ function processImagePureJS(sourceCanvas, fileName) {
 
 function downloadResultImage() {
     const link = document.createElement('a');
-    link.download = `Cham_${lastGradedSbd}.png`;
-    link.href = document.getElementById('result-canvas').toDataURL('image/png');
+    link.download = `Cham_${lastGradedSbd}.jpg`;
+    link.href = document.getElementById('result-canvas').toDataURL('image/jpeg', 0.9);
     link.click();
 }
 
@@ -939,6 +943,41 @@ function exportResultsExcel() {
     const data = [["STT", "Họ và tên", "Lớp", "SBD", "Mã Đề", "Điểm P.I", "Điểm P.II", "Điểm P.III", "TỔNG ĐIỂM", "Cảnh báo", "File"], ...gradedRows.map((r, i) => [i + 1, r.name, r.className, r.sbd, r.code, r.scoreP1, r.scoreP2, r.scoreP3, r.totalScore, r.warnings, r.file])];
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), "BangDiem");
     XLSX.writeFile(wb, `BangDiem_NTMIX_${Date.now()}.xlsx`);
+}
+
+// Hàm tải toàn bộ ảnh dạng file ZIP
+function downloadAllImagesZip() {
+    if (gradedImagesData.length === 0) {
+        alert("Chưa có ảnh nào được chấm để lưu!"); return;
+    }
+    
+    // Đổi text nút thành Trạng thái loading
+    const btn = document.querySelector('.btn-warning');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `⏳ Đang tạo file ZIP (${gradedImagesData.length} ảnh)...`;
+    btn.disabled = true;
+
+    // Chạy ngầm tránh treo trình duyệt
+    setTimeout(() => {
+        let zip = new JSZip();
+        let folder = zip.folder("AnhCham_NTMIX");
+        
+        gradedImagesData.forEach((img, index) => {
+            // Lấy SBD hoặc số thứ tự nếu trùng
+            let fName = img.filename;
+            folder.file(fName, img.base64, {base64: true});
+        });
+
+        zip.generateAsync({type:"blob"}).then(function(content) {
+            saveAs(content, `AnhCham_NTMIX_${Date.now()}.zip`);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }).catch(err => {
+            alert("Có lỗi khi tạo ZIP: " + err);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }, 100);
 }
 </script>
 </body>
