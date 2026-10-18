@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX OMR Mobile - V15 Final</title>
-    <!-- Thư viện siêu nhẹ, thuần JS -->
+    <title>NTMIX OMR Mobile - V16 Fix Phần III</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
@@ -37,7 +36,6 @@
         #qr-scanner-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-top: 8px; margin-bottom: 10px; }
         #qr-video { width: 100%; display: block; }
 
-        /* CAMERA TRÀN MÀN HÌNH */
         #camera-fullscreen-ui {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 9999; flex-direction: column; overflow: hidden;
@@ -45,7 +43,6 @@
         #video-container { position: relative; flex: 1; width: 100%; background: #000; overflow: hidden; }
         #video { width: 100%; height: 100%; object-fit: cover; display: block; }
         
-        /* OVERLAY TRẢ VỀ V12 HOÀN TOÀN */
         #cam-overlay { 
             position: absolute; 
             top: 45%; left: 50%; transform: translate(-50%, -50%);
@@ -59,7 +56,6 @@
 
         #grid-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* 4 GÓC NHỎ ÁP SÁT BIÊN NHƯ V12 YÊU CẦU */
         .corner-box {
             position: absolute; width: 10%; aspect-ratio: 1 / 1;
             border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.15); transition: background 0.2s;
@@ -110,7 +106,7 @@
 <header>
     <h1>NTMIX OMR MOBILE</h1>
     <p id="env-mode-label">Đang xác định môi trường...</p>
-    <span class="badge-cv">✅ V15 - Giao Diện V12 + Lõi P3 Chuẩn</span>
+    <span class="badge-cv">✅ V16 - Chuẩn Hóa Lõi Phần III</span>
 </header>
 
 <div class="container">
@@ -173,7 +169,16 @@
                     <input type="number" id="cfg-p2-4" step="0.05" value="1.0">
                 </div>
             </div>
-            <div class="form-group"><label>Ngưỡng nhận diện chì (0.15 - 0.45):</label><input type="number" id="cfg-conf" step="0.02" value="0.24"></div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Ngưỡng nhận diện chì chung:</label>
+                    <input type="number" id="cfg-conf" step="0.02" value="0.24">
+                </div>
+                <div class="form-group">
+                    <label>Ngưỡng lọc ô dấu trừ (-):</label>
+                    <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
+                </div>
+            </div>
             <div class="form-group">
                 <label class="check-inline" style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #1e3a8a; cursor: pointer;">
                     <input type="checkbox" id="cfg-show-grid" style="width: 18px; height: 18px;" checked>
@@ -185,7 +190,6 @@
         </div>
     </div>
 
-    <!-- TAB 2: CHẤM BÀI -->
     <div id="tab-scan" class="tab-pane">
         <div class="card">
             <div class="card-title">Chấm Phiếu Trực Tiếp</div>
@@ -222,7 +226,6 @@
         </div>
     </div>
 
-    <!-- TAB 3: BẢNG ĐIỂM -->
     <div id="tab-results" class="tab-pane">
         <div class="card">
             <div class="card-title">
@@ -273,7 +276,7 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
     const isGithub = window.location.hostname.includes('github.io');
-    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V15 - Hoàn Thiện Tọa Độ & Lõi P3" : "💻 V15 - Hoàn Thiện Tọa Độ & Lõi P3";
+    document.getElementById('env-mode-label').textContent = isGithub ? "🌐 V16 - Chuẩn Hóa Lõi Phần III" : "💻 V16 - Chuẩn Hóa Lõi Phần III";
     drawVirtualGrid(); 
 });
 
@@ -282,15 +285,11 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
-// =========================================================
-// BỘ TỌA ĐỘ VÀ THUẬT TOÁN ĐÃ ĐƯỢC KHÔI PHỤC VỀ V12 HOÀN TOÀN
-// =========================================================
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584] },
     p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743] },
-    // Tách riêng yMinus ra để chấm độc lập dấu trừ
     p3: { 
         blockX: [64, 184, 304, 424, 544, 664], 
         offsetsX: [0, 26, 52, 78], 
@@ -322,7 +321,7 @@ function drawVirtualGrid() {
     GRID_SPEC.p2.blockX.forEach(bx => { let offsets = [0, 38, 76, 114]; offsets.forEach(offX => { GRID_SPEC.p2.y.forEach(y => drawCircle(bx + offX, y)); }); });
     
     GRID_SPEC.p3.blockX.forEach(bx => { 
-        drawCircle(bx, GRID_SPEC.p3.yMinus); // Ô dấu âm ở đầu cột
+        drawCircle(bx, GRID_SPEC.p3.yMinus);
         GRID_SPEC.p3.offsetsX.forEach(offX => { 
             GRID_SPEC.p3.yDigit.forEach(y => drawCircle(bx + offX, y)); 
         }); 
@@ -505,13 +504,12 @@ function startAutoScan() {
             for(let y = cy; y < cy+h; y++) {
                 for(let x = cx; x < cx+w; x++) {
                     let i = (y * 200 + x) * 4;
-                    if (imgData[i+1] < 100) darkCount++; // Lấy kênh Xanh lá
+                    if (imgData[i+1] < 100) darkCount++;
                 }
             }
             return darkCount / (w * h);
         }
 
-        // CHUẨN V12: Quét đúng viền cạnh ngoài cùng 10%
         const startX = 0; const startY = 0; const bw = Math.round(200 * 0.10);
         const tl = checkDarkness(startX, startY, bw, bw);
         const tr = checkDarkness(200 - bw, startY, bw, bw);
@@ -608,7 +606,7 @@ async function handleImageFiles(files) {
     }
 }
 
-// ================= LÕI CHẤM ĐIỂM (TỌA ĐỘ V12) =================
+// ================= LÕI XỬ LÝ OMR =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -623,6 +621,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     let oy = parseInt(document.getElementById('cfg-offset-y').value) || 0;
 
     const minConf = parseFloat(document.getElementById('cfg-conf').value) || 0.24;
+    const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus').value) || 0.42;
     const diemP1 = parseFloat(document.getElementById('cfg-p1').value) || 0.25;
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1').value)||0.1, parseFloat(document.getElementById('cfg-p2-2').value)||0.25, parseFloat(document.getElementById('cfg-p2-3').value)||0.5, parseFloat(document.getElementById('cfg-p2-4').value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3').value) || 0.5;
@@ -677,7 +676,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
     let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
-    // BÙ TRỪ TỌA ĐỘ V12 (Rất chuẩn xác)
     function mapCoord(sx, sy) {
         let u = (sx + ox) / 800;
         let v = (sy + oy) / 1130;
@@ -829,7 +827,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     }
     scoreP2 = +scoreP2.toFixed(2);
 
-    // ================= LÕI P3 THÔNG MINH (CHỈ XÉT ĐÚNG CỘT CỦA ĐÁP ÁN) =================
+    // ================= XỬ LÝ PHẦN III ĐÃ SỬA LỖI Ô DẤU TRỪ =================
     let scoreP3 = 0, right3 = 0, validP3Count = 0; 
     
     for (let q = 0; q < 6; q++) {
@@ -841,10 +839,10 @@ function processImagePureJS(sourceCanvas, fileName) {
         let baseX = GRID_SPEC.p3.blockX[q];
         let stuAnsStr = "";
         
-        // KIỂM TRA DẤU ÂM (Độc lập hoàn toàn)
-        let expectedMinus = cleanKey.includes('-');
-        let minusScore = getBestMappedDarkness(baseX, GRID_SPEC.p3.yMinus, 14, 14);
-        let filledMinus = minusScore > minConf;
+        // KIỂM TRA DẤU ÂM VỚI NGƯỠNG RIÊNG (minConfMinus) ĐỂ KHÔNG NHẬN NHẦM NÉT MỰC IN
+        let expectedMinus = cleanKey.startsWith('-');
+        let minusScore = getBestMappedDarkness(baseX, GRID_SPEC.p3.yMinus, 10, 10);
+        let filledMinus = minusScore > minConfMinus;
         
         if (filledMinus) {
             drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill');
@@ -853,38 +851,35 @@ function processImagePureJS(sourceCanvas, fileName) {
             drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, 'missing_key');
         }
         
-        // KIỂM TRA CÁC CHỮ SỐ & DẤU PHẨY
-        let expectedCols = cleanKey.replace('-', '').split(''); // Lọc mảng đáp án không chứa dấu trừ
+        // KIỂM TRA CÁC KÝ TỰ (Chữ số và dấu phẩy)
+        let expectedCols = cleanKey.replace(/^-/, '').split(''); 
         
         for (let colIdx = 0; colIdx < 4; colIdx++) {
             let x = baseX + GRID_SPEC.p3.offsetsX[colIdx];
-            
-            // Nếu đáp án có 2 chữ số (VD: 12), expectedChar của cột 3,4 sẽ là rỗng ('')
             let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
             
-            let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestMappedDarkness(x, y, 14, 14));
+            let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestMappedDarkness(x, y, 13, 13));
             let maxDigitScore = Math.max(...scoresDigits);
             let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
             
-            let isFilled = maxDigitScore > minConf;
+            let sortedScores = [...scoresDigits].sort((a,b) => a - b);
+            let contrast = maxDigitScore - sortedScores[5]; // Độ chênh lệch giữa ô tối nhất và các ô trống
+            
+            let isFilled = (maxDigitScore > minConf) && (contrast > 0.08);
             let filledChar = isFilled ? GRID_SPEC.p3.digitChars[maxDigitIdx] : '';
 
             if (isFilled) {
-                // HS có tô vào cột này
                 stuAnsStr += filledChar;
                 if (filledChar === expectedChar) {
                     drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'correct_fill');
                 } else { 
                     drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'wrong_fill'); 
-                    // Chấm vàng báo lỗi cho đáp án đúng (Nếu cột đó có đáp án)
                     if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
                         drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key'); 
                     }
                 }
             } else {
-                // HS bỏ trống cột này
                 if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
-                    // Mà đáp án lại yêu cầu -> Báo chấm vàng
                     drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
                 }
             }
