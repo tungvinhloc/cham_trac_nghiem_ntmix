@@ -50,7 +50,7 @@
         #video-container { position: relative; flex: 1; width: 100%; background: #000; overflow: hidden; }
         #video { width: 100%; height: 100%; object-fit: cover; display: block; }
         
-        /* LỚP PHỦ GIAO DIỆN TNMAKER */
+        /* GIAO DIỆN MÀN CHẮN TNMAKER */
         #cam-overlay { 
             position: absolute; 
             top: 45%; left: 50%; transform: translate(-50%, -50%);
@@ -63,7 +63,7 @@
 
         #grid-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* 4 Ô VUÔNG TRẮNG LỚN Ở GÓC GIỐNG TNMAKER */
+        /* 4 Ô VUÔNG TRẮNG KIỂU TNMAKER (Chỉ để ngắm) */
         .tn-corner {
             position: absolute; width: 15%; aspect-ratio: 1 / 1;
             background: rgba(255, 255, 255, 0.9);
@@ -122,7 +122,7 @@
 <header>
     <h1>V1.0 App chấm trắc nghiệm NTMIX</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">Bản Chính Thức - Fix Trọng Tâm Lưới Toán Học</span>
+    <span class="badge-cv">Bản Chính Thức - Khôi phục Lõi Gốc Tuyệt Đối</span>
 </header>
 
 <div class="container">
@@ -198,7 +198,7 @@
             <div class="form-group">
                 <label class="check-inline" style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #1e3a8a; cursor: pointer;">
                     <input type="checkbox" id="cfg-show-grid" style="width: 18px; height: 18px;" checked>
-                    📐 Vẽ ô vuông mờ phủ lên bong bóng (như TNMaker)
+                    📐 Vẽ ô vuông bao bọc đáp án (như TNMaker)
                 </label>
             </div>
             <div class="form-group" style="margin-top: 12px;"><label>🔧 Mã đề dự phòng (Khi HS quên tô):</label><input type="text" id="fallback-code" placeholder="VD: 0234"></div>
@@ -305,7 +305,7 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
-// LƯỚI TỌA ĐỘ CHUẨN V12
+// LƯỚI TỌA ĐỘ VÀ THUẬT TOÁN ĐÃ ĐÓNG BĂNG 100% NHƯ BẢN V1.0 (CHẤM CHUẨN XÁC)
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -685,7 +685,7 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI TÍNH TOÁN (CÔNG THỨC CHUẨN ĐƯỢC ĐÓNG BĂNG) =================
+// ================= LÕI XỬ LÝ CHẤM BÀI ĐÃ ĐÓNG BĂNG 100% NHƯ BẢN V1.0 (CHẤM CHUẨN XÁC) =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -751,16 +751,15 @@ function processImagePureJS(sourceCanvas, fileName) {
         return {x: bestX, y: bestY};
     }
 
-    let searchW = 150, searchH = 150;
+    let searchW = 160, searchH = 160;
     let pTL = findDarkestSolidPatch(0, 0, searchW, searchH);
     let pTR = findDarkestSolidPatch(WIDTH - searchW, 0, searchW, searchH);
     let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
     let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
-    // CÔNG THỨC TOÁN HỌC (ĐÃ CHUẨN HÓA, TUYỆT ĐỐI KHÔNG SỬA ĐỔI)
     function mapCoord(sx, sy) {
-        let u = (sx + ox - 40) / 720;
-        let v = (sy + oy - 40) / 1050;
+        let u = (sx + ox) / 800;
+        let v = (sy + oy) / 1130;
         let ax = (1-u)*(1-v)*pTL.x + u*(1-v)*pTR.x + (1-u)*v*pBL.x + u*v*pBR.x;
         let ay = (1-u)*(1-v)*pTL.y + u*(1-v)*pTR.y + (1-u)*v*pBL.y + u*v*pBR.y;
         return { x: ax, y: ay };
@@ -772,8 +771,8 @@ function processImagePureJS(sourceCanvas, fileName) {
         let cy = Math.round(center.y);
 
         let bestScore = 0;
-        for (let dy = -6; dy <= 6; dy += 3) {
-            for (let dx = -6; dx <= 6; dx += 3) {
+        for (let dy = -9; dy <= 9; dy += 3) {
+            for (let dx = -9; dx <= 9; dx += 3) {
                 let startX = (cx + dx) - Math.floor(w/2);
                 let startY = (cy + dy) - Math.floor(h/2);
                 
@@ -805,7 +804,7 @@ function processImagePureJS(sourceCanvas, fileName) {
         }
         
         if (showSquareGrid) {
-            sCtx.strokeStyle = "rgba(100, 149, 237, 0.6)"; 
+            sCtx.strokeStyle = "rgba(255, 255, 255, 0.7)"; 
             sCtx.lineWidth = 1;
             sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(h/2), w, h);
         }
