@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>V4.1 App chấm trắc nghiệm NTMIX</title>
+    <title>V1.0 App chấm trắc nghiệm NTMIX</title>
+    <!-- Thư viện cơ bản -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <!-- Thư viện hỗ trợ đóng gói thư mục ZIP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
@@ -40,6 +42,7 @@
         #qr-scanner-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-top: 8px; margin-bottom: 10px; }
         #qr-video { width: 100%; display: block; }
 
+        /* CAMERA TRÀN MÀN HÌNH */
         #camera-fullscreen-ui {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 9999; flex-direction: column; overflow: hidden;
@@ -58,6 +61,7 @@
             z-index: 10;
         }
 
+        /* 4 Ô VUÔNG TRẮNG KIỂU TNMAKER */
         .tn-corner {
             position: absolute; width: 15%; aspect-ratio: 1 / 1;
             background: rgba(255, 255, 255, 0.85);
@@ -116,7 +120,7 @@
 <header>
     <h1>V1.0 App chấm trắc nghiệm NTMIX</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V4.1 - Nới lỏng Cảm biến & Homography PRO</span>
+    <span class="badge-cv">Lõi Homography PRO (Chuẩn TNMaker)</span>
 </header>
 
 <div class="container">
@@ -271,9 +275,9 @@
         <p id="hud-text">Đưa 4 ô đen của giấy lấp đầy 4 ô vuông trắng</p>
         <div class="cam-btn-group">
             <select id="cam-speed-select" class="speed-select">
-                <option value="4">Bắt nét: Nhanh (1.0s)</option>
-                <option value="6" selected>Bắt nét: Tiêu chuẩn (1.5s)</option>
-                <option value="8">Bắt nét: Chậm (2.0s)</option>
+                <option value="6">Bắt nét: Nhanh (0.8s)</option>
+                <option value="10" selected>Bắt nét: Tiêu chuẩn (1.5s)</option>
+                <option value="15">Bắt nét: Chậm (2.0s)</option>
             </select>
             <button class="btn btn-danger" style="padding: 10px 15px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Mẫu</button>
             <button class="btn btn-secondary" style="padding: 10px 15px; font-size: 15px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
@@ -294,7 +298,7 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
-// LƯỚI TỌA ĐỘ BGD 2025
+// LƯỚI TỌA ĐỘ BGD 2025 CHUẨN
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -504,8 +508,7 @@ function startAutoScan() {
             for(let y = cy; y < cy+h; y+=2) {
                 for(let x = cx; x < cx+w; x+=2) {
                     let i = (y * 200 + x) * 4;
-                    // V4.1 NỚI LỎNG CẢM BIẾN (Chống lỗi mặt bàn đen)
-                    if (imgData[i+1] < 130) darkCount++; 
+                    if (imgData[i+1] < 120) darkCount++;
                 }
             }
             return darkCount / ((w/2) * (h/2));
@@ -519,8 +522,7 @@ function startAutoScan() {
         const bl = checkDarkness(0, 282 - bh, bw, bh);
         const br = checkDarkness(200 - bw, 282 - bh, bw, bh);
 
-        // V4.1 NỚI LỎNG NGƯỠNG ĐỂ CAMERA DỄ THỞ HƠN TRÊN BÀN TỐI
-        function isValid(val) { return val > 0.015 && val < 0.85; } 
+        function isValid(val) { return val > 0.05 && val < 0.85; }
         
         const okTL = isValid(tl); const okTR = isValid(tr);
         const okBL = isValid(bl); const okBR = isValid(br);
@@ -557,7 +559,7 @@ function startAutoScan() {
             hudText.innerHTML = "Đưa 4 ô đen của giấy lấp đầy 4 ô vuông trắng";
             hudText.style.color = "#fff";
         }
-    }, 250);
+    }, 150);
 }
 
 function manualCapture() {
@@ -648,7 +650,7 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI HOMOGRAPHY PRO =================
+// ================= LÕI HOMOGRAPHY (PERSPECTIVE TRANSFORM 3x3) =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -672,7 +674,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     const showSquareGridCheckbox = document.getElementById('cfg-show-grid');
     const showSquareGrid = showSquareGridCheckbox ? showSquareGridCheckbox.checked : true;
 
-    // TÌM TÂM Ô VUÔNG ĐEN (Loại bỏ bảng Điểm bằng giới hạn tìm kiếm)
+    // TÌM CHÍNH XÁC TÂM CỦA 4 Ô VUÔNG ĐEN (LOẠI TRỪ BẢNG ĐIỂM Ở GÓC TRÊN TRÁI)
     function findBlackSquareCenter(startX, startY, w, h) {
         let bestX = startX + w/2;
         let bestY = startY + h/2;
@@ -705,12 +707,12 @@ function processImagePureJS(sourceCanvas, fileName) {
         return { x: bestX, y: bestY }; 
     }
 
-    // V4.1 TĂNG NHẸ TRƯỜNG NHÌN TÌM GÓC TỪ 80 LÊN 120 ĐỂ TRÁNH HỤT
-    let searchW = 120, searchH = 120;
+    // GIỚI HẠN VÙNG TÌM KIẾM CỰC HẸP ĐỂ TRÁNH BẮT NHẦM VÀO BẢNG ĐIỂM
+    let searchW = 80, searchH = 80;
     let pTL = findBlackSquareCenter(10, 10, searchW, searchH);
-    let pTR = findBlackSquareCenter(WIDTH - searchW - 10, 10, searchW, searchH);
-    let pBL = findBlackSquareCenter(10, HEIGHT - searchH - 10, searchW, searchH);
-    let pBR = findBlackSquareCenter(WIDTH - searchW - 10, HEIGHT - searchH - 10, searchW, searchH);
+    let pTR = findBlackSquareCenter(WIDTH - 90, 10, searchW, searchH);
+    let pBL = findBlackSquareCenter(10, HEIGHT - 90, searchW, searchH);
+    let pBR = findBlackSquareCenter(WIDTH - 90, HEIGHT - 90, searchW, searchH);
 
     // THUẬT TOÁN HOMOGRAPHY
     function createPerspectiveTransform(src, dst) {
@@ -721,15 +723,18 @@ function processImagePureJS(sourceCanvas, fileName) {
             a.push([x, y, 1, 0, 0, 0, -u*x, -u*y, u]);
             a.push([0, 0, 0, x, y, 1, -v*x, -v*y, v]);
         }
+        
         for (let i = 0; i < 8; i++) {
             let maxRow = i;
             for (let j = i + 1; j < 8; j++) { if (Math.abs(a[j][i]) > Math.abs(a[maxRow][i])) maxRow = j; }
             let temp = a[i]; a[i] = a[maxRow]; a[maxRow] = temp;
+            
             for (let j = i + 1; j < 8; j++) {
                 let f = a[j][i] / a[i][i];
                 for (let k = i; k <= 8; k++) a[j][k] -= a[i][k] * f;
             }
         }
+        
         let h = new Array(8);
         for (let i = 7; i >= 0; i--) {
             let sum = 0;
@@ -757,6 +762,7 @@ function processImagePureJS(sourceCanvas, fileName) {
         let cy = Math.round(center.y);
 
         let bestScore = 0;
+        // BÁN KÍNH LỰC HÚT NAM CHÂM LÀ +-6 PX ĐỂ TÌM TÂM CHÍNH XÁC NHẤT
         for (let dy = -6; dy <= 6; dy += 3) {
             for (let dx = -6; dx <= 6; dx += 3) {
                 let startX = (cx + dx) - Math.floor(w/2);
@@ -788,13 +794,6 @@ function processImagePureJS(sourceCanvas, fileName) {
                 if (score > bestScore) { bestScore = score; }
             }
         }
-        
-        if (showSquareGrid) {
-            sCtx.strokeStyle = "rgba(100, 149, 237, 0.6)"; 
-            sCtx.lineWidth = 1;
-            sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(h/2), w, h);
-        }
-        
         return bestScore;
     }
 
@@ -805,8 +804,8 @@ function processImagePureJS(sourceCanvas, fileName) {
         let hsx = pt.x - boxSize/2;
         let hsy = pt.y - boxSize/2;
         
+        sCtx.lineWidth = 2;
         if (showSquareGrid) {
-            sCtx.lineWidth = 2;
             if (status === 'correct_fill') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
             else if (status === 'wrong_fill') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
             else if (status === 'missing_key') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.strokeRect(hsx+1, hsy+1, boxSize-2, boxSize-2); }
