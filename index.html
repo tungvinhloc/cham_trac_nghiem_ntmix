@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V5.0 - Khóa Vùng Ngắm</title>
+    <title>NTMIX V5.0 - Hoàn Chỉnh</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
     <style>
-        :root { --primary: #1a73e8; --success: #0f9d58; --danger: #d93025; --dark: #1e293b; --bg: #f1f5f9; }
+        :root { --primary: #1a73e8; --success: #0f9d58; --danger: #d93025; --purple: #7c3aed; --dark: #1e293b; --bg: #f1f5f9; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: var(--bg); color: var(--dark); padding-bottom: 75px; }
         header { background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 12px 16px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
@@ -21,17 +21,25 @@
         .container { max-width: 600px; margin: 0 auto; padding: 10px; }
         .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
         .card-title { font-size: 15px; font-weight: 700; color: #1e3a8a; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
-        
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #475569; }
+        input[type="number"], input[type="text"], select { width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #f8fafc; font-weight: bold;}
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+
         .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; color: white; cursor: pointer; transition: 0.2s; gap: 6px; }
         .btn:active { transform: scale(0.98); }
         .btn-primary { background: var(--primary); }
         .btn-success { background: var(--success); }
         .btn-danger { background: var(--danger); }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-purple { background: var(--purple); }
         .btn-secondary { background: #64748b; }
-        
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; transition: 0.2s; }
 
-        /* GIAO DIỆN QUÉT CAMERA - HUD */
+        #qr-scanner-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-top: 8px; margin-bottom: 10px; }
+        #qr-video { width: 100%; display: block; }
+
         #camera-fullscreen-ui {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 9999; flex-direction: column; overflow: hidden;
@@ -39,7 +47,6 @@
         #video-container { position: relative; flex: 1; width: 100%; height: 100%; background: #000; overflow: hidden; }
         #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         
-        /* KHUNG CHUẨN A4 BGD 2025 */
         #cam-overlay { 
             position: absolute; 
             top: 45%; left: 50%; transform: translate(-50%, -50%);
@@ -51,7 +58,6 @@
             z-index: 10;
         }
 
-        /* 4 Ô VÙNG NGẮM (TARGETING HUD) */
         .tn-corner {
             position: absolute; width: 16%; aspect-ratio: 1 / 1;
             background: rgba(255, 255, 255, 0.2);
@@ -60,10 +66,7 @@
             transition: all 0.15s ease-out;
             display: flex; align-items: center; justify-content: center;
         }
-        /* Dấu cộng chữ thập mờ ở giữa */
         .tn-corner::after { content: '+'; color: rgba(255,255,255,0.6); font-size: 24px; font-weight: bold; }
-
-        /* Định vị 4 góc chồm ra ngoài viền một chút để ôm trọn ô đen */
         .tn-corner.tl { top: -2%; left: -2%; }
         .tn-corner.tr { top: -2%; right: -2%; }
         .tn-corner.bl { bottom: -2%; left: -2%; }
@@ -77,8 +80,30 @@
         }
         #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
 
-        /* CÁC THÀNH PHẦN KHÁC */
-        #result-canvas { width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; margin-top: 10px; display: none; }
+        #scan-status {
+            font-size: 14px; font-weight: 700; color: #64748b; text-align: center; 
+            margin-bottom: 12px; padding: 16px 10px; border: 2px dashed #cbd5e1; 
+            border-radius: 8px; background: #f8fafc; transition: 0.3s;
+        }
+
+        .score-dashboard { display: none; background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 12px; margin-top: 10px; box-shadow: 0 4px 10px rgba(220,38,38,0.12); }
+        .score-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #fca5a5; padding-bottom: 8px; margin-bottom: 10px; }
+        .score-total-box { font-size: 22px; font-weight: 900; color: #dc2626; }
+        .score-meta { font-size: 13px; font-weight: 700; color: #1e3a8a; text-align: right; }
+        .score-parts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+        .part-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 8px 4px; }
+        .part-box .p-title { font-size: 12px; font-weight: 700; color: #991b1b; }
+        .part-box .p-val { font-size: 18px; font-weight: 800; color: #dc2626; margin-top: 2px; }
+        .part-box .p-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+        .key-summary-box { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-top: 6px; display: none; }
+        #result-canvas { width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; display: none; margin-top: 10px; }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; text-align: center; }
+        th { background: #1e3a8a; color: white; white-space: nowrap; }
+
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e2e8f0; z-index: 50; }
         .nav-item { flex: 1; padding: 10px 4px; text-align: center; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; }
         .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); background: #eff6ff; }
@@ -91,39 +116,138 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V5.0 - Lõi HUD Khóa Vùng Ngắm Tốc Độ Cao</span>
+    <span class="badge-cv">V5.0 - HUD Camera & Auto Grading</span>
 </header>
 
 <div class="container">
-    <!-- TAB MÁY QUÉT -->
-    <div id="tab-scan" class="tab-pane active">
+    <div id="tab-config" class="tab-pane active">
+        <div class="card">
+            <div class="card-title">1. Nạp Đáp Án (Mã QR / Excel)</div>
+            <div class="form-group">
+                <div class="grid-2">
+                    <button class="btn btn-purple" id="btn-qr-cam" onclick="toggleQrScanner()">📷 Quét Mã QR</button>
+                    <div class="btn btn-success" style="margin: 0; cursor: pointer;" onclick="document.getElementById('file-qr-img').click()">🖼️ Chọn Ảnh QR</div>
+                    <input type="file" id="file-qr-img" accept="image/*" style="display: none;" onchange="handleQrImageFile(this.files[0])">
+                </div>
+                <div id="qr-scanner-wrapper"><video id="qr-video" autoplay playsinline muted></video></div>
+            </div>
+            
+            <div class="form-group">
+                <label>📄 Hoặc chọn file Excel Đáp án:</label>
+                <div class="btn-upload" onclick="document.getElementById('file-key').click()">
+                    <span id="label-file-key">📁 Bấm vào đây để chọn File</span>
+                </div>
+                <input type="file" id="file-key" accept=".xlsx, .xls" style="display: none;">
+            </div>
+            <div id="key-status-box" class="key-summary-box"></div>
+            
+            <div class="form-group" style="margin-top: 10px;">
+                <label>👥 File Danh sách Học sinh (Tùy chọn):</label>
+                <div class="btn-upload" onclick="document.getElementById('file-dshs').click()">
+                    <span id="label-file-dshs">📁 Bấm vào đây để chọn File</span>
+                </div>
+                <input type="file" id="file-dshs" accept=".xlsx, .xls" style="display: none;">
+                <small id="dshs-status" style="color: var(--primary); font-weight: 600; display: block; margin-top: 6px; text-align: center;"></small>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">2. Cấu hình Máy Quét & Chấm</div>
+            <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px dashed #6366f1;">
+                <label style="color: #4338ca;">⚙️ Căn chỉnh lề máy in (Để 0 nếu khớp):</label>
+                <div class="grid-2">
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Dịch Ngang (X) (Sang phải là +)</span>
+                        <input type="number" id="cfg-offset-x" value="0">
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Dịch Dọc (Y) (Xuống dưới là +)</span>
+                        <input type="number" id="cfg-offset-y" value="0">
+                    </div>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group"><label>Điểm Phần I:</label><input type="number" id="cfg-p1" step="0.05" value="0.25"></div>
+                <div class="form-group"><label>Điểm Phần III:</label><input type="number" id="cfg-p3" step="0.05" value="0.5"></div>
+            </div>
+            <div class="form-group">
+                <label>Điểm Phần II (1 | 2 | 3 | 4 ý đúng):</label>
+                <div class="grid-4">
+                    <input type="number" id="cfg-p2-1" step="0.05" value="0.1">
+                    <input type="number" id="cfg-p2-2" step="0.05" value="0.25">
+                    <input type="number" id="cfg-p2-3" step="0.05" value="0.5">
+                    <input type="number" id="cfg-p2-4" step="0.05" value="1.0">
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Ngưỡng nhận diện chì:</label>
+                    <input type="number" id="cfg-conf" step="0.02" value="0.24">
+                </div>
+                <div class="form-group">
+                    <label>Ngưỡng ô dấu (-):</label>
+                    <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="switchTab('tab-scan')" style="margin-top: 10px;">Lưu & Mở Giao Diện Chấm ➔</button>
+        </div>
+    </div>
+
+    <div id="tab-scan" class="tab-pane">
         <div class="card">
             <div class="card-title">Chấm Phiếu Trực Tiếp</div>
             <div class="grid-2" style="margin-bottom: 10px;">
                 <button class="btn btn-primary" onclick="openFullscreenCamera()">📷 Mở Máy Quét</button>
                 <div class="btn btn-success" style="margin: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('file-images').click()">🖼️ Chọn Từ Máy</div>
-                <input type="file" id="file-images" accept="image/*" style="display: none;" onchange="handleImageFiles(this)">
+                <input type="file" id="file-images" accept="image/*" capture="environment" multiple style="display: none;" onchange="handleImageFiles(this)">
             </div>
             
-            <div style="text-align: center; font-size: 13px; color: #64748b; margin-bottom: 10px;">
-                (Lưu ý: Thầy nạp đáp án ở Cấu hình trước khi chấm)
-            </div>
+            <div id="scan-status">👋 Sẵn sàng! Hãy Mở máy quét hoặc Chọn ảnh từ máy.</div>
 
+            <div id="score-dashboard" class="score-dashboard">
+                <div class="score-header">
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; color: #64748b;">TỔNG ĐIỂM BÀI LÀM</div>
+                        <div class="score-total-box" id="ui-total">0.00đ</div>
+                    </div>
+                    <div class="score-meta">
+                        <div id="ui-stu-name">Học sinh: ---</div>
+                        <div id="ui-sbd-made">SBD: --- | Mã đề: ---</div>
+                    </div>
+                </div>
+                <div class="score-parts-grid">
+                    <div class="part-box"><div class="p-title">PHẦN I</div><div class="p-val" id="ui-p1-score">0.00đ</div><div class="p-sub" id="ui-p1-detail">0/0 câu</div></div>
+                    <div class="part-box"><div class="p-title">PHẦN II</div><div class="p-val" id="ui-p2-score">0.00đ</div><div class="p-sub" id="ui-p2-detail">0/0 ý đúng</div></div>
+                    <div class="part-box"><div class="p-title">PHẦN III</div><div class="p-val" id="ui-p3-score">0.00đ</div><div class="p-sub" id="ui-p3-detail">0/0 câu</div></div>
+                </div>
+                <div id="ui-warnings" style="margin-top: 8px; font-size: 12px; color: #d93025; font-weight: 600; text-align: center;"></div>
+                <div class="grid-2" style="margin-top: 10px;">
+                    <button class="btn btn-primary" onclick="openFullscreenCamera()">🔄 Quét Tờ Khác</button>
+                    <button class="btn btn-secondary" onclick="downloadResultImage()">⬇️ Lưu Ảnh Đang Hiện</button>
+                </div>
+            </div>
             <canvas id="result-canvas"></canvas>
-            <div id="score-info" style="display:none; text-align:center; font-size:24px; font-weight:bold; color:red; margin-top:10px;">ĐIỂM: <span id="ui-score">0.00</span></div>
         </div>
     </div>
-    
-    <!-- TAB CẤU HÌNH BỊ LƯỢC BỚT ĐỂ TẬP TRUNG TEST CAMERA (Thầy có thể thêm lại phần Excel sau khi camera chuẩn) -->
-    <div id="tab-config" class="tab-pane">
+
+    <div id="tab-results" class="tab-pane">
         <div class="card">
-            <div class="card-title">Cấu hình Tạm</div>
-            <p style="font-size:13px; color:gray;">Giao diện quét rút gọn phục vụ kiểm thử độ mượt của Camera.</p>
+            <div class="card-title">Danh sách đã chấm (<span id="count-graded">0</span>)</div>
+            <div class="grid-2" style="margin-bottom: 12px;">
+                <button class="btn btn-success" onclick="exportResultsExcel()">📥 Xuất Excel Điểm</button>
+                <button class="btn btn-warning" onclick="downloadAllImagesZip()">📦 Tải Ảnh (ZIP)</button>
+            </div>
+            
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>STT</th><th>SBD</th><th>Tên</th><th>Mã</th><th>TỔNG</th></tr></thead>
+                    <tbody id="results-tbody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- KHU VỰC CAMERA TRÀN VIỀN -->
 <div id="camera-fullscreen-ui">
     <div id="video-container">
         <video id="video" autoplay playsinline muted></video>
@@ -144,56 +268,135 @@
 </div>
 
 <div class="bottom-nav">
-    <div class="nav-item" onclick="switchTab('tab-config')">⚙️ Cấu hình</div>
-    <div class="nav-item active" onclick="switchTab('tab-scan')">📷 Máy Quét</div>
+    <div class="nav-item active" onclick="switchTab('tab-config')">⚙️ Cấu hình</div>
+    <div class="nav-item" onclick="switchTab('tab-scan')">📷 Máy Quét</div>
+    <div class="nav-item" onclick="switchTab('tab-results')">📊 Bảng điểm (<span id="nav-count">0</span>)</div>
 </div>
 
 <script>
-let videoStream = null; 
-let autoScanTimer = null; 
-let stableFrames = 0;
+let answerKey = {}; let dshsDict = {}; let gradedRows = []; let gradedImagesData = []; 
+let videoStream = null; let qrStream = null; let qrScanTimer = null;
+let autoScanTimer = null; let stableFrames = 0; let lastGradedSbd = "Phieu";
 
-// ================= GIAO DIỆN ĐIỀU HƯỚNG =================
+// TỌA ĐỘ CHUẨN BGD 2025
+const GRID_SPEC = {
+    sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
+    made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
+    p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584] },
+    p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743] },
+    p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yComma: 871, yDigit: [891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], digitChars: ['0','1','2','3','4','5','6','7','8','9'] }
+};
+
 function switchTab(tabId) {
+    if (tabId !== 'tab-config') stopQrScanner();
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    const idx = ['tab-config', 'tab-scan'].indexOf(tabId);
+    const idx = ['tab-config', 'tab-scan', 'tab-results'].indexOf(tabId);
     if (idx >= 0) document.querySelectorAll('.nav-item')[idx].classList.add('active');
 }
 
 function playBeep() {
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator(); const gain = ctx.createGain();
-        osc.type = "sine"; osc.frequency.setValueAtTime(1250, ctx.currentTime);
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime + 0.12);
-    } catch (e) {}
+    try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = "sine"; osc.frequency.setValueAtTime(1250, ctx.currentTime); gain.gain.setValueAtTime(0.2, ctx.currentTime); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.12); } catch (e) {}
 }
 
-// ================= QUẢN LÝ CAMERA =================
-async function openFullscreenCamera() {
-    const ui = document.getElementById('camera-fullscreen-ui');
-    const video = document.getElementById('video');
-    
+function updateKeyStatusDisplay() {
+    const codes = Object.keys(answerKey).sort(); const box = document.getElementById('key-status-box');
+    if (codes.length === 0) { box.style.display = 'none'; return; }
+    box.style.display = 'block'; box.innerHTML = `✅ <b>Đã nạp:</b> ${codes.length} mã đề`;
+}
+
+function parseNtmixQrString(rawText) {
     try {
-        // Ép độ phân giải cao để ảnh chốt ra rõ nét
-        const constraints = {
-            video: {
-                facingMode: { ideal: "environment" },
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
+        const obj = JSON.parse(rawText.trim()); const parsedKey = {};
+        for (const [k, val] of Object.entries(obj)) {
+            if (k === "success" || k === "type") continue;
+            if (typeof val !== "string" || !val.includes("#")) continue;
+            const parts = val.split("#");
+            const p1 = (parts[0] || "").trim().toUpperCase().split('').filter(c => ['A','B','C','D'].includes(c));
+            const p2 = (parts[1] || "").trim().toUpperCase().split('_').filter(s => s.length > 0).map(s => s.replace(/D/g, 'Đ'));
+            const p3 = (parts[2] || "").trim().split('_').filter(s => s.length > 0);
+            parsedKey[String(k).trim()] = { p1, p2, p3 };
+        }
+        if (Object.keys(parsedKey).length === 0) return false;
+        answerKey = parsedKey; playBeep(); updateKeyStatusDisplay(); return true;
+    } catch (err) { return false; }
+}
+
+async function toggleQrScanner() {
+    const wrapper = document.getElementById('qr-scanner-wrapper'); const video = document.getElementById('qr-video');
+    if (qrStream) { stopQrScanner(); return; }
+    try {
+        qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 } } });
+        video.srcObject = qrStream; wrapper.style.display = 'block'; document.getElementById('btn-qr-cam').textContent = "❌ Đóng Quét QR";
+        const qrCanvas = document.createElement('canvas'); const qrCtx = qrCanvas.getContext('2d');
+        qrScanTimer = setInterval(() => {
+            if (!qrStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+            qrCanvas.width = video.videoWidth; qrCanvas.height = video.videoHeight;
+            qrCtx.drawImage(video, 0, 0, qrCanvas.width, qrCanvas.height);
+            const imgData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+            const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
+            if (code && code.data) { if (parseNtmixQrString(code.data)) stopQrScanner(); }
+        }, 150);
+    } catch (err) { alert("Không mở được camera!"); }
+}
+
+function stopQrScanner() {
+    if (qrScanTimer) clearInterval(qrScanTimer);
+    if (qrStream) qrStream.getTracks().forEach(t => t.stop());
+    qrStream = null; document.getElementById('qr-scanner-wrapper').style.display = 'none'; document.getElementById('btn-qr-cam').textContent = "📷 Quét Mã QR";
+}
+
+document.getElementById('file-key').addEventListener('change', function(e) {
+    const file = e.target.files[0]; if (!file) return;
+    document.getElementById('label-file-key').innerHTML = `✅ Đã chọn: <b>${file.name}</b>`;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        const wb = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1, defval: ""});
+        answerKey = {};
+        for (let col = 1; col < rows[0].length; col++) {
+            const code = String(rows[0][col]).trim(); if (!code) continue;
+            let p1 = [], p2 = [], p3 = [];
+            for (let r = 1; r < rows.length; r++) {
+                let val = String(rows[r][col]).trim().toUpperCase(); if (!val) continue;
+                if (val.length === 1 && ['A','B','C','D'].includes(val)) p1.push(val);
+                else if (val.length === 4 && /^[ĐDS]{4}$/.test(val.replace(/D/g,'Đ'))) p2.push(val.replace(/D/g, 'Đ'));
+                else p3.push(String(rows[r][col]).trim());
             }
-        };
+            answerKey[code] = {p1, p2, p3};
+        }
+        updateKeyStatusDisplay();
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+document.getElementById('file-dshs').addEventListener('change', function(e) {
+    const file = e.target.files[0]; if (!file) return;
+    document.getElementById('label-file-dshs').innerHTML = `✅ Đã chọn: <b>${file.name}</b>`;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        const wb = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1, defval: ""});
+        dshsDict = {}; let count = 0;
+        for (let r = 1; r < rows.length; r++) {
+            let sbd = String(rows[r][1] || "").trim();
+            if (sbd) { dshsDict[sbd] = { name: String(rows[r][2] || "").trim(), className: String(rows[r][3] || "").trim() }; count++; }
+        }
+        document.getElementById('dshs-status').textContent = `✅ Đã nạp ${count} học sinh`;
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+async function openFullscreenCamera() {
+    const ui = document.getElementById('camera-fullscreen-ui'); const video = document.getElementById('video');
+    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước khi chấm!"); switchTab('tab-config'); return; }
+    try {
+        const constraints = { video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } };
         videoStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = videoStream;
-        ui.style.display = 'flex';
+        video.srcObject = videoStream; ui.style.display = 'flex';
         video.onloadedmetadata = () => { video.play(); startHudAutoScan(); };
-    } catch (err) { 
-        alert("Lỗi mở Camera. Vui lòng cấp quyền hoặc dùng tính năng Chọn Từ Máy.");
-    }
+    } catch (err) { alert("Lỗi Camera. Vui lòng cấp quyền hoặc dùng Chọn Từ Máy."); }
 }
 
 function closeFullscreenCamera() {
@@ -202,193 +405,373 @@ function closeFullscreenCamera() {
     document.getElementById('camera-fullscreen-ui').style.display = 'none';
 }
 
-// ================= LÕI QUÉT HUD TỐC ĐỘ CAO (V5.0) =================
 function startHudAutoScan() {
     if (autoScanTimer) clearInterval(autoScanTimer);
-    const video = document.getElementById('video');
-    const overlay = document.getElementById('cam-overlay');
-    const hudText = document.getElementById('hud-text');
+    const video = document.getElementById('video'); const overlay = document.getElementById('cam-overlay'); const hudText = document.getElementById('hud-text');
     stableFrames = 0;
     
-    // Tự động quét 10 lần/giây (rất nhẹ vì chỉ đọc vùng nhỏ)
     autoScanTimer = setInterval(() => {
         if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-
-        // Tính toán tỷ lệ Video vs Màn hình thực tế
-        const videoRatio = video.videoWidth / video.videoHeight;
-        const elementRatio = video.clientWidth / video.clientHeight;
+        const videoRatio = video.videoWidth / video.videoHeight; const elementRatio = video.clientWidth / video.clientHeight;
         let sWidth, sHeight, sx, sy;
+        if (videoRatio > elementRatio) { sHeight = video.videoHeight; sWidth = sHeight * elementRatio; sx = (video.videoWidth - sWidth) / 2; sy = 0; } 
+        else { sWidth = video.videoWidth; sHeight = sWidth / elementRatio; sx = 0; sy = (video.videoHeight - sHeight) / 2; }
 
-        if (videoRatio > elementRatio) {
-            sHeight = video.videoHeight; sWidth = sHeight * elementRatio;
-            sx = (video.videoWidth - sWidth) / 2; sy = 0;
-        } else {
-            sWidth = video.videoWidth; sHeight = sWidth / elementRatio;
-            sx = 0; sy = (video.videoHeight - sHeight) / 2;
-        }
+        const rectV = video.getBoundingClientRect(); const scaleX = sWidth / rectV.width; const scaleY = sHeight / rectV.height;
 
-        const rectV = video.getBoundingClientRect();
-        const scaleX = sWidth / rectV.width;
-        const scaleY = sHeight / rectV.height;
-
-        // Hàm trích xuất Pixel chính xác bên trong 1 Ô Vuông Mục Tiêu (HUD Box)
-        function analyzeHudBox(boxElementId) {
-            const box = document.getElementById(boxElementId);
-            const rectB = box.getBoundingClientRect();
-            
-            // Ánh xạ tọa độ từ màn hình điện thoại ngược vào Video Gốc
-            const cropX = sx + (rectB.left - rectV.left) * scaleX;
-            const cropY = sy + (rectB.top - rectV.top) * scaleY;
-            const cropW = rectB.width * scaleX;
-            const cropH = rectB.height * scaleY;
-
-            // Dùng Canvas ảo chép đúng hình ảnh nằm lọt trong ô vuông đó
-            const tcv = document.createElement('canvas');
-            tcv.width = 40; tcv.height = 40; // Thu nhỏ lại để đếm pixel cực nhanh
-            const ctx = tcv.getContext('2d', { willReadFrequently: true });
-            ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 40, 40);
-            
-            const imgData = ctx.getImageData(0, 0, 40, 40).data;
-            let darkPixelCount = 0;
-            const totalPixels = 40 * 40;
-            
-            // Tính tỷ lệ mực đen trong ô (Lọc độ sáng < 100)
-            for(let i = 0; i < totalPixels * 4; i += 4) {
-                // Công thức Gray mộc: Ưu tiên kênh Xanh lá cho giấy trắng
-                if (imgData[i+1] < 100) darkPixelCount++; 
-            }
-            
-            const darkRatio = darkPixelCount / totalPixels;
-            
-            // Đánh giá: Nếu có cục đen đặc chiếm khoảng 10% đến 80% ô HUD -> Là chuẩn
+        function analyzeHudBox(boxId) {
+            const box = document.getElementById(boxId); const rectB = box.getBoundingClientRect();
+            const cropX = sx + (rectB.left - rectV.left) * scaleX; const cropY = sy + (rectB.top - rectV.top) * scaleY;
+            const cropW = rectB.width * scaleX; const cropH = rectB.height * scaleY;
+            const tcv = document.createElement('canvas'); tcv.width = 40; tcv.height = 40;
+            const ctx = tcv.getContext('2d', { willReadFrequently: true }); ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 40, 40);
+            const imgData = ctx.getImageData(0, 0, 40, 40).data; let darkCount = 0;
+            for(let i = 0; i < 1600 * 4; i += 4) { if (imgData[i+1] < 100) darkCount++; }
+            const darkRatio = darkCount / 1600;
             const isValid = darkRatio > 0.12 && darkRatio < 0.85;
-            
-            // Phản hồi giao diện (Đỏ = Trượt, Xanh lục = Trúng tâm)
-            if(isValid) {
-                box.style.borderColor = "rgba(0, 255, 0, 0.9)";
-                box.style.backgroundColor = "rgba(0, 255, 0, 0.3)";
-            } else {
-                box.style.borderColor = "rgba(255, 255, 255, 0.8)";
-                box.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
-            }
-            
+            if(isValid) { box.style.borderColor = "rgba(0, 255, 0, 0.9)"; box.style.backgroundColor = "rgba(0, 255, 0, 0.3)"; } 
+            else { box.style.borderColor = "rgba(255, 255, 255, 0.8)"; box.style.backgroundColor = "rgba(255, 255, 255, 0.2)"; }
             return isValid;
         }
 
-        // Quét độc lập 4 ô HUD (Chớp mắt)
-        const okTL = analyzeHudBox('cb-tl');
-        const okTR = analyzeHudBox('cb-tr');
-        const okBL = analyzeHudBox('cb-bl');
-        const okBR = analyzeHudBox('cb-br');
+        const okTL = analyzeHudBox('cb-tl'); const okTR = analyzeHudBox('cb-tr'); const okBL = analyzeHudBox('cb-bl'); const okBR = analyzeHudBox('cb-br');
 
-        // BÓP CÒ: Khi 4 góc báo xanh
         if (okTL && okTR && okBL && okBR) {
-            stableFrames++;
-            hudText.innerHTML = `🎯 Giữ yên... Khóa mục tiêu (${stableFrames}/5)`;
-            hudText.style.color = "#0f9d58";
-
-            if (stableFrames >= 5) { // 5 frame liên tục ~ 0.5 giây
-                clearInterval(autoScanTimer);
-                hudText.innerHTML = "⚡ ĐÃ CHỤP TỰ ĐỘNG!";
-                playBeep();
-                
-                // Trích xuất toàn bộ khu vực màn hình
+            stableFrames++; hudText.innerHTML = `🎯 Giữ yên... Khóa mục tiêu (${stableFrames}/5)`; hudText.style.color = "#0f9d58";
+            if (stableFrames >= 5) {
+                clearInterval(autoScanTimer); hudText.innerHTML = "⚡ ĐÃ CHỤP TỰ ĐỘNG!"; playBeep();
                 const rectO = overlay.getBoundingClientRect();
-                const cropX = sx + (rectO.left - rectV.left) * scaleX;
-                const cropY = sy + (rectO.top - rectV.top) * scaleY;
-                const cropW = rectO.width * scaleX;
-                const cropH = rectO.height * scaleY;
+                const cropX = sx + (rectO.left - rectV.left) * scaleX; const cropY = sy + (rectO.top - rectV.top) * scaleY;
+                const cropW = rectO.width * scaleX; const cropH = rectO.height * scaleY;
                 
-                // Ép ra độ phân giải chuẩn của phần mềm 800x1130
-                const finalCanvas = document.createElement('canvas');
-                finalCanvas.width = 800; finalCanvas.height = 1130;
+                const finalCanvas = document.createElement('canvas'); finalCanvas.width = 800; finalCanvas.height = 1130;
                 finalCanvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
-                
-                closeFullscreenCamera();
-                renderTestResult(finalCanvas);
+                closeFullscreenCamera(); processImagePureJS(finalCanvas, `Cam_${Date.now()}.jpg`);
             }
         } else {
             if (stableFrames > 0) stableFrames--;
-            hudText.innerHTML = "Đưa 4 ô đen vào đúng 4 ô vuông mục tiêu";
-            hudText.style.color = "#fff";
+            hudText.innerHTML = "Đưa 4 ô đen vào đúng 4 ô vuông mục tiêu"; hudText.style.color = "#fff";
         }
-    }, 100); // 100ms = 10 lần/giây
+    }, 100);
 }
 
 function manualCapture() {
-    const video = document.getElementById('video');
-    const overlay = document.getElementById('cam-overlay');
+    const video = document.getElementById('video'); const overlay = document.getElementById('cam-overlay');
     if (!videoStream || !video.videoWidth) return;
+    if (autoScanTimer) clearInterval(autoScanTimer); playBeep();
     
-    if (autoScanTimer) clearInterval(autoScanTimer);
-    playBeep();
-    
-    const videoRatio = video.videoWidth / video.videoHeight;
-    const elementRatio = video.clientWidth / video.clientHeight;
+    const videoRatio = video.videoWidth / video.videoHeight; const elementRatio = video.clientWidth / video.clientHeight;
     let sWidth, sHeight, sx, sy;
+    if (videoRatio > elementRatio) { sHeight = video.videoHeight; sWidth = sHeight * elementRatio; sx = (video.videoWidth - sWidth) / 2; sy = 0; } 
+    else { sWidth = video.videoWidth; sHeight = sWidth / elementRatio; sx = 0; sy = (video.videoHeight - sHeight) / 2; }
 
-    if (videoRatio > elementRatio) {
-        sHeight = video.videoHeight; sWidth = sHeight * elementRatio;
-        sx = (video.videoWidth - sWidth) / 2; sy = 0;
-    } else {
-        sWidth = video.videoWidth; sHeight = sWidth / elementRatio;
-        sx = 0; sy = (video.videoHeight - sHeight) / 2;
-    }
+    const rectV = video.getBoundingClientRect(); const rectO = overlay.getBoundingClientRect();
+    const scaleX = sWidth / rectV.width; const scaleY = sHeight / rectV.height;
+    const cropX = sx + (rectO.left - rectV.left) * scaleX; const cropY = sy + (rectO.top - rectV.top) * scaleY;
+    const cropW = rectO.width * scaleX; const cropH = rectO.height * scaleY;
 
-    const rectV = video.getBoundingClientRect();
-    const rectO = overlay.getBoundingClientRect();
-    const scaleX = sWidth / rectV.width;
-    const scaleY = sHeight / rectV.height;
-    
-    const cropX = sx + (rectO.left - rectV.left) * scaleX;
-    const cropY = sy + (rectO.top - rectV.top) * scaleY;
-    const cropW = rectO.width * scaleX;
-    const cropH = rectO.height * scaleY;
-
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = 800; finalCanvas.height = 1130;
-    finalCanvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
-    
-    closeFullscreenCamera();
-    renderTestResult(finalCanvas);
-}
-
-// Hàm giả lập kết quả để test Camera
-function renderTestResult(canvas) {
-    const resultCanvas = document.getElementById('result-canvas');
-    resultCanvas.width = 800;
-    resultCanvas.height = 1130;
-    const ctx = resultCanvas.getContext('2d');
-    
-    // In lại ảnh đã bẻ khung
-    ctx.drawImage(canvas, 0, 0);
-    
-    // Vẽ test lưới bọc giả lập
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "blue";
-    // Vẽ đại diện vùng Phần I
-    ctx.strokeRect(60, 400, 140, 200);
-    ctx.strokeRect(240, 400, 140, 200);
-    
-    resultCanvas.style.display = 'block';
-    document.getElementById('score-info').style.display = 'block';
-    
-    alert("✅ Ảnh đã được khóa và bẻ thẳng thành công bằng HUD! Nếu khung giấy ngay ngắn, chúng ta sẽ lắp hàm OMR chấm điểm vào.");
+    const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 1130;
+    canvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
+    closeFullscreenCamera(); processImagePureJS(canvas, `Cam_${Date.now()}.jpg`);
 }
 
 async function handleImageFiles(inputElement) {
-    const file = inputElement.files[0];
-    if (!file) return;
+    const files = inputElement.files; if (!files || !files.length) return;
+    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước khi chấm!"); switchTab('tab-config'); inputElement.value = ''; return; }
     
-    const img = new Image();
-    img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 800; canvas.height = 1130;
-        canvas.getContext('2d').drawImage(img, 0, 0, 800, 1130);
-        renderTestResult(canvas);
-    };
-    img.src = URL.createObjectURL(file);
-    inputElement.value = '';
+    const statusBox = document.getElementById('scan-status');
+    for (let i = 0; i < files.length; i++) {
+        statusBox.textContent = `⏳ Đang xử lý ảnh ${i+1}/${files.length}... Vui lòng đợi!`; statusBox.style.color = '#f59e0b'; 
+        await new Promise(r => setTimeout(r, 50));
+        await new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 1130;
+                canvas.getContext('2d').drawImage(img, 0, 0, 800, 1130);
+                processImagePureJS(canvas, files[i].name); resolve();
+            };
+            img.src = URL.createObjectURL(files[i]);
+        });
+    }
+    inputElement.value = ''; 
+}
+
+// ================= LÕI XỬ LÝ OMR & CHẤM ĐIỂM (CÓ TÍCH HỢP OFFSET GIAO DIỆN) =================
+function processImagePureJS(sourceCanvas, fileName) {
+    const WIDTH = 800, HEIGHT = 1130;
+    const scaledCanvas = document.createElement('canvas'); scaledCanvas.width = WIDTH; scaledCanvas.height = HEIGHT;
+    const sCtx = scaledCanvas.getContext('2d'); sCtx.drawImage(sourceCanvas, 0, 0, WIDTH, HEIGHT);
+    const data = sCtx.getImageData(0, 0, WIDTH, HEIGHT).data;
+
+    // LẤY OFFSET TỪ GIAO DIỆN
+    let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
+    let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
+
+    const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.24;
+    const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus')?.value) || 0.42;
+    const diemP1 = parseFloat(document.getElementById('cfg-p1')?.value) || 0.25;
+    const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
+    const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
+
+    // TÌM TÂM Ô VUÔNG CHÍNH XÁC (Vì HUD đã cắt sẵn 800x1130, ta chỉ tìm góc nhỏ 120x120 ở 4 viền)
+    function findBlackSquareCenter(startX, startY, w, h) {
+        let bestX = startX + w/2; let bestY = startY + h/2; let minVal = 255;
+        for (let y = startY; y < startY + h; y += 2) {
+            for (let x = startX; x < startX + w; x += 2) {
+                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
+                let idx = (y * WIDTH + x) * 4; let gray = 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2];
+                if (gray < minVal) minVal = gray;
+            }
+        }
+        let thresh = Math.min(130, minVal + 40); 
+        let sumX = 0, sumY = 0, count = 0;
+        for (let y = startY; y < startY + h; y++) {
+            for (let x = startX; x < startX + w; x++) {
+                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
+                let idx = (y * WIDTH + x) * 4; let gray = 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2];
+                if (gray <= thresh) { sumX += x; sumY += y; count++; }
+            }
+        }
+        if (count > 20) return { x: sumX / count, y: sumY / count };
+        return { x: bestX, y: bestY }; 
+    }
+
+    let searchW = 120, searchH = 120;
+    let pTL = findBlackSquareCenter(10, 10, searchW, searchH);
+    let pTR = findBlackSquareCenter(WIDTH - searchW - 10, 10, searchW, searchH);
+    let pBL = findBlackSquareCenter(10, HEIGHT - searchH - 10, searchW, searchH);
+    let pBR = findBlackSquareCenter(WIDTH - searchW - 10, HEIGHT - searchH - 10, searchW, searchH);
+
+    function createPerspectiveTransform(src, dst) {
+        let a = [];
+        for (let i = 0; i < 4; i++) {
+            let x = src[i].x, y = src[i].y; let u = dst[i].x, v = dst[i].y;
+            a.push([x, y, 1, 0, 0, 0, -u*x, -u*y, u]); a.push([0, 0, 0, x, y, 1, -v*x, -v*y, v]);
+        }
+        for (let i = 0; i < 8; i++) {
+            let maxRow = i;
+            for (let j = i + 1; j < 8; j++) { if (Math.abs(a[j][i]) > Math.abs(a[maxRow][i])) maxRow = j; }
+            let temp = a[i]; a[i] = a[maxRow]; a[maxRow] = temp;
+            for (let j = i + 1; j < 8; j++) {
+                let f = a[j][i] / a[i][i];
+                for (let k = i; k <= 8; k++) a[j][k] -= a[i][k] * f;
+            }
+        }
+        let h = new Array(8);
+        for (let i = 7; i >= 0; i--) {
+            let sum = 0; for (let j = i + 1; j < 8; j++) sum += a[i][j] * h[j];
+            h[i] = (a[i][8] - sum) / a[i][i];
+        }
+        return h;
+    }
+
+    const srcPoints = [ {x: 40, y: 40}, {x: 760, y: 40}, {x: 40, y: 1090}, {x: 760, y: 1090} ];
+    const dstPoints = [ pTL, pTR, pBL, pBR ];
+    const H_Matrix = createPerspectiveTransform(srcPoints, dstPoints);
+
+    // KẾT HỢP OFFSET GIAO DIỆN VÀO HÀM MAP TỌA ĐỘ
+    function mapCoord(sx, sy) {
+        let x = sx + ox; let y = sy + oy;
+        let denominator = H_Matrix[6]*x + H_Matrix[7]*y + 1;
+        let nx = (H_Matrix[0]*x + H_Matrix[1]*y + H_Matrix[2]) / denominator;
+        let ny = (H_Matrix[3]*x + H_Matrix[4]*y + H_Matrix[5]) / denominator;
+        return { x: nx, y: ny };
+    }
+
+    function getBestMappedDarkness(sx, sy, w, h) {
+        let center = mapCoord(sx, sy); let cx = Math.round(center.x); let cy = Math.round(center.y);
+        let bestScore = 0;
+        for (let dy = -6; dy <= 6; dy += 3) {
+            for (let dx = -6; dx <= 6; dx += 3) {
+                let startX = (cx + dx) - Math.floor(w/2); let startY = (cy + dy) - Math.floor(h/2);
+                let bgSum = 0, bgCount = 0;
+                for (let py = cy + dy - 16; py < cy + dy + 16; py+=2) {
+                    for (let px = cx + dx - 16; px < cx + dx + 16; px+=2) {
+                        if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
+                        let idx = (py * WIDTH + px) * 4;
+                        bgSum += 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2]; bgCount++;
+                    }
+                }
+                let bgAvg = bgCount > 0 ? bgSum / bgCount : 255; let localThresh = Math.min(145, bgAvg * 0.85); 
+                let darkCount = 0, total = 0;
+                for (let y = startY; y < startY + h; y++) {
+                    for (let x = startX; x < startX + w; x++) {
+                        if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
+                        let idx = (y * WIDTH + x) * 4; let gray = 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2];
+                        if (gray < localThresh) darkCount++; total++;
+                    }
+                }
+                let score = total > 0 ? darkCount / total : 0;
+                if (score > bestScore) { bestScore = score; }
+            }
+        }
+        return bestScore;
+    }
+
+    function drawMappedBubble(sx, sy, status) {
+        let pt = mapCoord(sx, sy); sCtx.beginPath(); let boxSize = 14;
+        let hsx = pt.x - boxSize/2; let hsy = pt.y - boxSize/2;
+        sCtx.lineWidth = 2;
+        if (status === 'correct_fill') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
+        else if (status === 'wrong_fill') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
+        else if (status === 'missing_key') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.strokeRect(hsx+1, hsy+1, boxSize-2, boxSize-2); }
+        else if (status === 'info_read') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
+    }
+
+    let scannedSbd = "";
+    for (let x of GRID_SPEC.sbd.x) {
+        let scores = GRID_SPEC.sbd.y.map(y => getBestMappedDarkness(x, y, 14, 14));
+        let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
+        if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { scannedSbd += String(maxIdx); drawMappedBubble(x, GRID_SPEC.sbd.y[maxIdx], 'info_read'); } else scannedSbd += "0";
+    }
+
+    let scannedCode = "";
+    for (let x of GRID_SPEC.made.x) {
+        let scores = GRID_SPEC.made.y.map(y => getBestMappedDarkness(x, y, 14, 14));
+        let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
+        if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { scannedCode += String(maxIdx); drawMappedBubble(x, GRID_SPEC.made.y[maxIdx], 'info_read'); } else scannedCode += "0";
+    }
+
+    let sbd = scannedSbd.replace(/\?/g, '0'), code = scannedCode.replace(/\?/g, '0');
+    let warnings = [];
+    if (!answerKey[code]) {
+        if (fallbackCode && answerKey[fallbackCode]) code = fallbackCode;
+        else warnings.push(`Mã đề ${scannedCode} không có`);
+    }
+
+    let key = answerKey[code] || { p1: [], p2: [], p3: [] }; let stuInfo = dshsDict[sbd] || { name: "", className: "" };
+    let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
+    for (let i = 0; i < key.p1.length; i++) {
+        let blockIdx = Math.floor(i / 10), rowIdx = i % 10; if (blockIdx >= 4) break;
+        let y = GRID_SPEC.p1.y[rowIdx]; let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
+        let scores = xList.map(x => getBestMappedDarkness(x, y, 14, 14));
+        let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
+        let isFilled = maxScore > minConf; let corrLabel = key.p1[i], corrIdx = labelsP1.indexOf(corrLabel);
+        if (isFilled) {
+            if (labelsP1[maxIdx] === corrLabel) { right1++; drawMappedBubble(xList[maxIdx], y, 'correct_fill'); }
+            else { drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key'); }
+        } else if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key');
+    }
+    let scoreP1 = +(right1 * diemP1).toFixed(2);
+
+    let key2Str = key.p2.join(''), student2 = '', scoreP2 = 0, right2Details = 0;
+    for (let i = 0; i < key.p2.length; i++) {
+        let blockIdx = Math.floor(i / 2), baseX = GRID_SPEC.p2.blockX[blockIdx];
+        let xList = (i % 2 === 1) ? [baseX + 76, baseX + 114] : [baseX, baseX + 38];
+        for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
+            let y = GRID_SPEC.p2.y[rowIdx]; let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
+            let scores = xList.map(x => getBestMappedDarkness(x, y, 14, 14));
+            let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
+            let isFilled = maxScore > minConf; let val = isFilled ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
+            student2 += val;
+            if (isFilled) {
+                if (val === expected) drawMappedBubble(xList[maxIdx], y, 'correct_fill');
+                else { drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); if (expected) drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key'); }
+            } else if (expected) { drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key'); }
+        }
+    }
+    for (let i = 0; i < key2Str.length; i += 4) {
+        let stuQ = student2.slice(i, i + 4), keyQ = key2Str.slice(i, i + 4), cCount = 0;
+        for (let j = 0; j < Math.min(stuQ.length, keyQ.length); j++) { if (stuQ[j] === keyQ[j] && stuQ[j] !== 'X') cCount++; }
+        right2Details += cCount; if (cCount >= 1 && cCount <= 4) scoreP2 += diemP2[cCount - 1];
+    }
+    scoreP2 = +scoreP2.toFixed(2);
+
+    let scoreP3 = 0, right3 = 0, validP3Count = 0; 
+    for (let q = 0; q < 6; q++) {
+        let rawKey = (q < key.p3.length) ? String(key.p3[q]) : ""; let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
+        if (!cleanKey) continue; validP3Count++;
+        let baseX = GRID_SPEC.p3.blockX[q]; let stuAnsStr = "";
+        let expectedMinus = cleanKey.startsWith('-'); let minusScore = getBestMappedDarkness(baseX, GRID_SPEC.p3.yMinus, 10, 10);
+        let filledMinus = minusScore > minConfMinus;
+        if (filledMinus) { drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill'); stuAnsStr += "-"; } 
+        else if (expectedMinus) { drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, 'missing_key'); }
+        
+        let expectedCols = cleanKey.replace(/^-/, '').split(''); 
+        for (let colIdx = 0; colIdx < 4; colIdx++) {
+            let x = baseX + GRID_SPEC.p3.offsetsX[colIdx]; let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
+            let scoreComma = getBestMappedDarkness(x, GRID_SPEC.p3.yComma, 13, 13);
+            let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestMappedDarkness(x, y, 13, 13));
+            let maxDigitScore = Math.max(...scoresDigits); let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
+            let isFilled = false; let filledChar = ''; let filledY = 0;
+            if (scoreComma > minConf && scoreComma > maxDigitScore) { isFilled = true; filledChar = ','; filledY = GRID_SPEC.p3.yComma; } 
+            else if (maxDigitScore > minConf) { isFilled = true; filledChar = GRID_SPEC.p3.digitChars[maxDigitIdx]; filledY = GRID_SPEC.p3.yDigit[maxDigitIdx]; }
+
+            if (isFilled) {
+                stuAnsStr += filledChar;
+                if (filledChar === expectedChar) { drawMappedBubble(x, filledY, 'correct_fill'); } 
+                else { drawMappedBubble(x, filledY, 'wrong_fill'); if (expectedChar === ',') drawMappedBubble(x, GRID_SPEC.p3.yComma, 'missing_key'); else if (expectedChar) drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key'); }
+            } else if (expectedChar) {
+                if (expectedChar === ',') drawMappedBubble(x, GRID_SPEC.p3.yComma, 'missing_key'); 
+                else drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
+            }
+        }
+        if (stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
+    }
+    
+    scoreP3 = +scoreP3.toFixed(2);
+    let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
+
+    sCtx.fillStyle = "#ffffff"; sCtx.fillRect(12, 85, 230, 165);
+    sCtx.lineWidth = 3; sCtx.strokeStyle = "#dc2626"; sCtx.strokeRect(12, 85, 230, 165);
+    sCtx.fillStyle = "#dc2626"; sCtx.font = "bold 26px Arial"; sCtx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
+    sCtx.font = "bold 19px Arial"; sCtx.fillText(`P.I:   ${scoreP1}đ`, 28, 162); sCtx.fillText(`P.II:  ${scoreP2}đ`, 28, 195); sCtx.fillText(`P.III: ${scoreP3}đ`, 28, 228);
+
+    const outCanvas = document.getElementById('result-canvas');
+    outCanvas.width = WIDTH; outCanvas.height = HEIGHT;
+    outCanvas.getContext('2d').drawImage(scaledCanvas, 0, 0);
+    outCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
+
+    try { let b64 = outCanvas.toDataURL('image/jpeg', 0.85).split(',')[1]; gradedImagesData.push({ filename: `${sbd}_${code}.jpg`, base64: b64 }); } 
+    catch(e) { console.warn("Lưu ZIP bị chặn."); }
+
+    document.getElementById('score-dashboard').style.display = 'block';
+    document.getElementById('ui-total').textContent = `${totalScore}đ`;
+    document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
+    document.getElementById('ui-sbd-made').textContent = `SBD: ${sbd} | Mã đề: ${code}`;
+    
+    document.getElementById('ui-p1-score').textContent = `${scoreP1}đ`; document.getElementById('ui-p1-detail').textContent = `Đúng ${right1}/${key.p1.length}`;
+    document.getElementById('ui-p2-score').textContent = `${scoreP2}đ`; document.getElementById('ui-p2-detail').textContent = `Đúng ${right2Details}/${key2Str.length}`;
+    document.getElementById('ui-p3-score').textContent = `${scoreP3}đ`; document.getElementById('ui-p3-detail').textContent = `Đúng ${right3}/${validP3Count}`;
+    
+    const statusBox = document.getElementById('scan-status');
+    if (warnings.length > 0) {
+        document.getElementById('ui-warnings').innerHTML = `⚠️ ${warnings.join(' | ')}`;
+        statusBox.textContent = `❌ Đã quét SBD: ${sbd} nhưng thiếu mã đề!`; statusBox.style.color = 'var(--danger)';
+    } else {
+        document.getElementById('ui-warnings').textContent = "";
+        statusBox.textContent = `✅ Đã chấm xong SBD: ${sbd} (Mã: ${code})`; statusBox.style.color = 'var(--success)';
+    }
+
+    gradedRows.push({ sbd, name: stuInfo.name, className: stuInfo.className, code, scoreP1, scoreP2, scoreP3, totalScore, warnings: warnings.join('; '), file: fileName });
+    updateResultsTable();
+}
+
+function downloadResultImage() {
+    const link = document.createElement('a'); link.download = `Cham_${lastGradedSbd}.jpg`;
+    link.href = document.getElementById('result-canvas').toDataURL('image/jpeg', 0.9); link.click();
+}
+
+function updateResultsTable() {
+    document.getElementById('count-graded').textContent = gradedRows.length; document.getElementById('nav-count').textContent = gradedRows.length;
+    document.getElementById('results-tbody').innerHTML = gradedRows.map((r, i) => `<tr><td>${i+1}</td><td><b>${r.sbd}</b></td><td style="text-align:left;">${r.name}</td><td>${r.code}</td><td><b style="color:#dc2626;">${r.totalScore}</b></td></tr>`).join('');
+}
+
+function exportResultsExcel() {
+    if (!gradedRows.length) { alert("Chưa có phiếu nào!"); return; }
+    const data = [["STT", "Họ tên", "Lớp", "SBD", "Mã", "Điểm P.I", "Điểm P.II", "Điểm P.III", "TỔNG ĐIỂM", "Cảnh báo", "File"], ...gradedRows.map((r, i) => [i + 1, r.name, r.className, r.sbd, r.code, r.scoreP1, r.scoreP2, r.scoreP3, r.totalScore, r.warnings, r.file])];
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), "BangDiem"); XLSX.writeFile(wb, `BangDiem_NTMIX_${Date.now()}.xlsx`);
+}
+
+function downloadAllImagesZip() {
+    if (gradedImagesData.length === 0) { alert("Chưa có ảnh!"); return; }
+    const btn = document.querySelector('.btn-warning'); const originalText = btn.innerHTML;
+    btn.innerHTML = `⏳ Đang ZIP...`; btn.disabled = true;
+    setTimeout(() => {
+        let zip = new JSZip(); let folder = zip.folder("AnhCham_NTMIX");
+        gradedImagesData.forEach((img) => { folder.file(img.filename, img.base64, {base64: true}); });
+        zip.generateAsync({type:"blob"}).then(function(content) { saveAs(content, `AnhCham_NTMIX_${Date.now()}.zip`); btn.innerHTML = originalText; btn.disabled = false; });
+    }, 100);
 }
 </script>
 </body>
