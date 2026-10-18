@@ -42,6 +42,7 @@
         #qr-scanner-wrapper { display: none; position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-top: 8px; margin-bottom: 10px; }
         #qr-video { width: 100%; display: block; }
 
+        /* CAMERA TRÀN MÀN HÌNH */
         #camera-fullscreen-ui {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 9999; flex-direction: column; overflow: hidden;
@@ -55,19 +56,19 @@
             top: 45%; left: 50%; transform: translate(-50%, -50%);
             width: 96vw; max-width: 650px; 
             aspect-ratio: 800 / 1130; 
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); /* Nền xám mờ giống TNMaker */
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); 
             pointer-events: none;
             z-index: 10;
         }
 
         #grid-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
 
-        /* 4 Ô VUÔNG TRẮNG LỚN Ở GÓC GIỐNG TNMAKER */
+        /* 4 Ô VUÔNG TRẮNG LỚN Ở GÓC */
         .tn-corner {
             position: absolute; width: 15%; aspect-ratio: 1 / 1;
             background: rgba(255, 255, 255, 0.9);
             box-shadow: 0px 0px 5px rgba(0,0,0,0.5);
-            transition: background 0.2s;
+            transition: background 0.15s ease-out;
         }
         .tn-corner.tl { top: -2px; left: -2px; }
         .tn-corner.tr { top: -2px; right: -2px; }
@@ -121,7 +122,7 @@
 <header>
     <h1>V1.0 App chấm trắc nghiệm NTMIX</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V3.0 - UI TNMaker & Phục hồi lõi gốc</span>
+    <span class="badge-cv">V3.1 - Tối ưu tốc độ lấy nét tức thì</span>
 </header>
 
 <div class="container">
@@ -194,7 +195,6 @@
                     <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
                 </div>
             </div>
-            <!-- CHO PHÉP CHỌN VẼ Ô VUÔNG BỌC ĐÁP ÁN -->
             <div class="form-group">
                 <label class="check-inline" style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #1e3a8a; cursor: pointer;">
                     <input type="checkbox" id="cfg-show-grid" style="width: 18px; height: 18px;" checked>
@@ -268,7 +268,7 @@
         <video id="video" autoplay playsinline muted></video>
         <div id="cam-overlay">
             <canvas id="grid-preview"></canvas>
-            <!-- 4 GÓC MÀU TRẮNG LỚN (GIỐNG TNMAKER) CHỈ DÙNG ĐỂ NGẮM BẰNG MẮT -->
+            <!-- 4 GÓC MÀU TRẮNG LỚN KIỂU TNMAKER -->
             <div class="tn-corner tl" id="cb-tl"></div>
             <div class="tn-corner tr" id="cb-tr"></div>
             <div class="tn-corner bl" id="cb-bl"></div>
@@ -279,9 +279,9 @@
         <p id="hud-text">Đưa 4 ô đen của giấy lấp đầy 4 ô vuông trắng</p>
         <div class="cam-btn-group">
             <select id="cam-speed-select" class="speed-select">
-                <option value="4">Lấy nét: Nhanh</option>
-                <option value="6" selected>Lấy nét: Vừa</option>
-                <option value="12">Lấy nét: Chậm</option>
+                <option value="2">Bắt nét: Siêu Tốc (0.2s)</option>
+                <option value="3" selected>Bắt nét: Tiêu Chuẩn (0.3s)</option>
+                <option value="5">Bắt nét: Ổn Định (0.5s)</option>
             </select>
             <button class="btn btn-danger" style="padding: 10px 15px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Mẫu</button>
             <button class="btn btn-secondary" style="padding: 10px 15px; font-size: 15px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
@@ -461,17 +461,38 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(file);
 });
 
+// ================= MỞ CAMERA VỚI CHẾ ĐỘ AUTOFOCUS LIÊN TỤC =================
 async function openFullscreenCamera() {
     const ui = document.getElementById('camera-fullscreen-ui');
     const video = document.getElementById('video');
     if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước!"); switchTab('tab-config'); return; }
     
     try {
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } });
+        const constraints = {
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                // Mở khóa lấy nét liên tục phần cứng trên mobile
+                focusMode: { ideal: "continuous" },
+                advanced: [{ focusMode: "continuous" }]
+            }
+        };
+        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = videoStream;
         ui.style.display = 'flex';
         video.onloadedmetadata = () => { video.play(); startAutoScan(); };
-    } catch (err) { alert("Trình duyệt chặn Camera nội bộ, hãy dùng nút 'Chọn Từ Máy' !"); }
+    } catch (err) { 
+        // Fallback cho trình duyệt không hỗ trợ advanced focus constraints
+        try {
+            videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 } } });
+            video.srcObject = videoStream;
+            ui.style.display = 'flex';
+            video.onloadedmetadata = () => { video.play(); startAutoScan(); };
+        } catch(e) {
+            alert("Trình duyệt chặn Camera nội bộ, hãy dùng nút 'Chọn Từ Máy' !");
+        }
+    }
 }
 
 function closeFullscreenCamera() {
@@ -480,6 +501,7 @@ function closeFullscreenCamera() {
     document.getElementById('camera-fullscreen-ui').style.display = 'none';
 }
 
+// ================= THUẬT TOÁN BẮT NÉT SIÊU TỐC V3.1 =================
 function startAutoScan() {
     if (autoScanTimer) clearInterval(autoScanTimer);
     const video = document.getElementById('video');
@@ -487,10 +509,11 @@ function startAutoScan() {
     const overlay = document.getElementById('cam-overlay');
     stableFrames = 0;
 
+    // Giảm chu kỳ xuống 100ms (10 lần/giây) để bắt nét tức thì
     autoScanTimer = setInterval(() => {
         if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA || !video.videoWidth) return;
         
-        const requiredFrames = parseInt(document.getElementById('cam-speed-select').value) || 6;
+        const requiredFrames = parseInt(document.getElementById('cam-speed-select').value) || 3;
 
         const videoRatio = video.videoWidth / video.videoHeight;
         const elementRatio = video.clientWidth / video.clientHeight;
@@ -515,41 +538,49 @@ function startAutoScan() {
         const cropH = rectO.height * scaleY;
 
         const tmpCanvas = document.createElement('canvas');
-        tmpCanvas.width = 200; tmpCanvas.height = 282;
+        tmpCanvas.width = 160; tmpCanvas.height = 226;
         const ctx = tmpCanvas.getContext('2d');
-        ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 200, 282);
+        ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 160, 226);
 
-        const imgData = ctx.getImageData(0, 0, 200, 282).data;
+        const imgData = ctx.getImageData(0, 0, 160, 226).data;
         
+        // Đo tương quan điểm đen có mặt trong 4 ô góc
         function checkDarkness(cx, cy, w, h) {
             let darkCount = 0;
-            for(let y = cy; y < cy+h; y++) {
-                for(let x = cx; x < cx+w; x++) {
-                    let i = (y * 200 + x) * 4;
-                    if (imgData[i+1] < 100) darkCount++;
+            for(let y = cy; y < cy+h; y+=2) {
+                for(let x = cx; x < cx+w; x+=2) {
+                    let i = (y * 160 + x) * 4;
+                    // Kênh Green nhận diện độ tối giấy tốt nhất
+                    if (imgData[i+1] < 110) darkCount++;
                 }
             }
-            return darkCount / (w * h);
+            return darkCount / ((w/2) * (h/2));
         }
 
-        // KHÔI PHỤC VÙNG QUÉT V1.0 (QUÉT VÀO RÌA TRONG TÌM GÓC ĐEN)
-        const startX = 0; const startY = 0; const bw = Math.round(200 * 0.12);
-        const tl = checkDarkness(startX, startY, bw, bw);
-        const tr = checkDarkness(200 - bw, startY, bw, bw);
-        const bl = checkDarkness(startX, 282 - bw, bw, bw);
-        const br = checkDarkness(200 - bw, 282 - bw, bw, bw);
+        const bw = Math.round(160 * 0.15);
+        const bh = Math.round(226 * 0.15);
 
-        function isValid(val) { return val > 0.05 && val < 0.60; }
+        const tl = checkDarkness(0, 0, bw, bh);
+        const tr = checkDarkness(160 - bw, 0, bw, bh);
+        const bl = checkDarkness(0, 226 - bh, bw, bh);
+        const br = checkDarkness(160 - bw, 226 - bh, bw, bh);
+
+        // Ngưỡng lọt vào khung: từ 3% đến 65% là vết đen chuẩn của ô vuông
+        function isValid(val) { return val > 0.03 && val < 0.65; }
         
-        // Cập nhật màu cho 4 ô vuông trắng TNMaker
-        document.getElementById('cb-tl').style.background = isValid(tl) ? "rgba(0, 255, 0, 0.4)" : "rgba(255, 255, 255, 0.9)";
-        document.getElementById('cb-tr').style.background = isValid(tr) ? "rgba(0, 255, 0, 0.4)" : "rgba(255, 255, 255, 0.9)";
-        document.getElementById('cb-bl').style.background = isValid(bl) ? "rgba(0, 255, 0, 0.4)" : "rgba(255, 255, 255, 0.9)";
-        document.getElementById('cb-br').style.background = isValid(br) ? "rgba(0, 255, 0, 0.4)" : "rgba(255, 255, 255, 0.9)";
+        const okTL = isValid(tl);
+        const okTR = isValid(tr);
+        const okBL = isValid(bl);
+        const okBR = isValid(br);
 
-        if (isValid(tl) && isValid(tr) && isValid(bl) && isValid(br)) {
+        document.getElementById('cb-tl').style.background = okTL ? "rgba(0, 255, 0, 0.45)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-tr').style.background = okTR ? "rgba(0, 255, 0, 0.45)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-bl').style.background = okBL ? "rgba(0, 255, 0, 0.45)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-br').style.background = okBR ? "rgba(0, 255, 0, 0.45)" : "rgba(255, 255, 255, 0.9)";
+
+        if (okTL && okTR && okBL && okBR) {
             stableFrames++;
-            hudText.innerHTML = `🎯 Đang lấy nét... Giữ yên (${stableFrames}/${requiredFrames})`;
+            hudText.innerHTML = `🎯 Bắt dính! Giữ yên... (${stableFrames}/${requiredFrames})`;
             hudText.style.color = "#00ff00";
 
             if (stableFrames >= requiredFrames) {
@@ -570,11 +601,12 @@ function startAutoScan() {
                 }
             }
         } else {
-            stableFrames = 0;
+            // Bộ đệm chống rung: Không gán về 0 mà giảm 1 điểm để tay hơi rung nhẹ vẫn không bị đứt quãng
+            if (stableFrames > 0) stableFrames--;
             hudText.innerHTML = "Đưa 4 ô đen của giấy lấp đầy 4 ô vuông trắng";
             hudText.style.color = "#fff";
         }
-    }, 250);
+    }, 100);
 }
 
 function manualCapture() {
@@ -665,7 +697,7 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= KHÔI PHỤC LÕI XỬ LÝ V1.0 (KHÔNG THAY ĐỔI) =================
+// ================= LÕI XỬ LÝ CHẤM BÀI ĐÃ ĐÓNG BĂNG 100% =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -689,7 +721,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     const showSquareGridCheckbox = document.getElementById('cfg-show-grid');
     const showSquareGrid = showSquareGridCheckbox ? showSquareGridCheckbox.checked : true;
 
-    // THUẬT TOÁN TÌM GÓC TỪ V1.0 - ĐÃ ĐƯỢC CHỨNG MINH LÀ CHUẨN XÁC
     function findDarkestSolidPatch(startX, startY, w, h) {
         let bestScore = Infinity;
         let bestX = startX + w/2;
@@ -752,7 +783,6 @@ function processImagePureJS(sourceCanvas, fileName) {
         let cy = Math.round(center.y);
 
         let bestScore = 0;
-        // BÁN KÍNH LỰC HÚT ĐƯỢC TĂNG LÊN ĐỂ CHỐNG LỆCH IN ẤN (+-9px)
         for (let dy = -9; dy <= 9; dy += 3) {
             for (let dx = -9; dx <= 9; dx += 3) {
                 let startX = (cx + dx) - Math.floor(w/2);
