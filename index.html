@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V5.1 - Hoàn Chỉnh</title>
+    <title>NTMIX V5.2 - Hoàn Chỉnh</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -116,7 +116,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V5.1 - HUD Camera Nhạy Sáng Tối Ưu</span>
+    <span class="badge-cv">V5.2 - Lỗi Ẩn Đã Được Khắc Phục</span>
 </header>
 
 <div class="container">
@@ -157,11 +157,11 @@
                 <label style="color: #4338ca;">⚙️ Căn chỉnh lề máy in (Để 0 nếu khớp):</label>
                 <div class="grid-2">
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Dịch Ngang (X) (Sang phải là +)</span>
+                        <span style="font-size: 11px; color: #64748b;">Dịch Ngang (X) (Phải là +)</span>
                         <input type="number" id="cfg-offset-x" value="0">
                     </div>
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Dịch Dọc (Y) (Xuống dưới là +)</span>
+                        <span style="font-size: 11px; color: #64748b;">Dịch Dọc (Y) (Xuống là +)</span>
                         <input type="number" id="cfg-offset-y" value="0">
                     </div>
                 </div>
@@ -189,6 +189,13 @@
                     <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
                 </div>
             </div>
+            
+            <!-- ĐÃ ĐƯA Ô MÃ ĐỀ DỰ PHÒNG QUAY TRỞ LẠI ĐỂ TRÁNH LỖI KẸT BIẾN -->
+            <div class="form-group" style="margin-top: 12px;">
+                <label>🔧 Mã đề dự phòng (Khi HS quên tô):</label>
+                <input type="text" id="fallback-code" placeholder="VD: 0234">
+            </div>
+
             <button class="btn btn-primary" onclick="switchTab('tab-scan')" style="margin-top: 10px;">Lưu & Mở Giao Diện Chấm ➔</button>
         </div>
     </div>
@@ -427,11 +434,8 @@ function startHudAutoScan() {
             const ctx = tcv.getContext('2d', { willReadFrequently: true }); ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 40, 40);
             const imgData = ctx.getImageData(0, 0, 40, 40).data; let darkCount = 0;
             
-            // TĂNG ĐỘ NHẠY SÁNG: Nhận cả màu xám đậm (140) thay vì đen đặc (100)
             for(let i = 0; i < 1600 * 4; i += 4) { if (imgData[i+1] < 140) darkCount++; }
             const darkRatio = darkCount / 1600;
-            
-            // GIẢM TỶ LỆ DIỆN TÍCH: Chỉ cần 2% ô HUD là màu đen sẽ nhận là hợp lệ
             const isValid = darkRatio > 0.02 && darkRatio < 0.70;
             
             if(isValid) { box.style.borderColor = "rgba(0, 255, 0, 0.9)"; box.style.backgroundColor = "rgba(0, 255, 0, 0.3)"; } 
@@ -516,6 +520,9 @@ function processImagePureJS(sourceCanvas, fileName) {
     const diemP1 = parseFloat(document.getElementById('cfg-p1')?.value) || 0.25;
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
+    
+    // Khai báo lại biến gây lỗi Crash
+    const fallbackCode = document.getElementById('fallback-code')?.value.trim() || "";
 
     function findBlackSquareCenter(startX, startY, w, h) {
         let bestX = startX + w/2; let bestY = startY + h/2; let minVal = 255;
