@@ -192,6 +192,13 @@
                     <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
                 </div>
             </div>
+            <!-- KHÔI PHỤC PHẦN TỬ LỰA CHỌN HIỂN THỊ LƯỚI ĐỂ FIX LỖI -->
+            <div class="form-group">
+                <label class="check-inline" style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #1e3a8a; cursor: pointer;">
+                    <input type="checkbox" id="cfg-show-grid" style="width: 18px; height: 18px;" checked>
+                    📐 Vẽ lưới định vị xanh lam bao phủ ô tròn
+                </label>
+            </div>
             <div class="form-group" style="margin-top: 12px;"><label>🔧 Mã đề dự phòng (Khi HS quên tô):</label><input type="text" id="fallback-code" placeholder="VD: 0234"></div>
             <button class="btn btn-primary" onclick="switchTab('tab-scan')" style="margin-top: 10px;">Lưu & Mở Giao Diện Chấm ➔</button>
         </div>
@@ -324,8 +331,8 @@ function drawVirtualGrid() {
     ctx.lineWidth = 2;
     const radius = 9;
 
-    let ox = parseInt(document.getElementById('cfg-offset-x').value) || 0;
-    let oy = parseInt(document.getElementById('cfg-offset-y').value) || 0;
+    let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
+    let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
 
     function drawCircle(x, y) { ctx.beginPath(); ctx.arc(x + ox, y + oy, radius, 0, 2 * Math.PI); ctx.stroke(); }
     
@@ -553,7 +560,6 @@ function startAutoScan() {
                 closeFullscreenCamera();
                 playBeep();
                 
-                // Bọc Try Catch chống lỗi ngầm
                 try {
                     processImagePureJS(hiResCanvas, `Cam_${Date.now()}.jpg`);
                 } catch (err) {
@@ -604,7 +610,6 @@ function manualCapture() {
     
     closeFullscreenCamera();
     
-    // Bọc Try Catch
     try {
         processImagePureJS(canvas, `Cam_${Date.now()}.jpg`);
     } catch (err) {
@@ -619,7 +624,7 @@ async function handleImageFiles(inputElement) {
     if (Object.keys(answerKey).length === 0) { 
         alert("Vui lòng nạp đáp án ở Tab Cấu hình trước khi chấm bài!"); 
         switchTab('tab-config'); 
-        inputElement.value = ''; // Reset input để cho phép chọn lại
+        inputElement.value = ''; 
         return; 
     }
     
@@ -627,9 +632,8 @@ async function handleImageFiles(inputElement) {
 
     for (let i = 0; i < files.length; i++) {
         statusBox.textContent = `⏳ Đang xử lý ảnh ${i+1}/${files.length}... Vui lòng đợi!`;
-        statusBox.style.color = '#f59e0b'; // Màu vàng báo đang tải
+        statusBox.style.color = '#f59e0b'; 
         
-        // Bắt buộc giao diện hiển thị trạng thái trước khi render ảnh nặng
         await new Promise(r => setTimeout(r, 50));
         
         await new Promise((resolve) => {
@@ -655,10 +659,9 @@ async function handleImageFiles(inputElement) {
         });
     }
     
-    inputElement.value = ''; // Reset file input sau khi hoàn tất để tránh kẹt
+    inputElement.value = ''; 
 }
 
-// ================= LÕI XỬ LÝ OMR CHÍNH QUY (An toàn tuyệt đối) =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -669,16 +672,18 @@ function processImagePureJS(sourceCanvas, fileName) {
     const imgData = sCtx.getImageData(0, 0, WIDTH, HEIGHT);
     const data = imgData.data;
 
-    let ox = parseInt(document.getElementById('cfg-offset-x').value) || 0;
-    let oy = parseInt(document.getElementById('cfg-offset-y').value) || 0;
+    let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
+    let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
 
-    const minConf = parseFloat(document.getElementById('cfg-conf').value) || 0.24;
-    const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus').value) || 0.42;
-    const diemP1 = parseFloat(document.getElementById('cfg-p1').value) || 0.25;
-    const diemP2 = [parseFloat(document.getElementById('cfg-p2-1').value)||0.1, parseFloat(document.getElementById('cfg-p2-2').value)||0.25, parseFloat(document.getElementById('cfg-p2-3').value)||0.5, parseFloat(document.getElementById('cfg-p2-4').value)||1.0];
-    const diemP3 = parseFloat(document.getElementById('cfg-p3').value) || 0.5;
-    const fallbackCode = document.getElementById('fallback-code').value.trim();
-    const showSquareGrid = document.getElementById('cfg-show-grid').checked;
+    const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.24;
+    const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus')?.value) || 0.42;
+    const diemP1 = parseFloat(document.getElementById('cfg-p1')?.value) || 0.25;
+    const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
+    const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
+    const fallbackCode = document.getElementById('fallback-code')?.value.trim() || "";
+    // XỬ LÝ AN TOÀN TRÁNH LỖI NULL KHI ĐỌC CHECKBOX
+    const showSquareGridCheckbox = document.getElementById('cfg-show-grid');
+    const showSquareGrid = showSquareGridCheckbox ? showSquareGridCheckbox.checked : true;
 
     function findDarkestSolidPatch(startX, startY, w, h) {
         let bestScore = Infinity;
@@ -949,7 +954,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     outCanvas.getContext('2d').drawImage(scaledCanvas, 0, 0);
     outCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
 
-    // Lưu ảnh an toàn
     try {
         let b64 = outCanvas.toDataURL('image/jpeg', 0.85).split(',')[1];
         gradedImagesData.push({ filename: `${sbd}_${code}.jpg`, base64: b64 });
