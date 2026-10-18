@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V5.0 - Hoàn Chỉnh</title>
+    <title>NTMIX V5.1 - Hoàn Chỉnh</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -59,7 +59,7 @@
         }
 
         .tn-corner {
-            position: absolute; width: 16%; aspect-ratio: 1 / 1;
+            position: absolute; width: 18%; aspect-ratio: 1 / 1;
             background: rgba(255, 255, 255, 0.2);
             border: 2px dashed rgba(255, 255, 255, 0.8);
             box-shadow: 0px 0px 5px rgba(0,0,0,0.5);
@@ -67,10 +67,10 @@
             display: flex; align-items: center; justify-content: center;
         }
         .tn-corner::after { content: '+'; color: rgba(255,255,255,0.6); font-size: 24px; font-weight: bold; }
-        .tn-corner.tl { top: -2%; left: -2%; }
-        .tn-corner.tr { top: -2%; right: -2%; }
-        .tn-corner.bl { bottom: -2%; left: -2%; }
-        .tn-corner.br { bottom: -2%; right: -2%; }
+        .tn-corner.tl { top: 0%; left: 0%; }
+        .tn-corner.tr { top: 0%; right: 0%; }
+        .tn-corner.bl { bottom: 0%; left: 0%; }
+        .tn-corner.br { bottom: 0%; right: 0%; }
 
         .cam-controls { 
             position: absolute; bottom: 0; left: 0; width: 100%; 
@@ -116,7 +116,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V5.0 - HUD Camera & Auto Grading</span>
+    <span class="badge-cv">V5.1 - HUD Camera Nhạy Sáng Tối Ưu</span>
 </header>
 
 <div class="container">
@@ -426,9 +426,14 @@ function startHudAutoScan() {
             const tcv = document.createElement('canvas'); tcv.width = 40; tcv.height = 40;
             const ctx = tcv.getContext('2d', { willReadFrequently: true }); ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 40, 40);
             const imgData = ctx.getImageData(0, 0, 40, 40).data; let darkCount = 0;
-            for(let i = 0; i < 1600 * 4; i += 4) { if (imgData[i+1] < 100) darkCount++; }
+            
+            // TĂNG ĐỘ NHẠY SÁNG: Nhận cả màu xám đậm (140) thay vì đen đặc (100)
+            for(let i = 0; i < 1600 * 4; i += 4) { if (imgData[i+1] < 140) darkCount++; }
             const darkRatio = darkCount / 1600;
-            const isValid = darkRatio > 0.12 && darkRatio < 0.85;
+            
+            // GIẢM TỶ LỆ DIỆN TÍCH: Chỉ cần 2% ô HUD là màu đen sẽ nhận là hợp lệ
+            const isValid = darkRatio > 0.02 && darkRatio < 0.70;
+            
             if(isValid) { box.style.borderColor = "rgba(0, 255, 0, 0.9)"; box.style.backgroundColor = "rgba(0, 255, 0, 0.3)"; } 
             else { box.style.borderColor = "rgba(255, 255, 255, 0.8)"; box.style.backgroundColor = "rgba(255, 255, 255, 0.2)"; }
             return isValid;
@@ -496,14 +501,13 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI XỬ LÝ OMR & CHẤM ĐIỂM (CÓ TÍCH HỢP OFFSET GIAO DIỆN) =================
+// ================= LÕI XỬ LÝ OMR & CHẤM ĐIỂM =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas'); scaledCanvas.width = WIDTH; scaledCanvas.height = HEIGHT;
     const sCtx = scaledCanvas.getContext('2d'); sCtx.drawImage(sourceCanvas, 0, 0, WIDTH, HEIGHT);
     const data = sCtx.getImageData(0, 0, WIDTH, HEIGHT).data;
 
-    // LẤY OFFSET TỪ GIAO DIỆN
     let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
     let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
 
@@ -513,7 +517,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
 
-    // TÌM TÂM Ô VUÔNG CHÍNH XÁC (Vì HUD đã cắt sẵn 800x1130, ta chỉ tìm góc nhỏ 120x120 ở 4 viền)
     function findBlackSquareCenter(startX, startY, w, h) {
         let bestX = startX + w/2; let bestY = startY + h/2; let minVal = 255;
         for (let y = startY; y < startY + h; y += 2) {
@@ -569,7 +572,6 @@ function processImagePureJS(sourceCanvas, fileName) {
     const dstPoints = [ pTL, pTR, pBL, pBR ];
     const H_Matrix = createPerspectiveTransform(srcPoints, dstPoints);
 
-    // KẾT HỢP OFFSET GIAO DIỆN VÀO HÀM MAP TỌA ĐỘ
     function mapCoord(sx, sy) {
         let x = sx + ox; let y = sy + oy;
         let denominator = H_Matrix[6]*x + H_Matrix[7]*y + 1;
