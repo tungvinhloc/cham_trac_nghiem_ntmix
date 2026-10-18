@@ -120,7 +120,7 @@
 <header>
     <h1>V1.0 App chấm trắc nghiệm NTMIX</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">Lõi Homography + Góc Quét Rộng Chuẩn</span>
+    <span class="badge-cv">Lõi Homography + Căn Tâm Chuẩn</span>
 </header>
 
 <div class="container">
@@ -275,9 +275,9 @@
         <p id="hud-text">Đưa 4 ô đen của giấy lấp đầy 4 ô vuông trắng</p>
         <div class="cam-btn-group">
             <select id="cam-speed-select" class="speed-select">
-                <option value="4">Bắt nét: Nhanh (1.0s)</option>
-                <option value="6" selected>Bắt nét: Tiêu chuẩn (1.5s)</option>
-                <option value="8">Bắt nét: Chậm (2.0s)</option>
+                <option value="4">Bắt nét: Nhanh (0.3s)</option>
+                <option value="6" selected>Bắt nét: Tiêu chuẩn (0.5s)</option>
+                <option value="8">Bắt nét: Chậm (1.0s)</option>
             </select>
             <button class="btn btn-danger" style="padding: 10px 15px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Mẫu</button>
             <button class="btn btn-secondary" style="padding: 10px 15px; font-size: 15px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
@@ -298,7 +298,7 @@ let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
-// LƯỚI TỌA ĐỘ THEO CHUẨN MẪU BGD 2025
+// LƯỚI TỌA ĐỘ BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -508,7 +508,6 @@ function startAutoScan() {
             for(let y = cy; y < cy+h; y+=2) {
                 for(let x = cx; x < cx+w; x+=2) {
                     let i = (y * 200 + x) * 4;
-                    // Lỏng cảm biến chống lỗi bóng đen mặt bàn
                     if (imgData[i+1] < 120) darkCount++;
                 }
             }
@@ -651,7 +650,7 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI TÍNH TOÁN BẮT GÓC RỘNG TỪ V1.0 (CHỐNG BẮT VÀO BẢNG ĐIỂM) =================
+// ================= LÕI HOMOGRAPHY PRO & TÌM TÂM BỌC ĐÁP ÁN =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -675,59 +674,52 @@ function processImagePureJS(sourceCanvas, fileName) {
     const showSquareGridCheckbox = document.getElementById('cfg-show-grid');
     const showSquareGrid = showSquareGridCheckbox ? showSquareGridCheckbox.checked : true;
 
-    // THUẬT TOÁN TÌM GÓC TỪ V1.0 (Phân tích khối vuông đen đặc, bỏ qua đường nét thanh)
-    function findDarkestSolidPatch(startX, startY, w, h) {
-        let bestScore = Infinity;
+    // TÌM TÂM CHÍNH XÁC CỦA Ô VUÔNG ĐEN
+    function findBlackSquareCenter(startX, startY, w, h) {
         let bestX = startX + w/2;
         let bestY = startY + h/2;
-        let iw = 22, ih = 22, hw = 44, hh = 44; 
         
-        for (let y = startY + hw/2; y < startY + h - hw/2; y += 2) {
-            for (let x = startX + hw/2; x < startX + w - hw/2; x += 2) {
-                let innerSum = 0, innerCount = 0;
-                let haloSum = 0, haloCount = 0;
+        let minVal = 255;
+        // Bỏ qua 15 pixel rìa mép ngoài cùng để không bắt vào đường kẻ của bảng
+        let inset = 15;
+        let sx = Math.max(0, startX + inset);
+        let sy = Math.max(0, startY + inset);
+        let ew = Math.min(WIDTH, startX + w - inset);
+        let eh = Math.min(HEIGHT, startY + h - inset);
 
-                let top = y - hh/2, bottom = y + hh/2;
-                let left = x - hw/2, right = x + hw/2;
-                let itop = y - ih/2, ibottom = y + ih/2;
-                let ileft = x - iw/2, iright = x + iw/2;
-
-                for (let py = top; py < bottom; py += 2) {
-                    for (let px = left; px < right; px += 2) {
-                        if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
-                        let idx = (py * WIDTH + px) * 4;
-                        let gray = data[idx+1]; 
-                        
-                        if (px >= ileft && px <= iright && py >= itop && py <= ibottom) {
-                            innerSum += gray; innerCount++;
-                        } else {
-                            haloSum += gray; haloCount++;
-                        }
-                    }
-                }
-                if (innerCount === 0 || haloCount === 0) continue;
-                let innerAvg = innerSum / innerCount;
-                let haloAvg = haloSum / haloCount;
-                
-                if (innerAvg > 160) continue; 
-                let score = innerAvg - haloAvg; 
-
-                if (score < bestScore) { bestScore = score; bestX = x; bestY = y; }
+        for (let y = sy; y < eh; y += 2) {
+            for (let x = sx; x < ew; x += 2) {
+                let idx = (y * WIDTH + x) * 4;
+                let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                if (gray < minVal) minVal = gray;
             }
         }
-        return {x: bestX, y: bestY};
+        
+        let thresh = Math.min(130, minVal + 40); 
+        
+        let sumX = 0, sumY = 0, count = 0;
+        for (let y = sy; y < eh; y++) {
+            for (let x = sx; x < ew; x++) {
+                let idx = (y * WIDTH + x) * 4;
+                let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                if (gray <= thresh) {
+                    sumX += x; sumY += y; count++;
+                }
+            }
+        }
+        
+        if (count > 20) return { x: sumX / count, y: sumY / count };
+        return { x: bestX, y: bestY }; 
     }
 
-    // TÌM GÓC KHÔNG GIAN RỘNG 160x160 TỪ V1.0
-    let searchW = 160, searchH = 160;
-    let pTL = findDarkestSolidPatch(0, 0, searchW, searchH);
-    let pTR = findDarkestSolidPatch(WIDTH - searchW, 0, searchW, searchH);
-    let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
-    let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
+    // GIỚI HẠN VÙNG TÌM KIẾM ĐỂ KHÔNG BẮT NHẦM VÀO BẢNG ĐIỂM HOẶC CHỮ
+    let searchW = 120, searchH = 120;
+    let pTL = findBlackSquareCenter(0, 0, searchW, searchH);
+    let pTR = findBlackSquareCenter(WIDTH - searchW, 0, searchW, searchH);
+    let pBL = findBlackSquareCenter(0, HEIGHT - searchH, searchW, searchH);
+    let pBR = findBlackSquareCenter(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
-    // =====================================================================================
-    // THUẬT TOÁN HOMOGRAPHY CỦA V2.0 PRO
-    // =====================================================================================
+    // THUẬT TOÁN HOMOGRAPHY
     function createPerspectiveTransform(src, dst) {
         let a = [];
         for (let i = 0; i < 4; i++) {
@@ -805,12 +797,6 @@ function processImagePureJS(sourceCanvas, fileName) {
                 let score = total > 0 ? darkCount / total : 0;
                 if (score > bestScore) { bestScore = score; }
             }
-        }
-        
-        if (showSquareGrid) {
-            sCtx.strokeStyle = "rgba(100, 149, 237, 0.6)"; 
-            sCtx.lineWidth = 1;
-            sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(h/2), w, h);
         }
         
         return bestScore;
