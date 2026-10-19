@@ -3,13 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V5.3 - Lõi OpenCV.js</title>
+    <title>NTMIX V5.4 - OpenCV.js Smart Load</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <!-- TÍCH HỢP LÕI OPENCV SIÊU MẠNH CHO WEB -->
-    <script src="https://docs.opencv.org/4.8.0/opencv.js" type="text/javascript"></script>
+    
+    <!-- CƠ CHẾ ĐÓN LÕI OPENCV THÔNG MINH -->
+    <script>
+        var Module = {
+            onRuntimeInitialized: function() {
+                window.cvReady = true;
+                let statusBox = document.getElementById('scan-status');
+                if(statusBox) {
+                    statusBox.innerHTML = "✅ Lõi OpenCV đã sẵn sàng! Có thể Mở Máy Quét.";
+                    statusBox.style.color = "var(--success)";
+                    statusBox.style.borderColor = "var(--success)";
+                    statusBox.style.backgroundColor = "#ecfdf5";
+                }
+            }
+        };
+    </script>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" type="text/javascript"></script>
     
     <style>
         :root { --primary: #1a73e8; --success: #0f9d58; --danger: #d93025; --purple: #7c3aed; --dark: #1e293b; --bg: #f1f5f9; }
@@ -85,7 +100,7 @@
         .speed-select { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 8px; border-radius: 8px; font-weight: bold; outline: none; margin-bottom: 12px; width: 80%; max-width: 300px; text-align: center; }
         .speed-select option { color: black; }
 
-        #scan-status { font-size: 14px; font-weight: 700; color: #64748b; text-align: center; margin-bottom: 12px; padding: 16px 10px; border: 2px dashed #cbd5e1; border-radius: 8px; background: #f8fafc; transition: 0.3s; }
+        #scan-status { font-size: 14px; font-weight: 700; color: #d93025; text-align: center; margin-bottom: 12px; padding: 16px 10px; border: 2px dashed #fca5a5; border-radius: 8px; background: #fef2f2; transition: 0.3s; }
         .score-dashboard { display: none; background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 12px; margin-top: 10px; box-shadow: 0 4px 10px rgba(220,38,38,0.12); }
         .score-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #fca5a5; padding-bottom: 8px; margin-bottom: 10px; }
         .score-total-box { font-size: 22px; font-weight: 900; color: #dc2626; }
@@ -114,7 +129,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V5.3 - Lõi OpenCV.js Phẳng Tuyệt Đối</span>
+    <span class="badge-cv">V5.4 - Lõi OpenCV Thông Minh</span>
 </header>
 
 <div class="container">
@@ -210,14 +225,15 @@
     <div id="tab-scan" class="tab-pane">
         <div class="card">
             <div class="card-title">Chấm Phiếu Trực Tiếp</div>
+            
+            <div id="scan-status">⏳ Đang tải lõi xử lý ảnh (8MB)... Vui lòng đợi!</div>
+
             <div class="grid-2" style="margin-bottom: 10px;">
                 <button class="btn btn-primary" onclick="openFullscreenCamera()">📷 Mở Máy Quét</button>
                 <div class="btn btn-success" style="margin: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('file-images').click()">🖼️ Chọn Từ Máy</div>
                 <input type="file" id="file-images" accept="image/*" capture="environment" multiple style="display: none;" onchange="handleImageFiles(this)">
             </div>
             
-            <div id="scan-status">👋 Sẵn sàng! Hãy Mở máy quét hoặc Chọn ảnh từ máy.</div>
-
             <div id="score-dashboard" class="score-dashboard">
                 <div class="score-header">
                     <div>
@@ -293,6 +309,7 @@
 </div>
 
 <script>
+window.cvReady = false;
 let answerKey = {}; let dshsDict = {}; let gradedRows = []; let gradedImagesData = []; 
 let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0; let lastGradedSbd = "Phieu";
@@ -407,14 +424,12 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
 });
 
 async function openFullscreenCamera() {
-    const ui = document.getElementById('camera-fullscreen-ui'); const video = document.getElementById('video');
-    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước khi chấm!"); switchTab('tab-config'); return; }
-    
-    if (typeof cv === 'undefined') {
-        alert("Đang tải thư viện xử lý ảnh lõi (OpenCV.js), vui lòng đợi 5 giây và thử lại!");
+    if (!window.cvReady) {
+        alert("Lõi OpenCV chưa tải xong. Nếu mạng chậm, vui lòng đợi thêm 10-15 giây nữa!");
         return;
     }
-    
+    const ui = document.getElementById('camera-fullscreen-ui'); const video = document.getElementById('video');
+    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước khi chấm!"); switchTab('tab-config'); return; }
     try {
         const constraints = { video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } };
         videoStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -508,7 +523,7 @@ async function handleImageFiles(inputElement) {
     const files = inputElement.files; if (!files || !files.length) return;
     if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước khi chấm!"); switchTab('tab-config'); inputElement.value = ''; return; }
     
-    if (typeof cv === 'undefined') { alert("Thư viện OpenCV.js chưa tải xong. Đợi 5 giây rồi thử lại!"); return; }
+    if (!window.cvReady) { alert("Thư viện OpenCV.js chưa tải xong. Đợi 5 giây rồi thử lại!"); return; }
 
     const statusBox = document.getElementById('scan-status');
     for (let i = 0; i < files.length; i++) {
@@ -527,7 +542,7 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI OPENCV.JS =================
+// ================= LÕI OPENCV.JS BẺ PHẲNG CHUẨN XÁC =================
 function processImageOMR(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
@@ -583,17 +598,11 @@ function processImageOMR(sourceCanvas, fileName) {
     let dsize = new cv.Size(WIDTH, HEIGHT);
 
     let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        pTL[0], pTL[1], 
-        pTR[0], pTR[1], 
-        pBL[0], pBL[1], 
-        pBR[0], pBR[1]
+        pTL[0], pTL[1], pTR[0], pTR[1], pBL[0], pBL[1], pBR[0], pBR[1]
     ]);
     
     let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        marginL, 35, 
-        WIDTH - marginR, 35, 
-        marginL, HEIGHT - 35, 
-        WIDTH - marginR, HEIGHT - 35
+        marginL, 35, WIDTH - marginR, 35, marginL, HEIGHT - 35, WIDTH - marginR, HEIGHT - 35
     ]);
 
     let M = cv.getPerspectiveTransform(srcTri, dstTri);
