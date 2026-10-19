@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V5.7 - Auto Alignment Pro</title>
+    <title>NTMIX V5.8 - Inner Anchor (Chuẩn TNMaker)</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -128,7 +128,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V5.7 - Zero Margin (Chuẩn Tỉ lệ Vàng)</span>
+    <span class="badge-cv">V5.8 - Định Vị Viền Trong (Chuẩn TNMaker)</span>
 </header>
 
 <div class="container">
@@ -166,7 +166,7 @@
         <div class="card">
             <div class="card-title">2. Cấu hình Máy Quét & Lưới</div>
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px dashed #6366f1;">
-                <label style="color: #4338ca;">⚙️ Căn chỉnh Lưới bọc vi tinh chỉnh:</label>
+                <label style="color: #4338ca;">⚙️ Căn chỉnh Lưới bọc (Nếu bị lệch):</label>
                 <div class="grid-2">
                     <div>
                         <span style="font-size: 11px; color: #64748b;">Trái(-)/Phải(+)</span>
@@ -175,6 +175,27 @@
                     <div>
                         <span style="font-size: 11px; color: #64748b;">Lên(-)/Xuống(+)</span>
                         <input type="number" id="cfg-offset-y" value="0">
+                    </div>
+                </div>
+                <label style="color: #4338ca; margin-top: 8px;">📐 Co giãn lề bọc viền trong:</label>
+                <div class="grid-2">
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Trái</span>
+                        <input type="number" id="cfg-margin-l" value="48">
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Phải</span>
+                        <input type="number" id="cfg-margin-r" value="38">
+                    </div>
+                </div>
+                 <div class="grid-2" style="margin-top: 8px;">
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Trên</span>
+                        <input type="number" id="cfg-margin-t" value="32">
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Dưới</span>
+                        <input type="number" id="cfg-margin-b" value="32">
                     </div>
                 </div>
             </div>
@@ -302,13 +323,13 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = []; let gradedImagesData
 let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0; let lastGradedSbd = "Phieu";
 
-// TỌA ĐỘ CHUẨN TỶ LỆ ZERO MARGIN (Cắt sát mép 4 ô đen định vị)
+// LƯỚI TỌA ĐỘ TRÊN BẢN 800x1130
 const GRID_SPEC = {
-    sbd: { x: [518, 536, 554, 572, 590, 608, 626, 644], y: [43, 67, 91, 115, 139, 163, 187, 211, 235, 259] },
-    made: { x: [684, 702, 720, 738], y: [43, 67, 91, 115, 139, 163, 187, 211, 235, 259] },
-    p1: { blockX: [31, 219, 407, 595], offsetsX: [0, 38, 76, 114], y: [377, 395, 414, 433, 451, 470, 488, 507, 525, 544] },
-    p2: { blockX: [31, 219, 407, 595], y: [646, 665, 684, 703] },
-    p3: { blockX: [24, 144, 264, 384, 504, 624], offsetsX: [0, 26, 52, 78], yMinus: 812, yComma: 831, yDigit: [851, 870, 889, 908, 927, 946, 965, 984, 1003, 1022], digitChars: ['0','1','2','3','4','5','6','7','8','9'] }
+    sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
+    made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
+    p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584] },
+    p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743] },
+    p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yComma: 871, yDigit: [891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], digitChars: ['0','1','2','3','4','5','6','7','8','9'] }
 };
 
 function switchTab(tabId) {
@@ -414,7 +435,7 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
 
 async function openFullscreenCamera() {
     if (!window.cvReady) {
-        alert("Lõi OpenCV (Local) chưa sẵn sàng. Vui lòng đợi thông báo màu xanh!");
+        alert("Lõi OpenCV chưa tải xong. Vui lòng đợi thông báo màu xanh!");
         return;
     }
     const ui = document.getElementById('camera-fullscreen-ui'); const video = document.getElementById('video');
@@ -531,7 +552,7 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI OPENCV.JS - ZERO MARGIN =================
+// ================= LÕI OPENCV.JS - LẤY VIỀN TRONG (INNER ANCHOR) =================
 function processImageOMR(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
@@ -540,6 +561,11 @@ function processImageOMR(sourceCanvas, fileName) {
 
     let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
     let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
+    // Điểm neo trên canvas 800x1130
+    let marginL = parseInt(document.getElementById('cfg-margin-l')?.value) || 48;
+    let marginR = parseInt(document.getElementById('cfg-margin-r')?.value) || 38;
+    let marginT = parseInt(document.getElementById('cfg-margin-t')?.value) || 32;
+    let marginB = parseInt(document.getElementById('cfg-margin-b')?.value) || 32;
 
     const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.20;
     const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus')?.value) || 0.40;
@@ -559,49 +585,53 @@ function processImageOMR(sourceCanvas, fileName) {
     let hierarchy = new cv.Mat();
     cv.findContours(threshMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
     
-    let squareCenters = [];
+    let squareRects = [];
     for (let i = 0; i < contours.size(); i++) {
         let cnt = contours.get(i);
         let area = cv.contourArea(cnt);
-        if (area > 150 && area < 1500) {
+        if (area > 100 && area < 2000) { // Bắt ô vuông đa kích cỡ
             let rect = cv.boundingRect(cnt);
             let aspectRatio = rect.width / rect.height;
-            if (aspectRatio >= 0.7 && aspectRatio <= 1.3) {
-                let M = cv.moments(cnt, false);
-                if (M.m00 != 0) {
-                    let cx = M.m10 / M.m00;
-                    let cy = M.m01 / M.m00;
-                    squareCenters.push({x: cx, y: cy});
-                }
+            if (aspectRatio >= 0.6 && aspectRatio <= 1.4) {
+                squareRects.push(rect);
             }
         }
         cnt.delete();
     }
     contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
 
-    if (squareCenters.length < 4) {
-        alert("Lỗi: Không tìm đủ 4 ô vuông định vị. Có thể ảnh mờ hoặc không bao quát đủ 4 góc giấy.");
+    // Sắp xếp các ô vuông thành 4 góc
+    squareRects.sort((a, b) => (a.y + a.height/2) - (b.y + b.height/2));
+    if (squareRects.length < 4) {
+        alert("Lỗi: Không tìm đủ 4 ô đen định vị. Vui lòng chụp rõ hơn.");
         srcMat.delete(); return;
     }
 
-    squareCenters.sort((a, b) => a.y - b.y);
-    let topCenters = squareCenters.slice(0, 2).sort((a, b) => a.x - b.x);
-    let bottomCenters = squareCenters.slice(-2).sort((a, b) => a.x - b.x);
+    let topRects = squareRects.slice(0, 2).sort((a, b) => (a.x + a.width/2) - (b.x + b.width/2));
+    let bottomRects = squareRects.slice(-2).sort((a, b) => (a.x + a.width/2) - (b.x + b.width/2));
     
-    let pTL = topCenters[0]; let pTR = topCenters[1];
-    let pBL = bottomCenters[0]; let pBR = bottomCenters[1];
+    let pTL_rect = topRects[0];
+    let pTR_rect = topRects[1];
+    let pBL_rect = bottomRects[0];
+    let pBR_rect = bottomRects[1];
+
+    // TRÍCH XUẤT CHÍNH XÁC VIỀN TRONG (INNER CORNERS) CỦA Ô VUÔNG
+    let pTL = { x: pTL_rect.x + pTL_rect.width, y: pTL_rect.y + pTL_rect.height }; // Dưới, Phải
+    let pTR = { x: pTR_rect.x,                  y: pTR_rect.y + pTR_rect.height }; // Dưới, Trái
+    let pBL = { x: pBL_rect.x + pBL_rect.width, y: pBL_rect.y };                   // Trên, Phải
+    let pBR = { x: pBR_rect.x,                  y: pBR_rect.y };                   // Trên, Trái
 
     let dstMat = new cv.Mat();
     let dsize = new cv.Size(WIDTH, HEIGHT);
 
     let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ pTL.x, pTL.y, pTR.x, pTR.y, pBL.x, pBL.y, pBR.x, pBR.y ]);
     
-    // Ép phẳng sát rạt tâm 4 góc để khử nhiễu lề (Tỷ lệ TNMaker)
+    // Ép phẳng vào tọa độ Lề
     let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ 
-        40, 40, 
-        WIDTH - 40, 40, 
-        40, HEIGHT - 40, 
-        WIDTH - 40, HEIGHT - 40 
+        marginL, marginT, 
+        WIDTH - marginR, marginT, 
+        marginL, HEIGHT - marginB, 
+        WIDTH - marginR, HEIGHT - marginB 
     ]);
 
     let M = cv.getPerspectiveTransform(srcTri, dstTri);
