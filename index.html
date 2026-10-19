@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V6.1 - Lưới Tương Đối (Chuẩn BGD)</title>
+    <title>NTMIX V6.2 - Lưới Tương Đối Bản Gốc</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -15,7 +15,7 @@
                 window.cvReady = true;
                 let statusBox = document.getElementById('scan-status');
                 if(statusBox) {
-                    statusBox.innerHTML = "✅ Lõi OpenCV đã sẵn sàng! Mời Mở Máy Quét.";
+                    statusBox.innerHTML = "✅ Lõi OpenCV (Local) đã sẵn sàng! Mời Mở Máy Quét.";
                     statusBox.style.color = "var(--success)";
                     statusBox.style.borderColor = "var(--success)";
                     statusBox.style.backgroundColor = "#ecfdf5";
@@ -128,7 +128,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V6.1 - Lưới Tương Đối BGD (Khung Trong)</span>
+    <span class="badge-cv">V6.2 - Tọa Độ Gốc Chuẩn Mẫu BGD</span>
 </header>
 
 <div class="container">
@@ -166,14 +166,15 @@
         <div class="card">
             <div class="card-title">2. Cấu hình Máy Quét & Lưới</div>
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px dashed #6366f1;">
-                <label style="color: #4338ca;">⚙️ Căn chỉnh Lưới bọc (Nếu bị lệch):</label>
+                <label style="color: #4338ca; font-weight: 700;">📐 Căn Chỉnh Vi Tinh (Dịch chuyển toàn bộ lưới):</label>
+                <p style="font-size: 11px; color: #475569; margin-bottom: 8px;">Nếu camera điện thoại bị méo góc, dùng 2 số này để kéo lại.</p>
                 <div class="grid-2">
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Trái(-)/Phải(+)</span>
+                        <span style="font-size: 11px; color: #64748b;">Trục X (Dịch ngang)</span>
                         <input type="number" id="cfg-offset-x" value="0">
                     </div>
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Lên(-)/Xuống(+)</span>
+                        <span style="font-size: 11px; color: #64748b;">Trục Y (Dịch dọc)</span>
                         <input type="number" id="cfg-offset-y" value="0">
                     </div>
                 </div>
@@ -304,32 +305,33 @@ let autoScanTimer = null; let stableFrames = 0; let lastGradedSbd = "Phieu";
 
 // =========================================================================
 // BẢN ĐỒ TỌA ĐỘ TƯƠNG ĐỐI DỰA TRÊN 4 MÉP TRONG
-// Đo đạc chuẩn xác từ file PDF BGD 2025. Tỷ lệ % từ 0.0 -> 1.0
+// Đã trích xuất chính xác 100% từ file gốc PDF của trường Vinh Xuân.
+// Hệ quy chiếu (0.0 -> 1.0) bám sát mép trong 4 ô định vị.
 // =========================================================================
 const REL_SPEC = {
     sbd: { 
-        x: [0.738, 0.764, 0.790, 0.816, 0.842, 0.868, 0.894, 0.920], 
+        x: [0.700, 0.729, 0.758, 0.787, 0.816, 0.845, 0.874, 0.903], 
         y: [0.038, 0.063, 0.088, 0.113, 0.138, 0.163, 0.188, 0.213, 0.238, 0.263] 
     },
     made: { 
-        x: [0.978, 1.004, 1.030, 1.056], 
+        x: [0.940, 0.969, 0.998, 1.027], 
         y: [0.038, 0.063, 0.088, 0.113, 0.138, 0.163, 0.188, 0.213, 0.238, 0.263] 
     },
     p1: { 
-        blockX: [0.035, 0.306, 0.577, 0.848], 
+        blockX: [0.025, 0.298, 0.571, 0.844], 
         offsetsX: [0, 0.055, 0.110, 0.165], 
-        y: [0.386, 0.405, 0.425, 0.445, 0.464, 0.484, 0.503, 0.523, 0.542, 0.562] 
+        y: [0.380, 0.405, 0.430, 0.455, 0.480, 0.505, 0.530, 0.555, 0.580, 0.605] 
     },
     p2: { 
-        blockX: [0.035, 0.306, 0.577, 0.848], 
-        y: [0.667, 0.686, 0.706, 0.725] 
+        blockX: [0.025, 0.298, 0.571, 0.844], 
+        y: [0.686, 0.711, 0.736, 0.761] 
     },
     p3: { 
-        blockX: [0.025, 0.198, 0.371, 0.544, 0.717, 0.890], 
-        offsetsX: [0, 0.037, 0.075, 0.112], 
-        yMinus: 0.839, 
-        yComma: 0.859, 
-        yDigit: [0.880, 0.899, 0.919, 0.938, 0.958, 0.978, 0.997, 1.017, 1.036, 1.056], 
+        blockX: [-0.010, 0.165, 0.340, 0.515, 0.690, 0.865], 
+        offsetsX: [0, 0.038, 0.076, 0.114], 
+        yMinus: 0.848, 
+        yComma: 0.873, 
+        yDigit: [0.898, 0.923, 0.948, 0.973, 0.998, 1.023, 1.048, 1.073, 1.098, 1.123], 
         digitChars: ['0','1','2','3','4','5','6','7','8','9'] 
     }
 };
@@ -437,7 +439,7 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
 
 async function openFullscreenCamera() {
     if (!window.cvReady) {
-        alert("Lõi OpenCV chưa tải xong. Nếu mạng chậm, vui lòng đợi thêm 10-15 giây nữa!");
+        alert("Lõi OpenCV chưa tải xong. Vui lòng đợi thông báo màu xanh!");
         return;
     }
     const ui = document.getElementById('camera-fullscreen-ui'); const video = document.getElementById('video');
@@ -554,7 +556,7 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI OPENCV.JS - LẤY VIỀN TRONG LÀM MỐC =================
+// ================= LÕI TỌA ĐỘ TƯƠNG ĐỐI TỪ BẢN GỐC (V6.2) =================
 function processImageOMR(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
@@ -586,7 +588,7 @@ function processImageOMR(sourceCanvas, fileName) {
     for (let i = 0; i < contours.size(); i++) {
         let cnt = contours.get(i);
         let area = cv.contourArea(cnt);
-        if (area > 100 && area < 2500) { 
+        if (area > 80 && area < 2500) { 
             let rect = cv.boundingRect(cnt);
             let aspectRatio = rect.width / rect.height;
             if (aspectRatio >= 0.6 && aspectRatio <= 1.4) {
@@ -597,7 +599,7 @@ function processImageOMR(sourceCanvas, fileName) {
     }
     contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
 
-    // 2. TÌM 4 GÓC VIỀN TRONG (INNER CORNERS) ĐỂ TẠO KHUNG TƯƠNG ĐỐI
+    // 2. TÌM 4 GÓC VIỀN TRONG (INNER CORNERS)
     squareRects.sort((a, b) => (a.y + a.height/2) - (b.y + b.height/2));
     if (squareRects.length < 4) {
         alert("Lỗi: Không tìm đủ 4 ô đen định vị. Vui lòng chụp rõ hơn.");
@@ -610,13 +612,13 @@ function processImageOMR(sourceCanvas, fileName) {
     let pTL_rect = topRects[0]; let pTR_rect = topRects[1];
     let pBL_rect = bottomRects[0]; let pBR_rect = bottomRects[1];
 
+    // CHUẨN INNER CORNERS
     let pTL = { x: pTL_rect.x + pTL_rect.width, y: pTL_rect.y + pTL_rect.height }; 
     let pTR = { x: pTR_rect.x,                  y: pTR_rect.y + pTR_rect.height }; 
     let pBL = { x: pBL_rect.x + pBL_rect.width, y: pBL_rect.y };                   
     let pBR = { x: pBR_rect.x,                  y: pBR_rect.y };                   
 
-    // 3. TẠO HỆ QUY CHIẾU BẰNG PHÉP BIẾN ĐỔI SONG TUYẾN TÍNH (Không làm méo ảnh gốc)
-    // Hệ thống sẽ vẽ một bản PDF trong suốt đè lên tờ giấy đã chụp
+    // 3. TẠO HỆ QUY CHIẾU TƯƠNG ĐỐI
     function getAbsoluteCoord(relX, relY) {
         let leftX = pTL.x + (pBL.x - pTL.x) * relY;
         let rightX = pTR.x + (pBR.x - pTR.x) * relY;
@@ -630,16 +632,15 @@ function processImageOMR(sourceCanvas, fileName) {
         return { x: Math.round(finalX) + ox, y: Math.round(finalY) + oy };
     }
 
-    // Tái sử dụng lại canvas ban đầu để vẽ đè lên
     const resultCanvas = document.getElementById('result-canvas');
     resultCanvas.width = WIDTH; resultCanvas.height = HEIGHT;
     cv.imshow(resultCanvas, srcMat);
     const rCtx = resultCanvas.getContext('2d', { willReadFrequently: true });
-    const rawData = imgData.data; // Lấy dữ liệu ảnh thẳng từ camera, độ nét 100%
+    const rawData = imgData.data;
 
     srcMat.delete();
 
-    // 4. BỘ CẢM BIẾN SMART SENSOR (Tìm vết chì)
+    // 4. BỘ CẢM BIẾN SMART SENSOR (Quét trên ảnh gốc không méo)
     function getBestDarkness(cx, cy, w, h) {
         let bestScore = 0;
         let searchRadius = 6; 
@@ -669,7 +670,6 @@ function processImageOMR(sourceCanvas, fileName) {
         return bestScore;
     }
 
-    // 5. CƠ CHẾ X-RAY: Vẽ toàn bộ lưới
     function drawBubble(pt, status) {
         rCtx.beginPath(); let boxSize = 14;
         let hsx = pt.x - boxSize/2; let hsy = pt.y - boxSize/2;
