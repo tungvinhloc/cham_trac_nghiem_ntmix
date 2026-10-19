@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V5.2 - Hoàn Chỉnh</title>
+    <title>NTMIX V5.3 - Lõi OpenCV.js</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- TÍCH HỢP LÕI OPENCV SIÊU MẠNH CHO WEB -->
+    <script src="https://docs.opencv.org/4.8.0/opencv.js" type="text/javascript"></script>
     
     <style>
         :root { --primary: #1a73e8; --success: #0f9d58; --danger: #d93025; --purple: #7c3aed; --dark: #1e293b; --bg: #f1f5f9; }
@@ -78,14 +80,12 @@
             background: linear-gradient(transparent, rgba(0,0,0,0.95)); 
             text-align: center; z-index: 20; 
         }
-        #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
 
-        #scan-status {
-            font-size: 14px; font-weight: 700; color: #64748b; text-align: center; 
-            margin-bottom: 12px; padding: 16px 10px; border: 2px dashed #cbd5e1; 
-            border-radius: 8px; background: #f8fafc; transition: 0.3s;
-        }
+        .speed-select { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 8px; border-radius: 8px; font-weight: bold; outline: none; margin-bottom: 12px; width: 80%; max-width: 300px; text-align: center; }
+        .speed-select option { color: black; }
 
+        #scan-status { font-size: 14px; font-weight: 700; color: #64748b; text-align: center; margin-bottom: 12px; padding: 16px 10px; border: 2px dashed #cbd5e1; border-radius: 8px; background: #f8fafc; transition: 0.3s; }
         .score-dashboard { display: none; background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 12px; margin-top: 10px; box-shadow: 0 4px 10px rgba(220,38,38,0.12); }
         .score-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #fca5a5; padding-bottom: 8px; margin-bottom: 10px; }
         .score-total-box { font-size: 22px; font-weight: 900; color: #dc2626; }
@@ -95,10 +95,8 @@
         .part-box .p-title { font-size: 12px; font-weight: 700; color: #991b1b; }
         .part-box .p-val { font-size: 18px; font-weight: 800; color: #dc2626; margin-top: 2px; }
         .part-box .p-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
-
         .key-summary-box { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; padding: 8px 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-top: 6px; display: none; }
         #result-canvas { width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; display: none; margin-top: 10px; }
-
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th, td { padding: 8px 6px; border-bottom: 1px solid #e2e8f0; text-align: center; }
@@ -116,7 +114,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V5.2 - Lỗi Ẩn Đã Được Khắc Phục</span>
+    <span class="badge-cv">V5.3 - Lõi OpenCV.js Phẳng Tuyệt Đối</span>
 </header>
 
 <div class="container">
@@ -152,20 +150,32 @@
         </div>
 
         <div class="card">
-            <div class="card-title">2. Cấu hình Máy Quét & Chấm</div>
+            <div class="card-title">2. Cấu hình Máy Quét & Lưới</div>
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px dashed #6366f1;">
-                <label style="color: #4338ca;">⚙️ Căn chỉnh lề máy in (Để 0 nếu khớp):</label>
+                <label style="color: #4338ca;">⚙️ Căn chỉnh Lưới bọc (Nếu bị lệch):</label>
                 <div class="grid-2">
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Dịch Ngang (X) (Phải là +)</span>
+                        <span style="font-size: 11px; color: #64748b;">Trái(-)/Phải(+)</span>
                         <input type="number" id="cfg-offset-x" value="0">
                     </div>
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Dịch Dọc (Y) (Xuống là +)</span>
+                        <span style="font-size: 11px; color: #64748b;">Lên(-)/Xuống(+)</span>
                         <input type="number" id="cfg-offset-y" value="0">
                     </div>
                 </div>
+                <label style="color: #4338ca; margin-top: 8px;">📐 Co giãn giấy (Tăng số = Bóp hẹp giấy):</label>
+                <div class="grid-2">
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Trái</span>
+                        <input type="number" id="cfg-margin-l" value="20">
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Phải</span>
+                        <input type="number" id="cfg-margin-r" value="20">
+                    </div>
+                </div>
             </div>
+            
             <div class="grid-2">
                 <div class="form-group"><label>Điểm Phần I:</label><input type="number" id="cfg-p1" step="0.05" value="0.25"></div>
                 <div class="form-group"><label>Điểm Phần III:</label><input type="number" id="cfg-p3" step="0.05" value="0.5"></div>
@@ -189,13 +199,10 @@
                     <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
                 </div>
             </div>
-            
-            <!-- ĐÃ ĐƯA Ô MÃ ĐỀ DỰ PHÒNG QUAY TRỞ LẠI ĐỂ TRÁNH LỖI KẸT BIẾN -->
             <div class="form-group" style="margin-top: 12px;">
-                <label>🔧 Mã đề dự phòng (Khi HS quên tô):</label>
+                <label>🔧 Mã đề dự phòng:</label>
                 <input type="text" id="fallback-code" placeholder="VD: 0234">
             </div>
-
             <button class="btn btn-primary" onclick="switchTab('tab-scan')" style="margin-top: 10px;">Lưu & Mở Giao Diện Chấm ➔</button>
         </div>
     </div>
@@ -230,7 +237,7 @@
                 <div id="ui-warnings" style="margin-top: 8px; font-size: 12px; color: #d93025; font-weight: 600; text-align: center;"></div>
                 <div class="grid-2" style="margin-top: 10px;">
                     <button class="btn btn-primary" onclick="openFullscreenCamera()">🔄 Quét Tờ Khác</button>
-                    <button class="btn btn-secondary" onclick="downloadResultImage()">⬇️ Lưu Ảnh Đang Hiện</button>
+                    <button class="btn btn-secondary" onclick="downloadResultImage()">⬇️ Lưu Ảnh Hiện Tại</button>
                 </div>
             </div>
             <canvas id="result-canvas"></canvas>
@@ -267,6 +274,11 @@
     </div>
     <div class="cam-controls">
         <p id="hud-text">Đưa 4 ô đen vào đúng 4 ô vuông mục tiêu</p>
+        <select id="cam-speed-select" class="speed-select">
+            <option value="3">⚡ Nhạy cực cao (Chạm là quét)</option>
+            <option value="6" selected>🎯 Tốc độ Vừa (Ổn định)</option>
+            <option value="12">🐢 Tốc độ Chậm (Chống rung)</option>
+        </select>
         <div class="grid-2">
             <button class="btn btn-danger" style="padding: 12px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Mẫu</button>
             <button class="btn btn-secondary" style="padding: 12px; font-size: 15px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
@@ -285,7 +297,6 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = []; let gradedImagesData
 let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0; let lastGradedSbd = "Phieu";
 
-// TỌA ĐỘ CHUẨN BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -398,6 +409,12 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
 async function openFullscreenCamera() {
     const ui = document.getElementById('camera-fullscreen-ui'); const video = document.getElementById('video');
     if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước khi chấm!"); switchTab('tab-config'); return; }
+    
+    if (typeof cv === 'undefined') {
+        alert("Đang tải thư viện xử lý ảnh lõi (OpenCV.js), vui lòng đợi 5 giây và thử lại!");
+        return;
+    }
+    
     try {
         const constraints = { video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } };
         videoStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -419,6 +436,9 @@ function startHudAutoScan() {
     
     autoScanTimer = setInterval(() => {
         if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        
+        const targetFrames = parseInt(document.getElementById('cam-speed-select').value) || 6;
+        
         const videoRatio = video.videoWidth / video.videoHeight; const elementRatio = video.clientWidth / video.clientHeight;
         let sWidth, sHeight, sx, sy;
         if (videoRatio > elementRatio) { sHeight = video.videoHeight; sWidth = sHeight * elementRatio; sx = (video.videoWidth - sWidth) / 2; sy = 0; } 
@@ -446,8 +466,8 @@ function startHudAutoScan() {
         const okTL = analyzeHudBox('cb-tl'); const okTR = analyzeHudBox('cb-tr'); const okBL = analyzeHudBox('cb-bl'); const okBR = analyzeHudBox('cb-br');
 
         if (okTL && okTR && okBL && okBR) {
-            stableFrames++; hudText.innerHTML = `🎯 Giữ yên... Khóa mục tiêu (${stableFrames}/5)`; hudText.style.color = "#0f9d58";
-            if (stableFrames >= 5) {
+            stableFrames++; hudText.innerHTML = `🎯 Giữ yên... (${stableFrames}/${targetFrames})`; hudText.style.color = "#0f9d58";
+            if (stableFrames >= targetFrames) {
                 clearInterval(autoScanTimer); hudText.innerHTML = "⚡ ĐÃ CHỤP TỰ ĐỘNG!"; playBeep();
                 const rectO = overlay.getBoundingClientRect();
                 const cropX = sx + (rectO.left - rectV.left) * scaleX; const cropY = sy + (rectO.top - rectV.top) * scaleY;
@@ -455,7 +475,7 @@ function startHudAutoScan() {
                 
                 const finalCanvas = document.createElement('canvas'); finalCanvas.width = 800; finalCanvas.height = 1130;
                 finalCanvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
-                closeFullscreenCamera(); processImagePureJS(finalCanvas, `Cam_${Date.now()}.jpg`);
+                closeFullscreenCamera(); processImageOMR(finalCanvas, `Cam_${Date.now()}.jpg`);
             }
         } else {
             if (stableFrames > 0) stableFrames--;
@@ -481,23 +501,25 @@ function manualCapture() {
 
     const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 1130;
     canvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
-    closeFullscreenCamera(); processImagePureJS(canvas, `Cam_${Date.now()}.jpg`);
+    closeFullscreenCamera(); processImageOMR(canvas, `Cam_${Date.now()}.jpg`);
 }
 
 async function handleImageFiles(inputElement) {
     const files = inputElement.files; if (!files || !files.length) return;
     if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước khi chấm!"); switchTab('tab-config'); inputElement.value = ''; return; }
     
+    if (typeof cv === 'undefined') { alert("Thư viện OpenCV.js chưa tải xong. Đợi 5 giây rồi thử lại!"); return; }
+
     const statusBox = document.getElementById('scan-status');
     for (let i = 0; i < files.length; i++) {
-        statusBox.textContent = `⏳ Đang xử lý ảnh ${i+1}/${files.length}... Vui lòng đợi!`; statusBox.style.color = '#f59e0b'; 
+        statusBox.textContent = `⏳ Đang xử lý ảnh ${i+1}/${files.length}...`; statusBox.style.color = '#f59e0b'; 
         await new Promise(r => setTimeout(r, 50));
         await new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
                 const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 1130;
                 canvas.getContext('2d').drawImage(img, 0, 0, 800, 1130);
-                processImagePureJS(canvas, files[i].name); resolve();
+                processImageOMR(canvas, files[i].name); resolve();
             };
             img.src = URL.createObjectURL(files[i]);
         });
@@ -505,90 +527,88 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI XỬ LÝ OMR & CHẤM ĐIỂM =================
-function processImagePureJS(sourceCanvas, fileName) {
+// ================= LÕI OPENCV.JS =================
+function processImageOMR(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
-    const scaledCanvas = document.createElement('canvas'); scaledCanvas.width = WIDTH; scaledCanvas.height = HEIGHT;
-    const sCtx = scaledCanvas.getContext('2d'); sCtx.drawImage(sourceCanvas, 0, 0, WIDTH, HEIGHT);
-    const data = sCtx.getImageData(0, 0, WIDTH, HEIGHT).data;
+    const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    const imgData = sCtx.getImageData(0, 0, WIDTH, HEIGHT);
+    const data = imgData.data;
 
     let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
     let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
+    let marginL = parseInt(document.getElementById('cfg-margin-l')?.value) || 20;
+    let marginR = parseInt(document.getElementById('cfg-margin-r')?.value) || 20;
 
     const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.24;
     const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus')?.value) || 0.42;
     const diemP1 = parseFloat(document.getElementById('cfg-p1')?.value) || 0.25;
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
-    
-    // Khai báo lại biến gây lỗi Crash
     const fallbackCode = document.getElementById('fallback-code')?.value.trim() || "";
 
-    function findBlackSquareCenter(startX, startY, w, h) {
-        let bestX = startX + w/2; let bestY = startY + h/2; let minVal = 255;
-        for (let y = startY; y < startY + h; y += 2) {
-            for (let x = startX; x < startX + w; x += 2) {
-                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
-                let idx = (y * WIDTH + x) * 4; let gray = 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2];
-                if (gray < minVal) minVal = gray;
+    function findHaloSquareCenter(startX, startY, w, h) {
+        let bestScore = Infinity; let bestX = startX + w/2; let bestY = startY + h/2;
+        let iw = 16, ih = 16, hw = 36, hh = 36;
+        for (let y = startY + hh/2; y < startY + h - hh/2; y += 3) {
+            for (let x = startX + hw/2; x < startX + w - hw/2; x += 3) {
+                let innerSum = 0, innerCount = 0; let haloSum = 0, haloCount = 0;
+                let top = y - hh/2, bottom = y + hh/2, left = x - hw/2, right = x + hw/2;
+                let itop = y - ih/2, ibottom = y + ih/2, ileft = x - iw/2, iright = x + iw/2;
+
+                for (let py = top; py < bottom; py += 2) {
+                    for (let px = left; px < right; px += 2) {
+                        let idx = (py * WIDTH + px) * 4; let gray = 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2];
+                        if (px >= ileft && px <= iright && py >= itop && py <= ibottom) { innerSum += gray; innerCount++; } 
+                        else { haloSum += gray; haloCount++; }
+                    }
+                }
+                if (innerCount === 0 || haloCount === 0) continue;
+                let innerAvg = innerSum / innerCount; let haloAvg = haloSum / haloCount;
+                if (innerAvg > 150) continue; 
+                let score = innerAvg - haloAvg; 
+                if (score < bestScore) { bestScore = score; bestX = x; bestY = y; }
             }
         }
-        let thresh = Math.min(130, minVal + 40); 
-        let sumX = 0, sumY = 0, count = 0;
-        for (let y = startY; y < startY + h; y++) {
-            for (let x = startX; x < startX + w; x++) {
-                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
-                let idx = (y * WIDTH + x) * 4; let gray = 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2];
-                if (gray <= thresh) { sumX += x; sumY += y; count++; }
-            }
-        }
-        if (count > 20) return { x: sumX / count, y: sumY / count };
-        return { x: bestX, y: bestY }; 
+        return [bestX, bestY];
     }
 
-    let searchW = 120, searchH = 120;
-    let pTL = findBlackSquareCenter(10, 10, searchW, searchH);
-    let pTR = findBlackSquareCenter(WIDTH - searchW - 10, 10, searchW, searchH);
-    let pBL = findBlackSquareCenter(10, HEIGHT - searchH - 10, searchW, searchH);
-    let pBR = findBlackSquareCenter(WIDTH - searchW - 10, HEIGHT - searchH - 10, searchW, searchH);
+    let searchW = 200, searchH = 200;
+    let pTL = findHaloSquareCenter(5, 5, searchW, searchH);
+    let pTR = findHaloSquareCenter(WIDTH - searchW - 5, 5, searchW, searchH);
+    let pBL = findHaloSquareCenter(5, HEIGHT - searchH - 5, searchW, searchH);
+    let pBR = findHaloSquareCenter(WIDTH - searchW - 5, HEIGHT - searchH - 5, searchW, searchH);
 
-    function createPerspectiveTransform(src, dst) {
-        let a = [];
-        for (let i = 0; i < 4; i++) {
-            let x = src[i].x, y = src[i].y; let u = dst[i].x, v = dst[i].y;
-            a.push([x, y, 1, 0, 0, 0, -u*x, -u*y, u]); a.push([0, 0, 0, x, y, 1, -v*x, -v*y, v]);
-        }
-        for (let i = 0; i < 8; i++) {
-            let maxRow = i;
-            for (let j = i + 1; j < 8; j++) { if (Math.abs(a[j][i]) > Math.abs(a[maxRow][i])) maxRow = j; }
-            let temp = a[i]; a[i] = a[maxRow]; a[maxRow] = temp;
-            for (let j = i + 1; j < 8; j++) {
-                let f = a[j][i] / a[i][i];
-                for (let k = i; k <= 8; k++) a[j][k] -= a[i][k] * f;
-            }
-        }
-        let h = new Array(8);
-        for (let i = 7; i >= 0; i--) {
-            let sum = 0; for (let j = i + 1; j < 8; j++) sum += a[i][j] * h[j];
-            h[i] = (a[i][8] - sum) / a[i][i];
-        }
-        return h;
-    }
+    let srcMat = cv.matFromImageData(imgData);
+    let dstMat = new cv.Mat();
+    let dsize = new cv.Size(WIDTH, HEIGHT);
 
-    const srcPoints = [ {x: 40, y: 40}, {x: 760, y: 40}, {x: 40, y: 1090}, {x: 760, y: 1090} ];
-    const dstPoints = [ pTL, pTR, pBL, pBR ];
-    const H_Matrix = createPerspectiveTransform(srcPoints, dstPoints);
+    let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        pTL[0], pTL[1], 
+        pTR[0], pTR[1], 
+        pBL[0], pBL[1], 
+        pBR[0], pBR[1]
+    ]);
+    
+    let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        marginL, 35, 
+        WIDTH - marginR, 35, 
+        marginL, HEIGHT - 35, 
+        WIDTH - marginR, HEIGHT - 35
+    ]);
 
-    function mapCoord(sx, sy) {
-        let x = sx + ox; let y = sy + oy;
-        let denominator = H_Matrix[6]*x + H_Matrix[7]*y + 1;
-        let nx = (H_Matrix[0]*x + H_Matrix[1]*y + H_Matrix[2]) / denominator;
-        let ny = (H_Matrix[3]*x + H_Matrix[4]*y + H_Matrix[5]) / denominator;
-        return { x: nx, y: ny };
-    }
+    let M = cv.getPerspectiveTransform(srcTri, dstTri);
+    cv.warpPerspective(srcMat, dstMat, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
 
-    function getBestMappedDarkness(sx, sy, w, h) {
-        let center = mapCoord(sx, sy); let cx = Math.round(center.x); let cy = Math.round(center.y);
+    const resultCanvas = document.getElementById('result-canvas');
+    resultCanvas.width = WIDTH; resultCanvas.height = HEIGHT;
+    cv.imshow(resultCanvas, dstMat);
+    const rCtx = resultCanvas.getContext('2d', { willReadFrequently: true });
+    const warpedData = rCtx.getImageData(0, 0, WIDTH, HEIGHT).data;
+
+    srcMat.delete(); dstMat.delete(); srcTri.delete(); dstTri.delete(); M.delete();
+
+    function getBestDarkness(sx, sy, w, h) {
+        let cx = Math.round(sx + ox); let cy = Math.round(sy + oy);
         let bestScore = 0;
         for (let dy = -6; dy <= 6; dy += 3) {
             for (let dx = -6; dx <= 6; dx += 3) {
@@ -597,8 +617,7 @@ function processImagePureJS(sourceCanvas, fileName) {
                 for (let py = cy + dy - 16; py < cy + dy + 16; py+=2) {
                     for (let px = cx + dx - 16; px < cx + dx + 16; px+=2) {
                         if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
-                        let idx = (py * WIDTH + px) * 4;
-                        bgSum += 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2]; bgCount++;
+                        let idx = (py * WIDTH + px) * 4; bgSum += 0.299*warpedData[idx] + 0.587*warpedData[idx+1] + 0.114*warpedData[idx+2]; bgCount++;
                     }
                 }
                 let bgAvg = bgCount > 0 ? bgSum / bgCount : 255; let localThresh = Math.min(145, bgAvg * 0.85); 
@@ -606,39 +625,40 @@ function processImagePureJS(sourceCanvas, fileName) {
                 for (let y = startY; y < startY + h; y++) {
                     for (let x = startX; x < startX + w; x++) {
                         if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
-                        let idx = (y * WIDTH + x) * 4; let gray = 0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2];
+                        let idx = (y * WIDTH + x) * 4; let gray = 0.299*warpedData[idx] + 0.587*warpedData[idx+1] + 0.114*warpedData[idx+2];
                         if (gray < localThresh) darkCount++; total++;
                     }
                 }
                 let score = total > 0 ? darkCount / total : 0;
-                if (score > bestScore) { bestScore = score; }
+                if (score > bestScore) bestScore = score;
             }
         }
         return bestScore;
     }
 
-    function drawMappedBubble(sx, sy, status) {
-        let pt = mapCoord(sx, sy); sCtx.beginPath(); let boxSize = 14;
-        let hsx = pt.x - boxSize/2; let hsy = pt.y - boxSize/2;
-        sCtx.lineWidth = 2;
-        if (status === 'correct_fill') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
-        else if (status === 'wrong_fill') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
-        else if (status === 'missing_key') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.strokeRect(hsx+1, hsy+1, boxSize-2, boxSize-2); }
-        else if (status === 'info_read') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
+    function drawBubble(sx, sy, status) {
+        let nx = sx + ox; let ny = sy + oy;
+        rCtx.beginPath(); let boxSize = 14;
+        let hsx = nx - boxSize/2; let hsy = ny - boxSize/2;
+        rCtx.lineWidth = 2;
+        if (status === 'correct_fill') { rCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; rCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
+        else if (status === 'wrong_fill') { rCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; rCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
+        else if (status === 'missing_key') { rCtx.strokeStyle = "rgba(255, 215, 0, 1)"; rCtx.strokeRect(hsx+1, hsy+1, boxSize-2, boxSize-2); }
+        else if (status === 'info_read') { rCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; rCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
     }
 
     let scannedSbd = "";
     for (let x of GRID_SPEC.sbd.x) {
-        let scores = GRID_SPEC.sbd.y.map(y => getBestMappedDarkness(x, y, 14, 14));
+        let scores = GRID_SPEC.sbd.y.map(y => getBestDarkness(x, y, 14, 14));
         let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
-        if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { scannedSbd += String(maxIdx); drawMappedBubble(x, GRID_SPEC.sbd.y[maxIdx], 'info_read'); } else scannedSbd += "0";
+        if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { scannedSbd += String(maxIdx); drawBubble(x, GRID_SPEC.sbd.y[maxIdx], 'info_read'); } else scannedSbd += "0";
     }
 
     let scannedCode = "";
     for (let x of GRID_SPEC.made.x) {
-        let scores = GRID_SPEC.made.y.map(y => getBestMappedDarkness(x, y, 14, 14));
+        let scores = GRID_SPEC.made.y.map(y => getBestDarkness(x, y, 14, 14));
         let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
-        if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { scannedCode += String(maxIdx); drawMappedBubble(x, GRID_SPEC.made.y[maxIdx], 'info_read'); } else scannedCode += "0";
+        if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { scannedCode += String(maxIdx); drawBubble(x, GRID_SPEC.made.y[maxIdx], 'info_read'); } else scannedCode += "0";
     }
 
     let sbd = scannedSbd.replace(/\?/g, '0'), code = scannedCode.replace(/\?/g, '0');
@@ -653,13 +673,13 @@ function processImagePureJS(sourceCanvas, fileName) {
     for (let i = 0; i < key.p1.length; i++) {
         let blockIdx = Math.floor(i / 10), rowIdx = i % 10; if (blockIdx >= 4) break;
         let y = GRID_SPEC.p1.y[rowIdx]; let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
-        let scores = xList.map(x => getBestMappedDarkness(x, y, 14, 14));
+        let scores = xList.map(x => getBestDarkness(x, y, 14, 14));
         let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
         let isFilled = maxScore > minConf; let corrLabel = key.p1[i], corrIdx = labelsP1.indexOf(corrLabel);
         if (isFilled) {
-            if (labelsP1[maxIdx] === corrLabel) { right1++; drawMappedBubble(xList[maxIdx], y, 'correct_fill'); }
-            else { drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key'); }
-        } else if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key');
+            if (labelsP1[maxIdx] === corrLabel) { right1++; drawBubble(xList[maxIdx], y, 'correct_fill'); }
+            else { drawBubble(xList[maxIdx], y, 'wrong_fill'); if (corrIdx >= 0) drawBubble(xList[corrIdx], y, 'missing_key'); }
+        } else if (corrIdx >= 0) drawBubble(xList[corrIdx], y, 'missing_key');
     }
     let scoreP1 = +(right1 * diemP1).toFixed(2);
 
@@ -669,14 +689,14 @@ function processImagePureJS(sourceCanvas, fileName) {
         let xList = (i % 2 === 1) ? [baseX + 76, baseX + 114] : [baseX, baseX + 38];
         for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
             let y = GRID_SPEC.p2.y[rowIdx]; let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
-            let scores = xList.map(x => getBestMappedDarkness(x, y, 14, 14));
+            let scores = xList.map(x => getBestDarkness(x, y, 14, 14));
             let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
             let isFilled = maxScore > minConf; let val = isFilled ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
             student2 += val;
             if (isFilled) {
-                if (val === expected) drawMappedBubble(xList[maxIdx], y, 'correct_fill');
-                else { drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); if (expected) drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key'); }
-            } else if (expected) { drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key'); }
+                if (val === expected) drawBubble(xList[maxIdx], y, 'correct_fill');
+                else { drawBubble(xList[maxIdx], y, 'wrong_fill'); if (expected) drawBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key'); }
+            } else if (expected) { drawBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key'); }
         }
     }
     for (let i = 0; i < key2Str.length; i += 4) {
@@ -691,16 +711,16 @@ function processImagePureJS(sourceCanvas, fileName) {
         let rawKey = (q < key.p3.length) ? String(key.p3[q]) : ""; let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
         if (!cleanKey) continue; validP3Count++;
         let baseX = GRID_SPEC.p3.blockX[q]; let stuAnsStr = "";
-        let expectedMinus = cleanKey.startsWith('-'); let minusScore = getBestMappedDarkness(baseX, GRID_SPEC.p3.yMinus, 10, 10);
+        let expectedMinus = cleanKey.startsWith('-'); let minusScore = getBestDarkness(baseX, GRID_SPEC.p3.yMinus, 10, 10);
         let filledMinus = minusScore > minConfMinus;
-        if (filledMinus) { drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill'); stuAnsStr += "-"; } 
-        else if (expectedMinus) { drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, 'missing_key'); }
+        if (filledMinus) { drawBubble(baseX, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill'); stuAnsStr += "-"; } 
+        else if (expectedMinus) { drawBubble(baseX, GRID_SPEC.p3.yMinus, 'missing_key'); }
         
         let expectedCols = cleanKey.replace(/^-/, '').split(''); 
         for (let colIdx = 0; colIdx < 4; colIdx++) {
             let x = baseX + GRID_SPEC.p3.offsetsX[colIdx]; let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
-            let scoreComma = getBestMappedDarkness(x, GRID_SPEC.p3.yComma, 13, 13);
-            let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestMappedDarkness(x, y, 13, 13));
+            let scoreComma = getBestDarkness(x, GRID_SPEC.p3.yComma, 13, 13);
+            let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestDarkness(x, y, 13, 13));
             let maxDigitScore = Math.max(...scoresDigits); let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
             let isFilled = false; let filledChar = ''; let filledY = 0;
             if (scoreComma > minConf && scoreComma > maxDigitScore) { isFilled = true; filledChar = ','; filledY = GRID_SPEC.p3.yComma; } 
@@ -708,11 +728,11 @@ function processImagePureJS(sourceCanvas, fileName) {
 
             if (isFilled) {
                 stuAnsStr += filledChar;
-                if (filledChar === expectedChar) { drawMappedBubble(x, filledY, 'correct_fill'); } 
-                else { drawMappedBubble(x, filledY, 'wrong_fill'); if (expectedChar === ',') drawMappedBubble(x, GRID_SPEC.p3.yComma, 'missing_key'); else if (expectedChar) drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key'); }
+                if (filledChar === expectedChar) { drawBubble(x, filledY, 'correct_fill'); } 
+                else { drawBubble(x, filledY, 'wrong_fill'); if (expectedChar === ',') drawBubble(x, GRID_SPEC.p3.yComma, 'missing_key'); else if (expectedChar) drawBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key'); }
             } else if (expectedChar) {
-                if (expectedChar === ',') drawMappedBubble(x, GRID_SPEC.p3.yComma, 'missing_key'); 
-                else drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
+                if (expectedChar === ',') drawBubble(x, GRID_SPEC.p3.yComma, 'missing_key'); 
+                else drawBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
             }
         }
         if (stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
@@ -721,17 +741,14 @@ function processImagePureJS(sourceCanvas, fileName) {
     scoreP3 = +scoreP3.toFixed(2);
     let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
-    sCtx.fillStyle = "#ffffff"; sCtx.fillRect(12, 85, 230, 165);
-    sCtx.lineWidth = 3; sCtx.strokeStyle = "#dc2626"; sCtx.strokeRect(12, 85, 230, 165);
-    sCtx.fillStyle = "#dc2626"; sCtx.font = "bold 26px Arial"; sCtx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
-    sCtx.font = "bold 19px Arial"; sCtx.fillText(`P.I:   ${scoreP1}đ`, 28, 162); sCtx.fillText(`P.II:  ${scoreP2}đ`, 28, 195); sCtx.fillText(`P.III: ${scoreP3}đ`, 28, 228);
+    rCtx.fillStyle = "#ffffff"; rCtx.fillRect(12, 85, 230, 165);
+    rCtx.lineWidth = 3; rCtx.strokeStyle = "#dc2626"; rCtx.strokeRect(12, 85, 230, 165);
+    rCtx.fillStyle = "#dc2626"; rCtx.font = "bold 26px Arial"; rCtx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
+    rCtx.font = "bold 19px Arial"; rCtx.fillText(`P.I:   ${scoreP1}đ`, 28, 162); rCtx.fillText(`P.II:  ${scoreP2}đ`, 28, 195); rCtx.fillText(`P.III: ${scoreP3}đ`, 28, 228);
 
-    const outCanvas = document.getElementById('result-canvas');
-    outCanvas.width = WIDTH; outCanvas.height = HEIGHT;
-    outCanvas.getContext('2d').drawImage(scaledCanvas, 0, 0);
-    outCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
+    resultCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
 
-    try { let b64 = outCanvas.toDataURL('image/jpeg', 0.85).split(',')[1]; gradedImagesData.push({ filename: `${sbd}_${code}.jpg`, base64: b64 }); } 
+    try { let b64 = resultCanvas.toDataURL('image/jpeg', 0.85).split(',')[1]; gradedImagesData.push({ filename: `${sbd}_${code}.jpg`, base64: b64 }); } 
     catch(e) { console.warn("Lưu ZIP bị chặn."); }
 
     document.getElementById('score-dashboard').style.display = 'block';
