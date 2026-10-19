@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V5.9 - Tọa Độ Tương Đối</title>
+    <title>NTMIX V6.0 - Lưới Tương Đối Động</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -15,7 +15,7 @@
                 window.cvReady = true;
                 let statusBox = document.getElementById('scan-status');
                 if(statusBox) {
-                    statusBox.innerHTML = "✅ Lõi OpenCV đã sẵn sàng! Mời Mở Máy Quét.";
+                    statusBox.innerHTML = "✅ Lõi OpenCV (Local) đã sẵn sàng! Mời Mở Máy Quét.";
                     statusBox.style.color = "var(--success)";
                     statusBox.style.borderColor = "var(--success)";
                     statusBox.style.backgroundColor = "#ecfdf5";
@@ -23,6 +23,7 @@
             }
         };
     </script>
+    <!-- ĐƯỜNG DẪN NỘI BỘ OPENCV.JS -->
     <script async src="opencv.js" type="text/javascript"></script>
     
     <style>
@@ -128,7 +129,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V5.9 - Kỷ Nguyên Tọa Độ Tương Đối</span>
+    <span class="badge-cv">V6.0 - Kiến Trúc Lưới Tương Đối Động</span>
 </header>
 
 <div class="container">
@@ -164,28 +165,18 @@
         </div>
 
         <div class="card">
-            <div class="card-title">2. Căn Chỉnh Khung Viền Trong</div>
+            <div class="card-title">2. Cấu hình Máy Quét & Lưới</div>
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px dashed #6366f1;">
-                <label style="color: #4338ca; font-weight: 700;">📐 Ép Khung Lưới (Tỷ lệ Vàng):</label>
-                <p style="font-size: 11px; color: #475569; margin-bottom: 8px;">Thay đổi 4 số này để co/giãn toàn bộ lưới đáp án cho vừa với viền trong của 4 ô đen máy in.</p>
+                <label style="color: #4338ca; font-weight: 700;">📐 Căn Chỉnh Hệ Tọa Độ Tương Đối:</label>
+                <p style="font-size: 11px; color: #475569; margin-bottom: 8px;">Dịch toàn bộ lưới sang trái (-), phải (+) hoặc lên (-), xuống (+).</p>
                 <div class="grid-2">
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Trục X (Viền Trái)</span>
-                        <input type="number" id="anchor-x-left" value="48">
+                        <span style="font-size: 11px; color: #64748b;">Trục X</span>
+                        <input type="number" id="cfg-offset-x" value="0">
                     </div>
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Trục X (Viền Phải)</span>
-                        <input type="number" id="anchor-x-right" value="765">
-                    </div>
-                </div>
-                 <div class="grid-2" style="margin-top: 8px;">
-                    <div>
-                        <span style="font-size: 11px; color: #64748b;">Trục Y (Viền Trên)</span>
-                        <input type="number" id="anchor-y-top" value="48">
-                    </div>
-                    <div>
-                        <span style="font-size: 11px; color: #64748b;">Trục Y (Viền Dưới)</span>
-                        <input type="number" id="anchor-y-bottom" value="1090">
+                        <span style="font-size: 11px; color: #64748b;">Trục Y</span>
+                        <input type="number" id="cfg-offset-y" value="0">
                     </div>
                 </div>
             </div>
@@ -313,13 +304,40 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = []; let gradedImagesData
 let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0; let lastGradedSbd = "Phieu";
 
-// LƯỚI TỌA ĐỘ TRÊN BẢN 800x1130
-const GRID_SPEC = {
-    sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
-    made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
-    p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584] },
-    p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743] },
-    p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yComma: 871, yDigit: [891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], digitChars: ['0','1','2','3','4','5','6','7','8','9'] }
+// =========================================================================
+// BẢN ĐỒ TỌA ĐỘ TƯƠNG ĐỐI (RELATIVE GRID MAP) - ĐỘT PHÁ V6.0
+// Thay vì Pixel cứng nhắc, tọa độ giờ đây là tỷ lệ phần trăm (0.0 -> 1.0)
+// tính từ viền trong của 4 ô vuông đen.
+// Lấy chuẩn dựa trên ảnh PDF gốc của BGD:
+// Box Viền Trong: W = ~680px, H = ~960px
+// =========================================================================
+
+const REL_SPEC = {
+    sbd: { 
+        x: [0.697, 0.723, 0.750, 0.776, 0.802, 0.829, 0.855, 0.882], 
+        y: [0.036, 0.061, 0.086, 0.111, 0.136, 0.161, 0.186, 0.211, 0.236, 0.261] 
+    },
+    made: { 
+        x: [0.941, 0.967, 0.994, 1.020], 
+        y: [0.036, 0.061, 0.086, 0.111, 0.136, 0.161, 0.186, 0.211, 0.236, 0.261] 
+    },
+    p1: { 
+        blockX: [-0.019, 0.257, 0.533, 0.810], 
+        offsetsX: [0, 0.055, 0.111, 0.167], 
+        y: [0.384, 0.403, 0.422, 0.442, 0.461, 0.481, 0.500, 0.519, 0.539, 0.558] 
+    },
+    p2: { 
+        blockX: [-0.019, 0.257, 0.533, 0.810], 
+        y: [0.665, 0.685, 0.704, 0.724] 
+    },
+    p3: { 
+        blockX: [-0.029, 0.147, 0.323, 0.500, 0.676, 0.852], 
+        offsetsX: [0, 0.038, 0.076, 0.114], 
+        yMinus: 0.838, 
+        yComma: 0.858, 
+        yDigit: [0.879, 0.899, 0.918, 0.938, 0.958, 0.978, 0.997, 1.017, 1.037, 1.056], 
+        digitChars: ['0','1','2','3','4','5','6','7','8','9'] 
+    }
 };
 
 function switchTab(tabId) {
@@ -542,18 +560,14 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI OPENCV.JS - LẤY VIỀN TRONG (INNER ANCHOR) =================
+// ================= LÕI TỌA ĐỘ TƯƠNG ĐỐI (V6.0) =================
 function processImageOMR(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
     const imgData = sCtx.getImageData(0, 0, WIDTH, HEIGHT);
-    const data = imgData.data;
 
-    // Kéo giãn theo viền trong tuyệt đối
-    let anchorL = parseInt(document.getElementById('anchor-x-left')?.value) || 48;
-    let anchorR = parseInt(document.getElementById('anchor-x-right')?.value) || 765;
-    let anchorT = parseInt(document.getElementById('anchor-y-top')?.value) || 48;
-    let anchorB = parseInt(document.getElementById('anchor-y-bottom')?.value) || 1090;
+    let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
+    let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
 
     const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.20;
     const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus')?.value) || 0.40;
@@ -562,6 +576,7 @@ function processImageOMR(sourceCanvas, fileName) {
     const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
     const fallbackCode = document.getElementById('fallback-code')?.value.trim() || "";
 
+    // 1. TÌM 4 Ô ĐEN BẰNG OPENCV
     let srcMat = cv.matFromImageData(imgData);
     let grayMat = new cv.Mat();
     cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
@@ -577,7 +592,7 @@ function processImageOMR(sourceCanvas, fileName) {
     for (let i = 0; i < contours.size(); i++) {
         let cnt = contours.get(i);
         let area = cv.contourArea(cnt);
-        if (area > 100 && area < 2500) { 
+        if (area > 80 && area < 2500) { 
             let rect = cv.boundingRect(cnt);
             let aspectRatio = rect.width / rect.height;
             if (aspectRatio >= 0.6 && aspectRatio <= 1.4) {
@@ -588,6 +603,7 @@ function processImageOMR(sourceCanvas, fileName) {
     }
     contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
 
+    // 2. TÌM 4 GÓC VIỀN TRONG (INNER CORNERS)
     squareRects.sort((a, b) => (a.y + a.height/2) - (b.y + b.height/2));
     if (squareRects.length < 4) {
         alert("Lỗi: Không tìm đủ 4 ô đen định vị. Vui lòng chụp rõ hơn.");
@@ -600,47 +616,48 @@ function processImageOMR(sourceCanvas, fileName) {
     let pTL_rect = topRects[0]; let pTR_rect = topRects[1];
     let pBL_rect = bottomRects[0]; let pBR_rect = bottomRects[1];
 
-    // LẤY TỌA ĐỘ MÉP TRONG TƯƠNG ĐỐI
     let pTL = { x: pTL_rect.x + pTL_rect.width, y: pTL_rect.y + pTL_rect.height }; 
     let pTR = { x: pTR_rect.x,                  y: pTR_rect.y + pTR_rect.height }; 
     let pBL = { x: pBL_rect.x + pBL_rect.width, y: pBL_rect.y };                   
     let pBR = { x: pBR_rect.x,                  y: pBR_rect.y };                   
 
-    let dstMat = new cv.Mat();
-    let dsize = new cv.Size(WIDTH, HEIGHT);
+    // 3. TẠO HỆ QUY CHIẾU BẰNG PHÉP BIẾN ĐỔI SONG TUYẾN TÍNH (Bilinear Interpolation)
+    // Không bẻ phẳng ảnh, mà bẻ cong lưới tọa độ theo độ méo của giấy!
+    function getAbsoluteCoord(relX, relY) {
+        // Tính tỷ lệ nội suy theo trục Y
+        let leftX = pTL.x + (pBL.x - pTL.x) * relY;
+        let rightX = pTR.x + (pBR.x - pTR.x) * relY;
+        
+        let leftY = pTL.y + (pBL.y - pTL.y) * relY;
+        let rightY = pTR.y + (pBR.y - pTR.y) * relY;
+        
+        // Tính tỷ lệ nội suy theo trục X
+        let finalX = leftX + (rightX - leftX) * relX;
+        let finalY = leftY + (rightY - leftY) * relX;
+        
+        return { x: Math.round(finalX) + ox, y: Math.round(finalY) + oy };
+    }
 
-    let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ pTL.x, pTL.y, pTR.x, pTR.y, pBL.x, pBL.y, pBR.x, pBR.y ]);
-    
-    // ÁP DỤNG ĐIỂM NEO DO NGƯỜI DÙNG CẤU HÌNH TRÊN GIAO DIỆN
-    let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ 
-        anchorL, anchorT, 
-        anchorR, anchorT, 
-        anchorL, anchorB, 
-        anchorR, anchorB 
-    ]);
-
-    let M = cv.getPerspectiveTransform(srcTri, dstTri);
-    cv.warpPerspective(srcMat, dstMat, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-
+    // 4. TIẾN HÀNH ĐỌC ĐÁP ÁN TRÊN ẢNH GỐC (Chất lượng điểm ảnh cao nhất)
     const resultCanvas = document.getElementById('result-canvas');
     resultCanvas.width = WIDTH; resultCanvas.height = HEIGHT;
-    cv.imshow(resultCanvas, dstMat);
+    cv.imshow(resultCanvas, srcMat);
     const rCtx = resultCanvas.getContext('2d', { willReadFrequently: true });
-    const warpedData = rCtx.getImageData(0, 0, WIDTH, HEIGHT).data;
+    const rawData = imgData.data;
 
-    srcMat.delete(); dstMat.delete(); srcTri.delete(); dstTri.delete(); M.delete();
+    srcMat.delete();
 
     function getBestDarkness(cx, cy, w, h) {
         let bestScore = 0;
-        let searchRadius = 8; 
-        for (let dy = -searchRadius; dy <= searchRadius; dy += 4) {
-            for (let dx = -searchRadius; dx <= searchRadius; dx += 4) {
+        let searchRadius = 6; 
+        for (let dy = -searchRadius; dy <= searchRadius; dy += 3) {
+            for (let dx = -searchRadius; dx <= searchRadius; dx += 3) {
                 let startX = Math.round(cx + dx) - Math.floor(w/2); let startY = Math.round(cy + dy) - Math.floor(h/2);
                 let bgSum = 0, bgCount = 0;
-                for (let py = Math.round(cy + dy) - 18; py < Math.round(cy + dy) + 18; py+=3) {
-                    for (let px = Math.round(cx + dx) - 18; px < Math.round(cx + dx) + 18; px+=3) {
+                for (let py = Math.round(cy + dy) - 16; py < Math.round(cy + dy) + 16; py+=3) {
+                    for (let px = Math.round(cx + dx) - 16; px < Math.round(cx + dx) + 16; px+=3) {
                         if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
-                        let idx = (py * WIDTH + px) * 4; bgSum += 0.299*warpedData[idx] + 0.587*warpedData[idx+1] + 0.114*warpedData[idx+2]; bgCount++;
+                        let idx = (py * WIDTH + px) * 4; bgSum += 0.299*rawData[idx] + 0.587*rawData[idx+1] + 0.114*rawData[idx+2]; bgCount++;
                     }
                 }
                 let bgAvg = bgCount > 0 ? bgSum / bgCount : 255; let localThresh = Math.min(150, bgAvg * 0.85); 
@@ -648,7 +665,7 @@ function processImageOMR(sourceCanvas, fileName) {
                 for (let y = startY; y < startY + h; y++) {
                     for (let x = startX; x < startX + w; x++) {
                         if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
-                        let idx = (y * WIDTH + x) * 4; let gray = 0.299*warpedData[idx] + 0.587*warpedData[idx+1] + 0.114*warpedData[idx+2];
+                        let idx = (y * WIDTH + x) * 4; let gray = 0.299*rawData[idx] + 0.587*rawData[idx+1] + 0.114*rawData[idx+2];
                         if (gray < localThresh) darkCount++; total++;
                     }
                 }
@@ -659,11 +676,11 @@ function processImageOMR(sourceCanvas, fileName) {
         return bestScore;
     }
 
-    function drawBubble(nx, ny, status) {
+    function drawBubble(pt, status) {
         rCtx.beginPath(); let boxSize = 14;
-        let hsx = nx - boxSize/2; let hsy = ny - boxSize/2;
+        let hsx = pt.x - boxSize/2; let hsy = pt.y - boxSize/2;
         rCtx.lineWidth = 1;
-        rCtx.strokeStyle = "rgba(100, 149, 237, 0.4)";
+        rCtx.strokeStyle = "rgba(100, 149, 237, 0.5)"; // Xanh mờ
         rCtx.strokeRect(hsx, hsy, boxSize, boxSize);
         rCtx.lineWidth = 2;
         if (status === 'correct_fill') { rCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; rCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
@@ -672,26 +689,30 @@ function processImageOMR(sourceCanvas, fileName) {
         else if (status === 'info_read') { rCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; rCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
     }
 
+    // ĐỌC SBD
     let scannedSbd = "";
-    for (let x of GRID_SPEC.sbd.x) {
-        let scores = GRID_SPEC.sbd.y.map(y => getBestDarkness(x, y, 14, 14));
+    for (let rx of REL_SPEC.sbd.x) {
+        let coords = REL_SPEC.sbd.y.map(ry => getAbsoluteCoord(rx, ry));
+        let scores = coords.map(pt => getBestDarkness(pt.x, pt.y, 14, 14));
         let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
-        GRID_SPEC.sbd.y.forEach((y, idx) => {
+        coords.forEach((pt, idx) => {
             if(idx === maxIdx && scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) {
-                scannedSbd += String(idx); drawBubble(x, y, 'info_read');
-            } else { drawBubble(x, y, 'empty'); }
+                scannedSbd += String(idx); drawBubble(pt, 'info_read');
+            } else { drawBubble(pt, 'empty'); }
         });
         if(scores[maxIdx] <= minConf || (scores[maxIdx] - sorted[4]) <= 0.08) scannedSbd += "0";
     }
 
+    // ĐỌC MÃ ĐỀ
     let scannedCode = "";
-    for (let x of GRID_SPEC.made.x) {
-        let scores = GRID_SPEC.made.y.map(y => getBestDarkness(x, y, 14, 14));
+    for (let rx of REL_SPEC.made.x) {
+        let coords = REL_SPEC.made.y.map(ry => getAbsoluteCoord(rx, ry));
+        let scores = coords.map(pt => getBestDarkness(pt.x, pt.y, 14, 14));
         let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
-        GRID_SPEC.made.y.forEach((y, idx) => {
+        coords.forEach((pt, idx) => {
             if(idx === maxIdx && scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) {
-                scannedCode += String(idx); drawBubble(x, y, 'info_read');
-            } else { drawBubble(x, y, 'empty'); }
+                scannedCode += String(idx); drawBubble(pt, 'info_read');
+            } else { drawBubble(pt, 'empty'); }
         });
         if(scores[maxIdx] <= minConf || (scores[maxIdx] - sorted[4]) <= 0.08) scannedCode += "0";
     }
@@ -705,46 +726,52 @@ function processImageOMR(sourceCanvas, fileName) {
 
     let key = answerKey[code] || { p1: [], p2: [], p3: [] }; let stuInfo = dshsDict[sbd] || { name: "", className: "" };
     
+    // ĐỌC PHẦN I
     let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
     for (let i = 0; i < 40; i++) { 
         let blockIdx = Math.floor(i / 10), rowIdx = i % 10; if (blockIdx >= 4) break;
-        let y = GRID_SPEC.p1.y[rowIdx]; let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
-        let scores = xList.map(x => getBestDarkness(x, y, 14, 14));
+        let ry = REL_SPEC.p1.y[rowIdx]; 
+        let rxList = REL_SPEC.p1.offsetsX.map(off => REL_SPEC.p1.blockX[blockIdx] + off);
+        let coords = rxList.map(rx => getAbsoluteCoord(rx, ry));
+        
+        let scores = coords.map(pt => getBestDarkness(pt.x, pt.y, 14, 14));
         let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
         let isFilled = maxScore > minConf; 
         
         let corrLabel = (i < key.p1.length) ? key.p1[i] : null; 
         let corrIdx = labelsP1.indexOf(corrLabel);
 
-        xList.forEach((x, idx) => {
+        coords.forEach((pt, idx) => {
             if (isFilled && idx === maxIdx) {
-                if (labelsP1[maxIdx] === corrLabel) { right1++; drawBubble(x, y, 'correct_fill'); }
-                else { drawBubble(x, y, 'wrong_fill'); }
-            } else if (idx === corrIdx) { drawBubble(x, y, 'missing_key'); } 
-            else { drawBubble(x, y, 'empty'); }
+                if (labelsP1[maxIdx] === corrLabel) { right1++; drawBubble(pt, 'correct_fill'); }
+                else { drawBubble(pt, 'wrong_fill'); }
+            } else if (idx === corrIdx) { drawBubble(pt, 'missing_key'); } 
+            else { drawBubble(pt, 'empty'); }
         });
     }
     let scoreP1 = +(right1 * diemP1).toFixed(2);
 
+    // ĐỌC PHẦN II
     let key2Str = key.p2.join(''), student2 = '', scoreP2 = 0, right2Details = 0;
     for (let i = 0; i < 8; i++) { 
-        let blockIdx = Math.floor(i / 2), baseX = GRID_SPEC.p2.blockX[blockIdx];
-        let xList = (i % 2 === 1) ? [baseX + 76, baseX + 114] : [baseX, baseX + 38];
+        let blockIdx = Math.floor(i / 2), baseRx = REL_SPEC.p2.blockX[blockIdx];
+        let rxList = (i % 2 === 1) ? [baseRx + 0.111, baseRx + 0.167] : [baseRx, baseRx + 0.055];
         for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
-            let y = GRID_SPEC.p2.y[rowIdx]; let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
-            let scores = xList.map(x => getBestDarkness(x, y, 14, 14));
+            let ry = REL_SPEC.p2.y[rowIdx]; let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
+            let coords = rxList.map(rx => getAbsoluteCoord(rx, ry));
+            let scores = coords.map(pt => getBestDarkness(pt.x, pt.y, 14, 14));
             let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
             let isFilled = maxScore > minConf; let val = isFilled ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
             
             if (i < key.p2.length) student2 += val;
 
-            xList.forEach((x, idx) => {
+            coords.forEach((pt, idx) => {
                 let thisVal = (idx === 0) ? 'Đ' : 'S';
                 if (isFilled && idx === maxIdx) {
-                    if (thisVal === expected) drawBubble(x, y, 'correct_fill');
-                    else drawBubble(x, y, 'wrong_fill');
-                } else if (thisVal === expected) { drawBubble(x, y, 'missing_key'); } 
-                else { drawBubble(x, y, 'empty'); }
+                    if (thisVal === expected) drawBubble(pt, 'correct_fill');
+                    else drawBubble(pt, 'wrong_fill');
+                } else if (thisVal === expected) { drawBubble(pt, 'missing_key'); } 
+                else { drawBubble(pt, 'empty'); }
             });
         }
     }
@@ -755,44 +782,53 @@ function processImageOMR(sourceCanvas, fileName) {
     }
     scoreP2 = +scoreP2.toFixed(2);
 
+    // ĐỌC PHẦN III
     let scoreP3 = 0, right3 = 0, validP3Count = 0; 
     for (let q = 0; q < 6; q++) { 
         let rawKey = (q < key.p3.length) ? String(key.p3[q]) : ""; let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
         if (cleanKey) validP3Count++;
         
-        let baseX = GRID_SPEC.p3.blockX[q]; let stuAnsStr = "";
-        let expectedMinus = cleanKey.startsWith('-'); let minusScore = getBestDarkness(baseX, GRID_SPEC.p3.yMinus, 10, 10);
+        let baseRx = REL_SPEC.p3.blockX[q]; let stuAnsStr = "";
+        let expectedMinus = cleanKey.startsWith('-'); 
+        
+        let ptMinus = getAbsoluteCoord(baseRx, REL_SPEC.p3.yMinus);
+        let minusScore = getBestDarkness(ptMinus.x, ptMinus.y, 10, 10);
         let filledMinus = minusScore > minConfMinus;
         
-        if (filledMinus) { drawBubble(baseX, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill'); stuAnsStr += "-"; } 
-        else if (expectedMinus) { drawBubble(baseX, GRID_SPEC.p3.yMinus, 'missing_key'); }
-        else { drawBubble(baseX, GRID_SPEC.p3.yMinus, 'empty'); }
+        if (filledMinus) { drawBubble(ptMinus, expectedMinus ? 'correct_fill' : 'wrong_fill'); stuAnsStr += "-"; } 
+        else if (expectedMinus) { drawBubble(ptMinus, 'missing_key'); }
+        else { drawBubble(ptMinus, 'empty'); }
         
         let expectedCols = cleanKey.replace(/^-/, '').split(''); 
         for (let colIdx = 0; colIdx < 4; colIdx++) {
-            let x = baseX + GRID_SPEC.p3.offsetsX[colIdx]; let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
-            let scoreComma = getBestDarkness(x, GRID_SPEC.p3.yComma, 13, 13);
-            let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestDarkness(x, y, 13, 13));
-            let maxDigitScore = Math.max(...scoresDigits); let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
-            let isFilled = false; let filledChar = ''; let filledY = 0;
+            let rx = baseRx + REL_SPEC.p3.offsetsX[colIdx]; let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
             
-            if (scoreComma > minConf && scoreComma > maxDigitScore) { isFilled = true; filledChar = ','; filledY = GRID_SPEC.p3.yComma; } 
-            else if (maxDigitScore > minConf) { isFilled = true; filledChar = GRID_SPEC.p3.digitChars[maxDigitIdx]; filledY = GRID_SPEC.p3.yDigit[maxDigitIdx]; }
+            let ptComma = getAbsoluteCoord(rx, REL_SPEC.p3.yComma);
+            let scoreComma = getBestDarkness(ptComma.x, ptComma.y, 13, 13);
+            
+            let digitCoords = REL_SPEC.p3.yDigit.map(ry => getAbsoluteCoord(rx, ry));
+            let scoresDigits = digitCoords.map(pt => getBestDarkness(pt.x, pt.y, 13, 13));
+            
+            let maxDigitScore = Math.max(...scoresDigits); let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
+            let isFilled = false; let filledChar = ''; let filledPt = null;
+            
+            if (scoreComma > minConf && scoreComma > maxDigitScore) { isFilled = true; filledChar = ','; filledPt = ptComma; } 
+            else if (maxDigitScore > minConf) { isFilled = true; filledChar = REL_SPEC.p3.digitChars[maxDigitIdx]; filledPt = digitCoords[maxDigitIdx]; }
 
             if (isFilled) {
                 stuAnsStr += filledChar;
-                if (filledChar === expectedChar) { drawBubble(x, filledY, 'correct_fill'); } 
-                else { drawBubble(x, filledY, 'wrong_fill'); }
+                if (filledChar === expectedChar) { drawBubble(filledPt, 'correct_fill'); } 
+                else { drawBubble(filledPt, 'wrong_fill'); }
             }
             
-            if (scoreComma <= minConf && expectedChar !== ',') drawBubble(x, GRID_SPEC.p3.yComma, 'empty');
-            else if (expectedChar === ',' && !isFilled) drawBubble(x, GRID_SPEC.p3.yComma, 'missing_key');
+            if (scoreComma <= minConf && expectedChar !== ',') drawBubble(ptComma, 'empty');
+            else if (expectedChar === ',' && !isFilled) drawBubble(ptComma, 'missing_key');
 
-            GRID_SPEC.p3.yDigit.forEach((y, d_idx) => {
+            digitCoords.forEach((pt, d_idx) => {
                 let thisChar = String(d_idx);
-                if (!isFilled || filledY !== y) {
-                     if (thisChar === expectedChar) drawBubble(x, y, 'missing_key');
-                     else drawBubble(x, y, 'empty');
+                if (!isFilled || filledPt !== pt) {
+                     if (thisChar === expectedChar) drawBubble(pt, 'missing_key');
+                     else drawBubble(pt, 'empty');
                 }
             });
         }
