@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V6.2 - Lưới Tương Đối Bản Gốc</title>
+    <title>NTMIX V6.3 - Nội Suy Lưới Chuẩn Xác</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -15,7 +15,7 @@
                 window.cvReady = true;
                 let statusBox = document.getElementById('scan-status');
                 if(statusBox) {
-                    statusBox.innerHTML = "✅ Lõi OpenCV (Local) đã sẵn sàng! Mời Mở Máy Quét.";
+                    statusBox.innerHTML = "✅ Lõi OpenCV đã sẵn sàng! Mời Mở Máy Quét.";
                     statusBox.style.color = "var(--success)";
                     statusBox.style.borderColor = "var(--success)";
                     statusBox.style.backgroundColor = "#ecfdf5";
@@ -128,7 +128,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V6.2 - Tọa Độ Gốc Chuẩn Mẫu BGD</span>
+    <span class="badge-cv">V6.3 - Nội Suy Lưới Chuẩn Xác Tỷ Lệ Vàng</span>
 </header>
 
 <div class="container">
@@ -166,16 +166,36 @@
         <div class="card">
             <div class="card-title">2. Cấu hình Máy Quét & Lưới</div>
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px dashed #6366f1;">
-                <label style="color: #4338ca; font-weight: 700;">📐 Căn Chỉnh Vi Tinh (Dịch chuyển toàn bộ lưới):</label>
-                <p style="font-size: 11px; color: #475569; margin-bottom: 8px;">Nếu camera điện thoại bị méo góc, dùng 2 số này để kéo lại.</p>
+                <label style="color: #4338ca;">⚙️ Căn chỉnh Lưới bọc (Nếu bị lệch):</label>
                 <div class="grid-2">
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Trục X (Dịch ngang)</span>
+                        <span style="font-size: 11px; color: #64748b;">Trái(-)/Phải(+)</span>
                         <input type="number" id="cfg-offset-x" value="0">
                     </div>
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Trục Y (Dịch dọc)</span>
+                        <span style="font-size: 11px; color: #64748b;">Lên(-)/Xuống(+)</span>
                         <input type="number" id="cfg-offset-y" value="0">
+                    </div>
+                </div>
+                <label style="color: #4338ca; margin-top: 8px;">📐 Kích thước trang ép phẳng (Giữ nguyên hoặc chỉnh nếu méo viền):</label>
+                <div class="grid-2">
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Trái</span>
+                        <input type="number" id="cfg-margin-l" value="48">
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Phải</span>
+                        <input type="number" id="cfg-margin-r" value="38">
+                    </div>
+                </div>
+                 <div class="grid-2" style="margin-top: 8px;">
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Trên</span>
+                        <input type="number" id="cfg-margin-t" value="32">
+                    </div>
+                    <div>
+                        <span style="font-size: 11px; color: #64748b;">Lề Dưới</span>
+                        <input type="number" id="cfg-margin-b" value="32">
                     </div>
                 </div>
             </div>
@@ -303,11 +323,8 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = []; let gradedImagesData
 let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0; let lastGradedSbd = "Phieu";
 
-// =========================================================================
-// BẢN ĐỒ TỌA ĐỘ TƯƠNG ĐỐI DỰA TRÊN 4 MÉP TRONG
-// Đã trích xuất chính xác 100% từ file gốc PDF của trường Vinh Xuân.
-// Hệ quy chiếu (0.0 -> 1.0) bám sát mép trong 4 ô định vị.
-// =========================================================================
+// BẢN ĐỒ TỌA ĐỘ TƯƠNG ĐỐI 
+// Đo đạc chuẩn xác từ file PDF BGD 2025. Tỷ lệ % từ 0.0 -> 1.0 (so với khoảng cách giữa 4 mép trong)
 const REL_SPEC = {
     sbd: { 
         x: [0.700, 0.729, 0.758, 0.787, 0.816, 0.845, 0.874, 0.903], 
@@ -556,7 +573,6 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
-// ================= LÕI TỌA ĐỘ TƯƠNG ĐỐI TỪ BẢN GỐC (V6.2) =================
 function processImageOMR(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
@@ -564,6 +580,11 @@ function processImageOMR(sourceCanvas, fileName) {
 
     let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
     let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
+    
+    let marginL = parseInt(document.getElementById('cfg-margin-l')?.value) || 48;
+    let marginR = parseInt(document.getElementById('cfg-margin-r')?.value) || 38;
+    let marginT = parseInt(document.getElementById('cfg-margin-t')?.value) || 32;
+    let marginB = parseInt(document.getElementById('cfg-margin-b')?.value) || 32;
 
     const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.20;
     const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus')?.value) || 0.40;
@@ -599,7 +620,6 @@ function processImageOMR(sourceCanvas, fileName) {
     }
     contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
 
-    // 2. TÌM 4 GÓC VIỀN TRONG (INNER CORNERS)
     squareRects.sort((a, b) => (a.y + a.height/2) - (b.y + b.height/2));
     if (squareRects.length < 4) {
         alert("Lỗi: Không tìm đủ 4 ô đen định vị. Vui lòng chụp rõ hơn.");
@@ -612,35 +632,50 @@ function processImageOMR(sourceCanvas, fileName) {
     let pTL_rect = topRects[0]; let pTR_rect = topRects[1];
     let pBL_rect = bottomRects[0]; let pBR_rect = bottomRects[1];
 
-    // CHUẨN INNER CORNERS
+    // LẤY TỌA ĐỘ MÉP TRONG (INNER CORNERS)
     let pTL = { x: pTL_rect.x + pTL_rect.width, y: pTL_rect.y + pTL_rect.height }; 
     let pTR = { x: pTR_rect.x,                  y: pTR_rect.y + pTR_rect.height }; 
     let pBL = { x: pBL_rect.x + pBL_rect.width, y: pBL_rect.y };                   
     let pBR = { x: pBR_rect.x,                  y: pBR_rect.y };                   
 
-    // 3. TẠO HỆ QUY CHIẾU TƯƠNG ĐỐI
-    function getAbsoluteCoord(relX, relY) {
-        let leftX = pTL.x + (pBL.x - pTL.x) * relY;
-        let rightX = pTR.x + (pBR.x - pTR.x) * relY;
-        
-        let leftY = pTL.y + (pBL.y - pTL.y) * relY;
-        let rightY = pTR.y + (pBR.y - pTR.y) * relY;
-        
-        let finalX = leftX + (rightX - leftX) * relX;
-        let finalY = leftY + (rightY - leftY) * relX;
-        
-        return { x: Math.round(finalX) + ox, y: Math.round(finalY) + oy };
-    }
+    let dstMat = new cv.Mat();
+    let dsize = new cv.Size(WIDTH, HEIGHT);
+
+    let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ pTL.x, pTL.y, pTR.x, pTR.y, pBL.x, pBL.y, pBR.x, pBR.y ]);
+    
+    // Ép phẳng vào tọa độ Lề đã cấu hình
+    let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ 
+        marginL, marginT, 
+        WIDTH - marginR, marginT, 
+        marginL, HEIGHT - marginB, 
+        WIDTH - marginR, HEIGHT - marginB 
+    ]);
+
+    let M = cv.getPerspectiveTransform(srcTri, dstTri);
+    cv.warpPerspective(srcMat, dstMat, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
 
     const resultCanvas = document.getElementById('result-canvas');
     resultCanvas.width = WIDTH; resultCanvas.height = HEIGHT;
-    cv.imshow(resultCanvas, srcMat);
+    cv.imshow(resultCanvas, dstMat);
     const rCtx = resultCanvas.getContext('2d', { willReadFrequently: true });
-    const rawData = imgData.data;
+    
+    // Tự động giải phóng bộ nhớ
+    srcMat.delete(); dstMat.delete(); srcTri.delete(); dstTri.delete(); M.delete();
 
-    srcMat.delete();
+    // 2. DÙNG NỘI SUY (INTERPOLATION) ĐỂ TÍNH TỌA ĐỘ TUYỆT ĐỐI TỪ GRID MAP %
+    // Do ảnh ĐÃ ĐƯỢC BẺ PHẲNG bằng OpenCV, khoảng cách 4 góc đã thành hình chữ nhật chuẩn.
+    // Việc quy đổi tỷ lệ % ra Pixel chỉ là phép nhân cơ bản.
+    let inner_width = (WIDTH - marginR) - marginL;
+    let inner_height = (HEIGHT - marginB) - marginT;
 
-    // 4. BỘ CẢM BIẾN SMART SENSOR (Quét trên ảnh gốc không méo)
+    function getAbsoluteCoord(relX, relY) {
+        let finalX = marginL + (relX * inner_width) + ox;
+        let finalY = marginT + (relY * inner_height) + oy;
+        return { x: Math.round(finalX), y: Math.round(finalY) };
+    }
+
+    const warpedData = rCtx.getImageData(0, 0, WIDTH, HEIGHT).data;
+
     function getBestDarkness(cx, cy, w, h) {
         let bestScore = 0;
         let searchRadius = 6; 
@@ -648,10 +683,10 @@ function processImageOMR(sourceCanvas, fileName) {
             for (let dx = -searchRadius; dx <= searchRadius; dx += 3) {
                 let startX = Math.round(cx + dx) - Math.floor(w/2); let startY = Math.round(cy + dy) - Math.floor(h/2);
                 let bgSum = 0, bgCount = 0;
-                for (let py = Math.round(cy + dy) - 16; py < Math.round(cy + dy) + 16; py+=3) {
-                    for (let px = Math.round(cx + dx) - 16; px < Math.round(cx + dx) + 16; px+=3) {
+                for (let py = Math.round(cy + dy) - 18; py < Math.round(cy + dy) + 18; py+=3) {
+                    for (let px = Math.round(cx + dx) - 18; px < Math.round(cx + dx) + 18; px+=3) {
                         if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
-                        let idx = (py * WIDTH + px) * 4; bgSum += 0.299*rawData[idx] + 0.587*rawData[idx+1] + 0.114*rawData[idx+2]; bgCount++;
+                        let idx = (py * WIDTH + px) * 4; bgSum += 0.299*warpedData[idx] + 0.587*warpedData[idx+1] + 0.114*warpedData[idx+2]; bgCount++;
                     }
                 }
                 let bgAvg = bgCount > 0 ? bgSum / bgCount : 255; let localThresh = Math.min(150, bgAvg * 0.85); 
@@ -659,7 +694,7 @@ function processImageOMR(sourceCanvas, fileName) {
                 for (let y = startY; y < startY + h; y++) {
                     for (let x = startX; x < startX + w; x++) {
                         if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
-                        let idx = (y * WIDTH + x) * 4; let gray = 0.299*rawData[idx] + 0.587*rawData[idx+1] + 0.114*rawData[idx+2];
+                        let idx = (y * WIDTH + x) * 4; let gray = 0.299*warpedData[idx] + 0.587*warpedData[idx+1] + 0.114*warpedData[idx+2];
                         if (gray < localThresh) darkCount++; total++;
                     }
                 }
@@ -682,10 +717,6 @@ function processImageOMR(sourceCanvas, fileName) {
         else if (status === 'missing_key') { rCtx.strokeStyle = "rgba(255, 215, 0, 1)"; rCtx.strokeRect(hsx+1, hsy+1, boxSize-2, boxSize-2); }
         else if (status === 'info_read') { rCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; rCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
     }
-
-    // ==========================================
-    // ĐỌC ĐÁP ÁN DỰA TRÊN LƯỚI TƯƠNG ĐỐI
-    // ==========================================
 
     let scannedSbd = "";
     for (let rx of REL_SPEC.sbd.x) {
@@ -749,7 +780,7 @@ function processImageOMR(sourceCanvas, fileName) {
     let key2Str = key.p2.join(''), student2 = '', scoreP2 = 0, right2Details = 0;
     for (let i = 0; i < 8; i++) { 
         let blockIdx = Math.floor(i / 2), baseRx = REL_SPEC.p2.blockX[blockIdx];
-        let rxList = (i % 2 === 1) ? [baseRx + 0.111, baseRx + 0.167] : [baseRx, baseRx + 0.055];
+        let rxList = (i % 2 === 1) ? [baseRx + 0.110, baseRx + 0.165] : [baseRx, baseRx + 0.055];
         for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
             let ry = REL_SPEC.p2.y[rowIdx]; let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
             let coords = rxList.map(rx => getAbsoluteCoord(rx, ry));
