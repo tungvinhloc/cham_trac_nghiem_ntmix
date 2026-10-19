@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V5.8 - Inner Anchor (Chuẩn TNMaker)</title>
+    <title>NTMIX V5.9 - Tọa Độ Tương Đối</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -15,7 +15,7 @@
                 window.cvReady = true;
                 let statusBox = document.getElementById('scan-status');
                 if(statusBox) {
-                    statusBox.innerHTML = "✅ Lõi OpenCV (Local) đã sẵn sàng! Mời Mở Máy Quét.";
+                    statusBox.innerHTML = "✅ Lõi OpenCV đã sẵn sàng! Mời Mở Máy Quét.";
                     statusBox.style.color = "var(--success)";
                     statusBox.style.borderColor = "var(--success)";
                     statusBox.style.backgroundColor = "#ecfdf5";
@@ -128,7 +128,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V5.8 - Định Vị Viền Trong (Chuẩn TNMaker)</span>
+    <span class="badge-cv">V5.9 - Kỷ Nguyên Tọa Độ Tương Đối</span>
 </header>
 
 <div class="container">
@@ -164,38 +164,28 @@
         </div>
 
         <div class="card">
-            <div class="card-title">2. Cấu hình Máy Quét & Lưới</div>
+            <div class="card-title">2. Căn Chỉnh Khung Viền Trong</div>
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px dashed #6366f1;">
-                <label style="color: #4338ca;">⚙️ Căn chỉnh Lưới bọc (Nếu bị lệch):</label>
+                <label style="color: #4338ca; font-weight: 700;">📐 Ép Khung Lưới (Tỷ lệ Vàng):</label>
+                <p style="font-size: 11px; color: #475569; margin-bottom: 8px;">Thay đổi 4 số này để co/giãn toàn bộ lưới đáp án cho vừa với viền trong của 4 ô đen máy in.</p>
                 <div class="grid-2">
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Trái(-)/Phải(+)</span>
-                        <input type="number" id="cfg-offset-x" value="0">
+                        <span style="font-size: 11px; color: #64748b;">Trục X (Viền Trái)</span>
+                        <input type="number" id="anchor-x-left" value="48">
                     </div>
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Lên(-)/Xuống(+)</span>
-                        <input type="number" id="cfg-offset-y" value="0">
-                    </div>
-                </div>
-                <label style="color: #4338ca; margin-top: 8px;">📐 Co giãn lề bọc viền trong:</label>
-                <div class="grid-2">
-                    <div>
-                        <span style="font-size: 11px; color: #64748b;">Lề Trái</span>
-                        <input type="number" id="cfg-margin-l" value="48">
-                    </div>
-                    <div>
-                        <span style="font-size: 11px; color: #64748b;">Lề Phải</span>
-                        <input type="number" id="cfg-margin-r" value="38">
+                        <span style="font-size: 11px; color: #64748b;">Trục X (Viền Phải)</span>
+                        <input type="number" id="anchor-x-right" value="765">
                     </div>
                 </div>
                  <div class="grid-2" style="margin-top: 8px;">
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Lề Trên</span>
-                        <input type="number" id="cfg-margin-t" value="32">
+                        <span style="font-size: 11px; color: #64748b;">Trục Y (Viền Trên)</span>
+                        <input type="number" id="anchor-y-top" value="48">
                     </div>
                     <div>
-                        <span style="font-size: 11px; color: #64748b;">Lề Dưới</span>
-                        <input type="number" id="cfg-margin-b" value="32">
+                        <span style="font-size: 11px; color: #64748b;">Trục Y (Viền Dưới)</span>
+                        <input type="number" id="anchor-y-bottom" value="1090">
                     </div>
                 </div>
             </div>
@@ -435,7 +425,7 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
 
 async function openFullscreenCamera() {
     if (!window.cvReady) {
-        alert("Lõi OpenCV chưa tải xong. Vui lòng đợi thông báo màu xanh!");
+        alert("Lõi OpenCV (Local) chưa sẵn sàng. Vui lòng tải lại trang!");
         return;
     }
     const ui = document.getElementById('camera-fullscreen-ui'); const video = document.getElementById('video');
@@ -559,13 +549,11 @@ function processImageOMR(sourceCanvas, fileName) {
     const imgData = sCtx.getImageData(0, 0, WIDTH, HEIGHT);
     const data = imgData.data;
 
-    let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
-    let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
-    // Điểm neo trên canvas 800x1130
-    let marginL = parseInt(document.getElementById('cfg-margin-l')?.value) || 48;
-    let marginR = parseInt(document.getElementById('cfg-margin-r')?.value) || 38;
-    let marginT = parseInt(document.getElementById('cfg-margin-t')?.value) || 32;
-    let marginB = parseInt(document.getElementById('cfg-margin-b')?.value) || 32;
+    // Kéo giãn theo viền trong tuyệt đối
+    let anchorL = parseInt(document.getElementById('anchor-x-left')?.value) || 48;
+    let anchorR = parseInt(document.getElementById('anchor-x-right')?.value) || 765;
+    let anchorT = parseInt(document.getElementById('anchor-y-top')?.value) || 48;
+    let anchorB = parseInt(document.getElementById('anchor-y-bottom')?.value) || 1090;
 
     const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.20;
     const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus')?.value) || 0.40;
@@ -589,7 +577,7 @@ function processImageOMR(sourceCanvas, fileName) {
     for (let i = 0; i < contours.size(); i++) {
         let cnt = contours.get(i);
         let area = cv.contourArea(cnt);
-        if (area > 100 && area < 2000) { // Bắt ô vuông đa kích cỡ
+        if (area > 100 && area < 2500) { 
             let rect = cv.boundingRect(cnt);
             let aspectRatio = rect.width / rect.height;
             if (aspectRatio >= 0.6 && aspectRatio <= 1.4) {
@@ -600,7 +588,6 @@ function processImageOMR(sourceCanvas, fileName) {
     }
     contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
 
-    // Sắp xếp các ô vuông thành 4 góc
     squareRects.sort((a, b) => (a.y + a.height/2) - (b.y + b.height/2));
     if (squareRects.length < 4) {
         alert("Lỗi: Không tìm đủ 4 ô đen định vị. Vui lòng chụp rõ hơn.");
@@ -610,28 +597,26 @@ function processImageOMR(sourceCanvas, fileName) {
     let topRects = squareRects.slice(0, 2).sort((a, b) => (a.x + a.width/2) - (b.x + b.width/2));
     let bottomRects = squareRects.slice(-2).sort((a, b) => (a.x + a.width/2) - (b.x + b.width/2));
     
-    let pTL_rect = topRects[0];
-    let pTR_rect = topRects[1];
-    let pBL_rect = bottomRects[0];
-    let pBR_rect = bottomRects[1];
+    let pTL_rect = topRects[0]; let pTR_rect = topRects[1];
+    let pBL_rect = bottomRects[0]; let pBR_rect = bottomRects[1];
 
-    // TRÍCH XUẤT CHÍNH XÁC VIỀN TRONG (INNER CORNERS) CỦA Ô VUÔNG
-    let pTL = { x: pTL_rect.x + pTL_rect.width, y: pTL_rect.y + pTL_rect.height }; // Dưới, Phải
-    let pTR = { x: pTR_rect.x,                  y: pTR_rect.y + pTR_rect.height }; // Dưới, Trái
-    let pBL = { x: pBL_rect.x + pBL_rect.width, y: pBL_rect.y };                   // Trên, Phải
-    let pBR = { x: pBR_rect.x,                  y: pBR_rect.y };                   // Trên, Trái
+    // LẤY TỌA ĐỘ MÉP TRONG TƯƠNG ĐỐI
+    let pTL = { x: pTL_rect.x + pTL_rect.width, y: pTL_rect.y + pTL_rect.height }; 
+    let pTR = { x: pTR_rect.x,                  y: pTR_rect.y + pTR_rect.height }; 
+    let pBL = { x: pBL_rect.x + pBL_rect.width, y: pBL_rect.y };                   
+    let pBR = { x: pBR_rect.x,                  y: pBR_rect.y };                   
 
     let dstMat = new cv.Mat();
     let dsize = new cv.Size(WIDTH, HEIGHT);
 
     let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ pTL.x, pTL.y, pTR.x, pTR.y, pBL.x, pBL.y, pBR.x, pBR.y ]);
     
-    // Ép phẳng vào tọa độ Lề
+    // ÁP DỤNG ĐIỂM NEO DO NGƯỜI DÙNG CẤU HÌNH TRÊN GIAO DIỆN
     let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ 
-        marginL, marginT, 
-        WIDTH - marginR, marginT, 
-        marginL, HEIGHT - marginB, 
-        WIDTH - marginR, HEIGHT - marginB 
+        anchorL, anchorT, 
+        anchorR, anchorT, 
+        anchorL, anchorB, 
+        anchorR, anchorB 
     ]);
 
     let M = cv.getPerspectiveTransform(srcTri, dstTri);
@@ -650,10 +635,10 @@ function processImageOMR(sourceCanvas, fileName) {
         let searchRadius = 8; 
         for (let dy = -searchRadius; dy <= searchRadius; dy += 4) {
             for (let dx = -searchRadius; dx <= searchRadius; dx += 4) {
-                let startX = Math.round(cx + dx + ox) - Math.floor(w/2); let startY = Math.round(cy + dy + oy) - Math.floor(h/2);
+                let startX = Math.round(cx + dx) - Math.floor(w/2); let startY = Math.round(cy + dy) - Math.floor(h/2);
                 let bgSum = 0, bgCount = 0;
-                for (let py = Math.round(cy + dy + oy) - 18; py < Math.round(cy + dy + oy) + 18; py+=3) {
-                    for (let px = Math.round(cx + dx + ox) - 18; px < Math.round(cx + dx + ox) + 18; px+=3) {
+                for (let py = Math.round(cy + dy) - 18; py < Math.round(cy + dy) + 18; py+=3) {
+                    for (let px = Math.round(cx + dx) - 18; px < Math.round(cx + dx) + 18; px+=3) {
                         if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
                         let idx = (py * WIDTH + px) * 4; bgSum += 0.299*warpedData[idx] + 0.587*warpedData[idx+1] + 0.114*warpedData[idx+2]; bgCount++;
                     }
@@ -676,7 +661,7 @@ function processImageOMR(sourceCanvas, fileName) {
 
     function drawBubble(nx, ny, status) {
         rCtx.beginPath(); let boxSize = 14;
-        let hsx = nx + ox - boxSize/2; let hsy = ny + oy - boxSize/2;
+        let hsx = nx - boxSize/2; let hsy = ny - boxSize/2;
         rCtx.lineWidth = 1;
         rCtx.strokeStyle = "rgba(100, 149, 237, 0.4)";
         rCtx.strokeRect(hsx, hsy, boxSize, boxSize);
