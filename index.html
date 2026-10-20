@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V25.0 - Neo Địa Hình (Bản Chuẩn Cuối)</title>
+    <title>NTMIX V22.1 - Sửa Lỗi Nạp File & Chuẩn Hóa 800x1130</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -16,7 +16,7 @@
                 window.cvReady = true;
                 let statusBox = document.getElementById('scan-status');
                 if(statusBox) {
-                    statusBox.innerHTML = "✅ OpenCV Sẵn Sàng! Mời Mở Máy Quét.";
+                    statusBox.innerHTML = "✅ Lõi OpenCV Sẵn Sàng! Mời Mở Máy Quét.";
                     statusBox.style.color = "var(--success)";
                     statusBox.style.backgroundColor = "#ecfdf5";
                     statusBox.style.borderColor = "var(--success)";
@@ -51,7 +51,10 @@
         .btn-danger { background: var(--danger); }
         .btn-warning { background: #f59e0b; color: white; }
         .btn-secondary { background: #64748b; }
-        .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; font-weight:bold; }
+        
+        /* Chỉnh lại nút Upload để chống lỗi bấm không ăn */
+        .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; font-weight:bold; transition: 0.2s;}
+        .btn-upload:active { background: #e2e8f0; transform: scale(0.98); }
 
         #camera-fullscreen-ui { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; flex-direction: column; overflow: hidden; }
         #video-container { position: relative; flex: 1; width: 100%; height: 100%; background: #000; overflow: hidden; }
@@ -102,22 +105,29 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V25.0 - Kiến Trúc Neo Địa Hình (Chuẩn Cuối)</span>
+    <span class="badge-cv">V22.1 - Sửa Lỗi Form Nạp File</span>
 </header>
 
 <div class="container">
     <div id="tab-config" class="tab-pane active">
         <div class="card">
             <div class="card-title">1. Nạp Đáp Án & DSHS</div>
-            <div class="form-group">
-                <label class="btn-upload" for="file-key"><span id="label-file-key">📁 Chọn File Excel Đáp Án</span></label>
-                <input type="file" id="file-key" accept=".xlsx, .xls" style="display: none;">
-            </div>
-            <div id="key-status-box" style="color: var(--success); font-weight: bold; text-align: center; margin-top: 5px;"></div>
             
+            <!-- NÚT BẤM NẠP FILE ĐÁP ÁN (DÙNG JS TRỰC TIẾP CHỐNG LỖI) -->
+            <div class="form-group">
+                <div class="btn-upload" onclick="document.getElementById('file-key').click()">
+                    <span id="label-file-key">📁 Bấm Chọn File Excel Đáp Án</span>
+                </div>
+                <input type="file" id="file-key" accept=".xlsx, .xls" style="display: none;" onchange="loadExcelKey(this)">
+            </div>
+            <div id="key-status-box" style="color: var(--success); font-weight: bold; text-align: center; margin-top: 5px; display: none;"></div>
+            
+            <!-- NÚT BẤM NẠP FILE DSHS -->
             <div class="form-group" style="margin-top: 15px;">
-                <label class="btn-upload" for="file-dshs"><span id="label-file-dshs">📁 Chọn File DSHS (Tùy chọn)</span></label>
-                <input type="file" id="file-dshs" accept=".xlsx, .xls" style="display: none;">
+                <div class="btn-upload" onclick="document.getElementById('file-dshs').click()">
+                    <span id="label-file-dshs">📁 Bấm Chọn File DSHS (Tùy chọn)</span>
+                </div>
+                <input type="file" id="file-dshs" accept=".xlsx, .xls" style="display: none;" onchange="loadExcelDSHS(this)">
                 <small id="dshs-status" style="color: var(--primary); font-weight: 600; display: block; margin-top: 6px; text-align: center;"></small>
             </div>
         </div>
@@ -132,13 +142,13 @@
 
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; margin-top: 10px;">
                 <label>📍 Khoảng cách SBD & Mã Đề (X / Y):</label>
-                <div class="grid-2"><input type="number" id="sbd-dx" value="18"><input type="number" id="sbd-dy" value="26"></div>
+                <div class="grid-2"><input type="number" id="sbd-dx" value="23"><input type="number" id="sbd-dy" value="28"></div>
                 <label style="margin-top: 8px;">📍 Khoảng cách Phần I (X / Y):</label>
-                <div class="grid-2"><input type="number" id="p1-dx" value="18"><input type="number" id="p1-dy" value="28"></div>
+                <div class="grid-2"><input type="number" id="p1-dx" value="15"><input type="number" id="p1-dy" value="25"></div>
                 <label style="margin-top: 8px;">📍 Khoảng cách Phần II (X / Y):</label>
-                <div class="grid-2"><input type="number" id="p2-dx" value="18"><input type="number" id="p2-dy" value="28"></div>
+                <div class="grid-2"><input type="number" id="p2-dx" value="10"><input type="number" id="p2-dy" value="30"></div>
                 <label style="margin-top: 8px;">📍 Khoảng cách Phần III (X / Y):</label>
-                <div class="grid-2"><input type="number" id="p3-dx" value="18"><input type="number" id="p3-dy" value="28"></div>
+                <div class="grid-2"><input type="number" id="p3-dx" value="20"><input type="number" id="p3-dy" value="28"></div>
             </div>
             
             <div class="grid-2" style="margin-top: 10px;">
@@ -163,6 +173,7 @@
         </div>
     </div>
 
+    <!-- MÁY QUÉT -->
     <div id="tab-scan" class="tab-pane">
         <div class="card">
             <div class="card-title">Chấm Phiếu Trực Tiếp</div>
@@ -170,8 +181,8 @@
             
             <div class="grid-2" style="margin-bottom: 10px;">
                 <button class="btn btn-primary" onclick="openFullscreenCamera()">📷 Mở Máy Quét</button>
-                <label class="btn btn-success" style="margin: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;" for="file-images">🖼️ Chọn Ảnh</label>
-                <input type="file" id="file-images" accept="image/*" capture="environment" multiple style="display: none;" onchange="handleImageFiles(this)">
+                <div class="btn btn-success" onclick="document.getElementById('file-images').click()">🖼️ Chọn Ảnh</div>
+                <input type="file" id="file-images" accept="image/*" multiple style="display: none;" onchange="handleImageFiles(this)">
             </div>
             
             <div id="score-dashboard" class="score-dashboard">
@@ -200,6 +211,7 @@
         </div>
     </div>
 
+    <!-- BẢNG ĐIỂM -->
     <div id="tab-results" class="tab-pane">
         <div class="card">
             <div class="card-title">Danh sách đã chấm (<span id="count-graded">0</span>)</div>
@@ -263,9 +275,12 @@ function switchTab(tabId) {
 
 function playBeep() { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = "sine"; osc.frequency.setValueAtTime(1250, ctx.currentTime); gain.gain.setValueAtTime(0.2, ctx.currentTime); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.12); } catch (e) {} }
 
-document.getElementById('file-key').addEventListener('change', function(e) {
-    const file = e.target.files[0]; if (!file) return;
-    if (typeof XLSX === 'undefined') return;
+// ==========================================
+// CÁC HÀM NẠP FILE TỐI ƯU CHO MOBILE
+// ==========================================
+function loadExcelKey(input) {
+    const file = input.files[0]; if (!file) return;
+    if (typeof XLSX === 'undefined') { alert("Thư viện Excel đang tải, vui lòng chờ 1-2 giây rồi bấm lại!"); return; }
     document.getElementById('label-file-key').innerHTML = `✅ Đã chọn: <b>${file.name}</b>`;
     const reader = new FileReader();
     reader.onload = function(evt) {
@@ -284,15 +299,19 @@ document.getElementById('file-key').addEventListener('change', function(e) {
                 }
                 answerKey[code] = {p1, p2, p3};
             }
-            document.getElementById('key-status-box').innerHTML = `✅ Đã nạp ${Object.keys(answerKey).length} mã đề`;
-        } catch(e) { alert("Lỗi đọc Excel!"); }
+            let statusBox = document.getElementById('key-status-box');
+            statusBox.style.display = 'block';
+            statusBox.innerHTML = `✅ Đã nạp ${Object.keys(answerKey).length} mã đề`;
+            playBeep();
+        } catch(e) { alert("Lỗi đọc Excel: " + e.message); }
     };
-    reader.readAsArrayBuffer(file); e.target.value = '';
-});
+    reader.readAsArrayBuffer(file);
+    input.value = ''; // Cho phép chọn lại đúng file đó nếu cần
+}
 
-document.getElementById('file-dshs').addEventListener('change', function(e) {
-    const file = e.target.files[0]; if (!file) return;
-    if (typeof XLSX === 'undefined') return;
+function loadExcelDSHS(input) {
+    const file = input.files[0]; if (!file) return;
+    if (typeof XLSX === 'undefined') { alert("Thư viện Excel đang tải, vui lòng chờ 1-2 giây rồi bấm lại!"); return; }
     document.getElementById('label-file-dshs').innerHTML = `✅ Đã chọn: <b>${file.name}</b>`;
     const reader = new FileReader();
     reader.onload = function(evt) {
@@ -305,20 +324,22 @@ document.getElementById('file-dshs').addEventListener('change', function(e) {
                 if (sbd) { dshsDict[sbd] = { name: String(rows[r][2] || "").trim(), className: String(rows[r][3] || "").trim() }; count++; }
             }
             document.getElementById('dshs-status').textContent = `✅ Đã nạp ${count} học sinh`;
-        } catch(e) { alert("Lỗi đọc DSHS!"); }
+            playBeep();
+        } catch(e) { alert("Lỗi đọc DSHS: " + e.message); }
     };
-    reader.readAsArrayBuffer(file); e.target.value = '';
-});
+    reader.readAsArrayBuffer(file);
+    input.value = '';
+}
 
 async function openFullscreenCamera() {
-    if (!window.cvReady) return alert("Đang tải OpenCV...");
-    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án trước!"); switchTab('tab-config'); return; }
+    if (!window.cvReady) return alert("Đang tải OpenCV. Vui lòng chờ thông báo Xanh lá cây ở Tab Quét.");
+    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp Đáp án trước khi quét!"); switchTab('tab-config'); return; }
     const ui = document.getElementById('camera-fullscreen-ui'); const video = document.getElementById('video');
     try {
         videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } } });
         video.srcObject = videoStream; ui.style.display = 'flex';
         video.onloadedmetadata = () => { video.play(); startCornerAutoScan(); };
-    } catch (err) { alert("Lỗi Camera."); }
+    } catch (err) { alert("Lỗi Camera. Vui lòng cấp quyền hoặc dùng tính năng Chọn Ảnh."); }
 }
 
 function closeFullscreenCamera() {
@@ -381,7 +402,7 @@ function startCornerAutoScan() {
 
                 let finalCanvas = document.createElement('canvas'); finalCanvas.width = finalW; finalCanvas.height = finalH;
                 finalCanvas.getContext('2d').drawImage(video, finalX, finalY, finalW, finalH, 0, 0, finalW, finalH);
-                closeFullscreenCamera(); processLocalWarpEngine(finalCanvas);
+                closeFullscreenCamera(); processHybridEngine(finalCanvas);
             }
         } else {
             if (stableFrames > 0) stableFrames--;
@@ -398,26 +419,23 @@ function manualCapture() {
     let canvas = document.createElement('canvas'); 
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    closeFullscreenCamera(); processLocalWarpEngine(canvas);
+    closeFullscreenCamera(); processHybridEngine(canvas);
 }
 
 async function handleImageFiles(inputElement) {
     const files = inputElement.files; if (!files || !files.length) return;
     if (!window.cvReady) return alert("Đang tải OpenCV...");
+    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án trước khi quét!"); switchTab('tab-config'); inputElement.value = ''; return; }
+    
     let img = new Image();
     img.onload = () => {
         let canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
         canvas.getContext('2d').drawImage(img, 0, 0);
-        processLocalWarpEngine(canvas);
+        processHybridEngine(canvas);
     };
     img.src = URL.createObjectURL(files[0]);
     inputElement.value = ''; 
 }
-
-// =====================================================================
-// LÕI V25.0: NEO ĐỊA HÌNH (TOPOLOGICAL ANCHORING)
-// KHÔNG BÁO LỖI CẤU TRÚC. DÙNG 4 GÓC ĐỂ WARP VÀ DÙNG NEO ĐỂ HÚT LƯỚI
-// =====================================================================
 
 function createPerspectiveTransform(src, dst) {
     let a = [];
@@ -436,12 +454,20 @@ function createPerspectiveTransform(src, dst) {
     return h;
 }
 
-function processLocalWarpEngine(sourceCanvas) {
+function mapCoord(H_Matrix, x, y) {
+    let denominator = H_Matrix[6]*x + H_Matrix[7]*y + 1;
+    let nx = (H_Matrix[0]*x + H_Matrix[1]*y + H_Matrix[2]) / denominator;
+    let ny = (H_Matrix[3]*x + H_Matrix[4]*y + H_Matrix[5]) / denominator;
+    return { x: nx, y: ny };
+}
+
+function processHybridEngine(sourceCanvas) {
     try {
         const TARGET_W = 800; const TARGET_H = 1130;
         const W = sourceCanvas.width; const H = sourceCanvas.height;
         const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
         const imgData = sCtx.getImageData(0, 0, W, H);
+        const rawData = imgData.data;
         
         let minConf = getNumVal('cfg-conf', 0.20);
         let diemP1 = getNumVal('cfg-p1', 0.25);
@@ -450,12 +476,12 @@ function processLocalWarpEngine(sourceCanvas) {
         let fallbackCode = getStrVal('fallback-code', "");
 
         let SP = getNumVal('cfg-spacing', 19); 
-        let sbd_dx = getNumVal('sbd-dx', 18); let sbd_dy = getNumVal('sbd-dy', 26);
-        let p1_dx = getNumVal('p1-dx', 18); let p1_dy = getNumVal('p1-dy', 28);
-        let p2_dx = getNumVal('p2-dx', 18); let p2_dy = getNumVal('p2-dy', 28);
-        let p3_dx = getNumVal('p3-dx', 18); let p3_dy = getNumVal('p3-dy', 28);
+        let sbd_dx = getNumVal('sbd-dx', 23); let sbd_dy = getNumVal('sbd-dy', 28);
+        let p1_dx = getNumVal('p1-dx', 15); let p1_dy = getNumVal('p1-dy', 25);
+        let p2_dx = getNumVal('p2-dx', 10); let p2_dy = getNumVal('p2-dy', 30);
+        let p3_dx = getNumVal('p3-dx', 20); let p3_dy = getNumVal('p3-dy', 28);
 
-        // 1. TÌM 4 GÓC ĐỂ WARP VĨ MÔ
+        // 1. TÌM 4 GÓC WARP VĨ MÔ
         let srcMat = cv.matFromImageData(imgData);
         let grayMat = new cv.Mat(); cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
         let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 15);
@@ -476,11 +502,11 @@ function processLocalWarpEngine(sourceCanvas) {
             }
             cnt.delete();
         }
-        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
+        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete(); srcMat.delete();
 
         if (squareCenters.length < 4) {
-            alert("Không tìm thấy đủ 4 góc định vị. Vui lòng chụp bao quát toàn bộ trang giấy.");
-            srcMat.delete(); return;
+            alert("Lỗi: Không tìm thấy rõ 4 ô vuông đen to ở 4 góc giấy. Vui lòng chụp rõ nét hơn!");
+            return;
         }
 
         let pTL = squareCenters.reduce((p, c) => (c.x*c.x + c.y*c.y) < (p.x*p.x + p.y*p.y) ? c : p);
@@ -488,123 +514,106 @@ function processLocalWarpEngine(sourceCanvas) {
         let pBL = squareCenters.reduce((p, c) => (c.x*c.x + Math.pow(H-c.y, 2)) < (p.x*p.x + Math.pow(H-p.y, 2)) ? c : p);
         let pBR = squareCenters.reduce((p, c) => (Math.pow(W-c.x, 2) + Math.pow(H-c.y, 2)) < (Math.pow(W-p.x, 2) + Math.pow(H-p.y, 2)) ? c : p);
 
-        let dstMat = new cv.Mat(); let dsize = new cv.Size(TARGET_W, TARGET_H);
-        let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ pTL.x, pTL.y, pTR.x, pTR.y, pBL.x, pBL.y, pBR.x, pBR.y ]);
-        let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ 40, 40, 760, 40, 40, 1090, 760, 1090 ]);
+        // 2. MA TRẬN WARP
+        let idealPoints = [ {x:40, y:40}, {x:760, y:40}, {x:40, y:1090}, {x:760, y:1090} ];
+        let rawPoints = [ pTL, pTR, pBL, pBR ];
+        const H_Matrix = createPerspectiveTransform(idealPoints, rawPoints);
 
-        let M = cv.getPerspectiveTransform(srcTri, dstTri);
-        cv.warpPerspective(srcMat, dstMat, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
-
-        const resultCanvas = document.getElementById('result-canvas');
-        resultCanvas.width = TARGET_W; resultCanvas.height = TARGET_H;
-        cv.imshow(resultCanvas, dstMat);
-        const rCtx = resultCanvas.getContext('2d', { willReadFrequently: true });
-        const flatData = rCtx.getImageData(0, 0, TARGET_W, TARGET_H).data;
-
-        srcMat.delete(); dstMat.delete(); srcTri.delete(); dstTri.delete(); M.delete();
-
-        // 2. KHAI BÁO TỌA ĐỘ LÝ THUYẾT (Dựa trên phiếu 800x1130)
+        // TỌA ĐỘ ƯỚC LƯỢNG CHO PHIẾU MỚI
         const est_SBD_X = 548; const est_SBD_Y = 168;
         const est_MAD_X = 693; const est_MAD_Y = 168;
         const est_P1_X = [68, 250, 432, 615]; const est_P1_Y = 398;
         const est_P2_X = [70, 160, 252, 342, 432, 523, 615, 705]; const est_P2_Y = 645;
         const est_P3_X = [84, 203, 321, 440, 558, 676]; const est_P3_Y = 785;
 
-        function getDarknessFlat(cx, cy, rawRadius) {
+        let scaleRatio = (Math.sqrt(Math.pow(pTR.x - pTL.x, 2) + Math.pow(pTR.y - pTL.y, 2))) / 800; 
+
+        function getDarknessRaw(cx, cy, rawRadius) {
             let darkCount = 0, total = 0;
             let rx = Math.round(cx); let ry = Math.round(cy); let rad = Math.round(rawRadius);
             for (let y = ry - rad; y < ry + rad; y++) {
                 for (let x = rx - rad; x < rx + rad; x++) {
-                    if (x < 0 || x >= TARGET_W || y < 0 || y >= TARGET_H) continue;
-                    let idx = (y * TARGET_W + x) * 4; 
-                    let gray = 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2];
+                    if (x < 0 || x >= W || y < 0 || y >= H) continue;
+                    let idx = (y * W + x) * 4; 
+                    let gray = 0.299*rawData[idx] + 0.587*rawData[idx+1] + 0.114*rawData[idx+2];
                     if (gray < 140) darkCount++; total++; 
                 }
             }
             return total > 0 ? darkCount / total : 0;
         }
 
-        // HÀM HÚT TÂM THÔNG MINH (Chống lỗi cấu trúc)
-        // Nếu không tìm thấy tâm đen nào rõ rệt, nó sẽ dùng lại tọa độ gốc (idealX, idealY)
-        function snapToLocalAnchor(idealX, idealY) {
-            let searchRad = 15; // Bán kính rà soát nhỏ gọn (15px) vì ảnh đã được ép phẳng
-            let scanRad = 6; 
+        function snapToTrueAnchor(idealX, idealY) {
+            let predPt = mapCoord(H_Matrix, idealX, idealY); 
+            let searchRad = Math.max(10, Math.round(30 * scaleRatio)); 
+            let scanRad = Math.max(3, Math.round(8 * scaleRatio)); 
 
-            let bestScore = 0; let bestX = idealX; let bestY = idealY;
+            let bestScore = 0; let bestX = predPt.x; let bestY = predPt.y;
             for(let dy = -searchRad; dy <= searchRad; dy+=2) {
                 for(let dx = -searchRad; dx <= searchRad; dx+=2) {
-                    let score = getDarknessFlat(idealX + dx, idealY + dy, scanRad);
-                    if(score > bestScore) { bestScore = score; bestX = idealX + dx; bestY = idealY + dy; }
+                    let score = getDarknessRaw(predPt.x + dx, predPt.y + dy, scanRad);
+                    if(score > bestScore) { bestScore = score; bestX = predPt.x + dx; bestY = predPt.y + dy; }
                 }
             }
             
-            // Vẽ ô vuông xanh lơ thể hiện hệ thống đã "Hút" được vào tâm ô định vị
-            rCtx.lineWidth = 2; rCtx.strokeStyle = "rgba(0, 191, 255, 0.9)";
-            rCtx.strokeRect(bestX - scanRad, bestY - scanRad, scanRad*2, scanRad*2);
-
+            sCtx.lineWidth = 3; sCtx.strokeStyle = "rgba(0, 191, 255, 0.9)";
+            sCtx.strokeRect(bestX - scanRad, bestY - scanRad, scanRad*2, scanRad*2);
             return {x: bestX, y: bestY};
         }
 
-        function scanBubbleFlat(cx, cy, radius) {
-            let bgSum = 0, bgCount = 0;
-            for (let py = cy - radius*2; py < cy + radius*2; py+=4) {
-                for (let px = cx - radius*2; px < cx + radius*2; px+=4) {
-                    if (px < 0 || px >= TARGET_W || py < 0 || py >= TARGET_H) continue;
-                    let idx = (Math.round(py) * TARGET_W + Math.round(px)) * 4; 
-                    bgSum += 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2]; bgCount++;
-                }
-            }
-            let bgAvg = bgCount > 0 ? bgSum / bgCount : 255; let localThresh = Math.min(150, bgAvg * 0.85); 
+        function scanBubbleRel(anchor, relX, relY) {
+            let targetX = anchor.x + (relX * scaleRatio);
+            let targetY = anchor.y + (relY * scaleRatio);
             
-            let darkCount = 0, total = 0;
-            for (let y = cy - radius; y < cy + radius; y++) {
-                for (let x = cx - radius; x < cx + radius; x++) {
-                    if (x < 0 || x >= TARGET_W || y < 0 || y >= TARGET_H) continue;
-                    let idx = (Math.round(y) * TARGET_W + Math.round(x)) * 4; 
-                    let gray = 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2];
-                    if (gray < localThresh) darkCount++; total++;
-                }
-            }
-            return total > 0 ? darkCount / total : 0;
+            let dx = targetX - anchor.x; let dy = targetY - anchor.y;
+            let angle = Math.atan2(pTR.y - pTL.y, pTR.x - pTL.x);
+            let finalX = anchor.x + dx * Math.cos(angle) - dy * Math.sin(angle);
+            let finalY = anchor.y + dx * Math.sin(angle) + dy * Math.cos(angle);
+
+            let scanRad = Math.max(3, Math.round(7 * scaleRatio));
+            let score = getDarknessRaw(finalX, finalY, scanRad);
+            return { score: score, x: finalX, y: finalY, r: scanRad };
         }
 
-        function drawBox(x, y, status) {
-            rCtx.lineWidth = 1; rCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; rCtx.strokeRect(x-7, y-7, 14, 14); 
-            rCtx.lineWidth = 2;
-            if (status === 'correct') { rCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; rCtx.strokeRect(x-7, y-7, 14, 14); }
-            else if (status === 'wrong') { rCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; rCtx.strokeRect(x-7, y-7, 14, 14); }
-            else if (status === 'miss') { rCtx.strokeStyle = "rgba(255, 215, 0, 1)"; rCtx.strokeRect(x-6, y-6, 12, 12); }
-            else if (status === 'info') { rCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; rCtx.strokeRect(x-7, y-7, 14, 14); }
+        function drawBubbleResult(res, status) {
+            sCtx.lineWidth = 2; sCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; 
+            sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); 
+            sCtx.lineWidth = 3;
+            if (status === 'correct') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); }
+            else if (status === 'wrong') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); }
+            else if (status === 'miss') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.strokeRect(res.x - res.r + 1, res.y - res.r + 1, res.r*2 - 2, res.r*2 - 2); }
+            else if (status === 'info') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); }
         }
 
-        // 3. ĐỌC ĐIỂM
+        // BƯỚC 4: ĐỌC ĐIỂM
         
-        // ĐỌC SBD
-        let anchorSBD = snapToLocalAnchor(est_SBD_X, est_SBD_Y);
+        let anchorSBD = snapToTrueAnchor(est_SBD_X, est_SBD_Y);
         let scannedSbd = "";
         for (let col = 0; col < 8; col++) {
-            let bx = anchorSBD.x + (col * sbd_dx); let maxS = 0, maxRow = 0;
+            let relX = col * sbd_dx; let maxS = 0, maxRow = 0, bestRes = null;
+            let results = [];
             for(let row = 0; row < 10; row++) {
-                let by = anchorSBD.y + sbd_dy + (row * SP);
-                let score = scanBubbleFlat(bx, by, 6);
-                if (score > maxS) { maxS = score; maxRow = row; }
+                let relY = sbd_dy + (row * SP);
+                let res = scanBubbleRel(anchorSBD, relX, relY);
+                results.push(res);
+                if (res.score > maxS) { maxS = res.score; maxRow = row; bestRes = res; }
             }
             scannedSbd += (maxS > minConf) ? String(maxRow) : "0";
-            for(let row = 0; row < 10; row++) { drawBox(bx, anchorSBD.y + sbd_dy + (row * SP), (maxS>minConf && row===maxRow) ? 'info' : 'empty'); }
+            results.forEach((res, row) => drawBubbleResult(res, (maxS>minConf && row===maxRow) ? 'info' : 'empty'));
         }
 
-        // ĐỌC MÃ ĐỀ
-        let anchorMade = snapToLocalAnchor(est_MAD_X, est_MAD_Y);
+        let anchorMade = snapToTrueAnchor(est_MAD_X, est_MAD_Y);
         let scannedMade = "";
         for (let col = 0; col < 4; col++) {
-            let bx = anchorMade.x + (col * sbd_dx); let maxS = 0, maxRow = 0;
+            let relX = col * sbd_dx; let maxS = 0, maxRow = 0;
+            let results = [];
             for(let row = 0; row < 10; row++) {
-                let by = anchorMade.y + sbd_dy + (row * SP);
-                let score = scanBubbleFlat(bx, by, 6);
-                if (score > maxS) { maxS = score; maxRow = row; }
+                let relY = sbd_dy + (row * SP);
+                let res = scanBubbleRel(anchorMade, relX, relY);
+                results.push(res);
+                if (res.score > maxS) { maxS = res.score; maxRow = row; }
             }
             scannedMade += (maxS > minConf) ? String(maxRow) : "0";
-            for(let row = 0; row < 10; row++) { drawBox(bx, anchorMade.y + sbd_dy + (row * SP), (maxS>minConf && row===maxRow) ? 'info' : 'empty'); }
+            results.forEach((res, row) => drawBubbleResult(res, (maxS>minConf && row===maxRow) ? 'info' : 'empty'));
         }
 
         let code = scannedMade.replace(/\?/g, '0'); let warnings = [];
@@ -612,48 +621,47 @@ function processLocalWarpEngine(sourceCanvas) {
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
         let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
-        // ĐỌC P1
         let scoreP1 = 0; let right1 = 0;
         for (let b = 0; b < 4; b++) {
-            let anchorP1 = snapToLocalAnchor(est_P1_X[b], est_P1_Y);
+            let anchorP1 = snapToTrueAnchor(est_P1_X[b], est_P1_Y);
             for (let row = 0; row < 10; row++) {
-                let by = anchorP1.y + p1_dy + (row * SP);
-                let scores = [1,2,3,4].map(c => scanBubbleFlat(anchorP1.x + c*p1_dx, by, 6)); 
-                let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
+                let relY = p1_dy + (row * SP);
+                let results = [1,2,3,4].map(c => scanBubbleRel(anchorP1, c*p1_dx, relY)); 
+                let maxS = Math.max(...results.map(r => r.score)); 
+                let maxIdx = results.findIndex(r => r.score === maxS);
                 let isFilled = maxS > minConf;
                 
                 let corrLabel = (b*10 + row < key.p1.length) ? key.p1[b*10 + row] : null; 
                 let corrIdx = ['A','B','C','D'].indexOf(corrLabel);
 
-                [1,2,3,4].forEach((c, idx) => {
-                    let bx = anchorP1.x + c*p1_dx;
-                    if (isFilled && idx === maxIdx) {
-                        if (idx === corrIdx) { right1++; drawBox(bx, by, 'correct'); } else { drawBox(bx, by, 'wrong'); }
-                    } else if (idx === corrIdx) { drawBox(bx, by, 'miss'); } else { drawBox(bx, by, 'empty'); }
+                results.forEach((res, c) => {
+                    if (isFilled && c === maxIdx) {
+                        if (c === corrIdx) { right1++; drawBubbleResult(res, 'correct'); } else { drawBubbleResult(res, 'wrong'); }
+                    } else if (c === corrIdx) { drawBubbleResult(res, 'miss'); } else { drawBubbleResult(res, 'empty'); }
                 });
             }
         }
         scoreP1 = +(right1 * diemP1).toFixed(2);
 
-        // ĐỌC P2 
         let scoreP2 = 0; let right2Details = 0; let key2Str = key.p2.join(''); let student2Str = '';
         for (let b = 0; b < 8; b++) {
-            let anchorP2 = snapToLocalAnchor(est_P2_X[b], est_P2_Y);
+            let anchorP2 = snapToTrueAnchor(est_P2_X[b], est_P2_Y);
             for (let row = 0; row < 4; row++) {
-                let by = anchorP2.y + p2_dy + (row * SP);
-                let scores = [1,2].map(c => scanBubbleFlat(anchorP2.x + c*p2_dx, by, 6)); 
-                let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
+                let relY = p2_dy + (row * SP);
+                let results = [1,2].map(c => scanBubbleRel(anchorP2, c*p2_dx, relY)); 
+                let maxS = Math.max(...results.map(r=>r.score)); 
+                let maxIdx = results.findIndex(r=>r.score===maxS);
                 let isFilled = maxS > minConf;
                 
                 let gIdx = b * 4 + row; let expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
                 let val = isFilled ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
                 if (b < key.p2.length) student2Str += val;
 
-                [1,2].forEach((c, idx) => {
-                    let bx = anchorP2.x + c*p2_dx; let thisVal = (idx === 0) ? 'Đ' : 'S';
-                    if (isFilled && idx === maxIdx) {
-                        if (thisVal === expected) { drawBox(bx, by, 'correct'); } else { drawBox(bx, by, 'wrong'); }
-                    } else if (thisVal === expected) { drawBox(bx, by, 'miss'); } else { drawBox(bx, by, 'empty'); }
+                results.forEach((res, c) => {
+                    let thisVal = (c === 0) ? 'Đ' : 'S';
+                    if (isFilled && c === maxIdx) {
+                        if (thisVal === expected) { drawBubbleResult(res, 'correct'); } else { drawBubbleResult(res, 'wrong'); }
+                    } else if (thisVal === expected) { drawBubbleResult(res, 'miss'); } else { drawBubbleResult(res, 'empty'); }
                 });
             }
         }
@@ -664,46 +672,46 @@ function processLocalWarpEngine(sourceCanvas) {
         }
         scoreP2 = +scoreP2.toFixed(2);
 
-        // ĐỌC P3 
         let scoreP3 = 0; let right3 = 0; let validP3Count = 0; 
         for (let q = 0; q < 6; q++) { 
-            let anchorP3 = snapToLocalAnchor(est_P3_X[q], est_P3_Y);
+            let anchorP3 = snapToTrueAnchor(est_P3_X[q], est_P3_Y);
             let rawKey = (q < key.p3.length) ? String(key.p3[q]) : ""; let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
             if (cleanKey) validP3Count++;
             
             let stuAnsStr = ""; let expectedMinus = cleanKey.startsWith('-'); 
             
-            let minusScore = scanBubbleFlat(anchorP3.x, anchorP3.y + p3_dy, 6); 
-            let filledMinus = minusScore > minConf;
-            if (filledMinus) { drawBox(anchorP3.x, anchorP3.y + p3_dy, expectedMinus ? 'correct' : 'wrong'); stuAnsStr += "-"; } 
-            else if (expectedMinus) { drawBox(anchorP3.x, anchorP3.y + p3_dy, 'miss'); } else { drawBox(anchorP3.x, anchorP3.y + p3_dy, 'empty'); }
+            let resMinus = scanBubbleRel(anchorP3, 0, p3_dy);
+            let filledMinus = resMinus.score > minConf;
+            if (filledMinus) { drawBubbleResult(resMinus, expectedMinus ? 'correct' : 'wrong'); stuAnsStr += "-"; } 
+            else if (expectedMinus) { drawBubbleResult(resMinus, 'miss'); } else { drawBubbleResult(resMinus, 'empty'); }
             
             let expectedCols = cleanKey.replace(/^-/, '').split(''); 
             for (let colIdx = 0; colIdx < 4; colIdx++) {
-                let bx = anchorP3.x + (colIdx + 1) * p3_dx; 
+                let relX = (colIdx + 1) * p3_dx; 
                 let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
                 
-                let commaScore = scanBubbleFlat(bx, anchorP3.y + p3_dy + SP, 6);
-                let scoresDigits = [0,1,2,3,4,5,6,7,8,9].map(i => scanBubbleFlat(bx, anchorP3.y + p3_dy + (i+2)*SP, 6));
+                let resComma = scanBubbleRel(anchorP3, relX, p3_dy + SP);
+                let resDigits = [0,1,2,3,4,5,6,7,8,9].map(i => scanBubbleRel(anchorP3, relX, p3_dy + (i+2)*SP));
                 
-                let maxDigitScore = Math.max(...scoresDigits); let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
-                let isFilled = false; let filledChar = ''; let filledY = null;
+                let maxDigitScore = Math.max(...resDigits.map(r=>r.score)); 
+                let maxDigitIdx = resDigits.findIndex(r=>r.score === maxDigitScore);
                 
-                if (commaScore > minConf && commaScore > maxDigitScore) { isFilled = true; filledChar = ','; filledY = anchorP3.y + p3_dy + SP; } 
-                else if (maxDigitScore > minConf) { isFilled = true; filledChar = String(maxDigitIdx); filledY = anchorP3.y + p3_dy + (maxDigitIdx+2)*SP; }
+                let isFilled = false; let filledChar = ''; let filledRes = null;
+                
+                if (resComma.score > minConf && resComma.score > maxDigitScore) { isFilled = true; filledChar = ','; filledRes = resComma; } 
+                else if (maxDigitScore > minConf) { isFilled = true; filledChar = String(maxDigitIdx); filledRes = resDigits[maxDigitIdx]; }
 
                 if (isFilled) {
                     stuAnsStr += filledChar;
-                    drawBox(bx, filledY, (filledChar === expectedChar) ? 'correct' : 'wrong');
+                    drawBubbleResult(filledRes, (filledChar === expectedChar) ? 'correct' : 'wrong');
                 }
                 
-                if (commaScore <= minConf && expectedChar !== ',') drawBox(bx, anchorP3.y + p3_dy + SP, 'empty');
-                else if (expectedChar === ',' && !isFilled) drawBox(bx, anchorP3.y + p3_dy + SP, 'miss');
+                if (resComma.score <= minConf && expectedChar !== ',') drawBubbleResult(resComma, 'empty');
+                else if (expectedChar === ',' && !isFilled) drawBubbleResult(resComma, 'miss');
 
-                [0,1,2,3,4,5,6,7,8,9].forEach(i => {
-                    let cy = anchorP3.y + p3_dy + (i+2)*SP;
-                    if (!isFilled || filledY !== cy) {
-                         drawBox(bx, cy, (String(i) === expectedChar) ? 'miss' : 'empty');
+                resDigits.forEach((res, i) => {
+                    if (!isFilled || filledRes !== res) {
+                         drawBubbleResult(res, (String(i) === expectedChar) ? 'miss' : 'empty');
                     }
                 });
             }
@@ -713,13 +721,14 @@ function processLocalWarpEngine(sourceCanvas) {
         
         let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
-        rCtx.fillStyle = "rgba(255, 255, 255, 0.95)"; rCtx.fillRect(10, 80, 280, 200);
-        rCtx.lineWidth = 4; rCtx.strokeStyle = "#dc2626"; rCtx.strokeRect(10, 80, 280, 200);
-        rCtx.fillStyle = "#dc2626"; rCtx.font = "bold 32px Arial"; rCtx.fillText(`TỔNG: ${totalScore}đ`, 25, 130);
-        rCtx.font = "bold 24px Arial"; rCtx.fillText(`P.I:   ${scoreP1}đ`, 30, 180); rCtx.fillText(`P.II:  ${scoreP2}đ`, 30, 220); rCtx.fillText(`P.III: ${scoreP3}đ`, 30, 260);
+        sCtx.fillStyle = "rgba(255, 255, 255, 0.95)"; sCtx.fillRect(10, 80, 280, 200);
+        sCtx.lineWidth = 4; sCtx.strokeStyle = "#dc2626"; sCtx.strokeRect(10, 80, 280, 200);
+        sCtx.fillStyle = "#dc2626"; sCtx.font = "bold 32px Arial"; sCtx.fillText(`TỔNG: ${totalScore}đ`, 25, 130);
+        sCtx.font = "bold 24px Arial"; sCtx.fillText(`P.I:   ${scoreP1}đ`, 30, 180); sCtx.fillText(`P.II:  ${scoreP2}đ`, 30, 220); sCtx.fillText(`P.III: ${scoreP3}đ`, 30, 260);
 
         const resultCanvas = document.getElementById('result-canvas');
-        resultCanvas.width = TARGET_W; resultCanvas.height = TARGET_H;
+        resultCanvas.width = W; resultCanvas.height = H;
+        resultCanvas.getContext('2d').drawImage(sourceCanvas, 0, 0);
         resultCanvas.style.display = 'block'; 
         
         document.getElementById('score-dashboard').style.display = 'block';
