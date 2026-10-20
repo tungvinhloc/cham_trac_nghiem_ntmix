@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V13.0 - Lõi Vệ Tinh (Phiếu Mới)</title>
+    <title>NTMIX V13.1 - Lõi Phẳng & Tọa Độ Tùy Chỉnh</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -19,6 +19,7 @@
                     statusBox.innerHTML = "✅ Lõi OpenCV Sẵn Sàng! Mời chụp phiếu MỚI.";
                     statusBox.style.color = "var(--success)";
                     statusBox.style.backgroundColor = "#ecfdf5";
+                    statusBox.style.borderColor = "var(--success)";
                 }
             }
         };
@@ -49,7 +50,6 @@
         .btn-success { background: var(--success); }
         .btn-danger { background: var(--danger); }
         .btn-warning { background: #f59e0b; color: white; }
-        .btn-purple { background: var(--purple); }
         .btn-secondary { background: #64748b; }
         .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; font-weight:bold; }
 
@@ -57,10 +57,9 @@
         #video-container { position: relative; flex: 1; width: 100%; height: 100%; background: #000; }
         #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         
-        /* Guide Box mới cho Phiếu Mới */
         #cam-overlay { 
             position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
-            width: 90vw; max-width: 600px; aspect-ratio: 1 / 1.4; 
+            width: 90vw; max-width: 600px; aspect-ratio: 800 / 1130; 
             box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); 
             border: 2px dashed rgba(255, 255, 255, 0.8); pointer-events: none; z-index: 10;
         }
@@ -96,14 +95,13 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V13.0 - Lõi Vệ Tinh (Phiếu Mới)</span>
+    <span class="badge-cv">V13.1 - Lõi Ép Phẳng 4 Góc & Lưới Tùy Chỉnh</span>
 </header>
 
 <div class="container">
-    <!-- CẤU HÌNH -->
     <div id="tab-config" class="tab-pane active">
         <div class="card">
-            <div class="card-title">1. Nạp Đáp Án</div>
+            <div class="card-title">1. Nạp Đáp Án (File Excel)</div>
             <div class="form-group">
                 <label class="btn-upload" for="file-key">
                     <span id="label-file-key">📁 Chọn File Excel Đáp Án</span>
@@ -114,32 +112,32 @@
         </div>
 
         <div class="card">
-            <div class="card-title">2. Tinh chỉnh Lưới Vệ Tinh (Offset)</div>
-            <p style="font-size: 11px; color: #64748b; margin-bottom: 8px;">Dịch lưới từ tâm ô đen định vị sang phải/xuống dưới (Đơn vị Pixel).</p>
+            <div class="card-title">2. Tinh chỉnh Lưới (Cho Phiếu Mới)</div>
+            <p style="font-size: 11px; color: #d93025; margin-bottom: 8px; font-weight:bold;">Mẹo: Nhìn ảnh chấm bị lệch ở đâu, tăng giảm số X(ngang) Y(dọc) ở đó để khớp lưới.</p>
             
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px;">
                 <label>📍 SBD & Mã Đề (Dịch X / Dịch Y):</label>
                 <div class="grid-2">
-                    <input type="number" id="off-head-x" value="25" title="Cách ô đen sang phải">
-                    <input type="number" id="off-head-y" value="30" title="Cách ô đen xuống dưới">
+                    <input type="number" id="off-sbd-x" value="0">
+                    <input type="number" id="off-sbd-y" value="0">
                 </div>
                 
                 <label style="margin-top: 8px;">📍 Phần I (Dịch X / Dịch Y):</label>
                 <div class="grid-2">
-                    <input type="number" id="off-p1-x" value="15">
-                    <input type="number" id="off-p1-y" value="25">
+                    <input type="number" id="off-p1-x" value="0">
+                    <input type="number" id="off-p1-y" value="0">
                 </div>
 
                 <label style="margin-top: 8px;">📍 Phần II (Dịch X / Dịch Y):</label>
                 <div class="grid-2">
-                    <input type="number" id="off-p2-x" value="10">
-                    <input type="number" id="off-p2-y" value="35">
+                    <input type="number" id="off-p2-x" value="0">
+                    <input type="number" id="off-p2-y" value="0">
                 </div>
 
                 <label style="margin-top: 8px;">📍 Phần III (Dịch X / Dịch Y):</label>
                 <div class="grid-2">
-                    <input type="number" id="off-p3-x" value="20">
-                    <input type="number" id="off-p3-y" value="25">
+                    <input type="number" id="off-p3-x" value="0">
+                    <input type="number" id="off-p3-y" value="0">
                 </div>
             </div>
             
@@ -156,6 +154,16 @@
                     <input type="number" id="cfg-p2-4" step="0.05" value="1.0">
                 </div>
             </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Độ nhạy mực chì:</label>
+                    <input type="number" id="cfg-conf" step="0.02" value="0.20">
+                </div>
+                <div class="form-group">
+                    <label>Mã đề dự phòng:</label>
+                    <input type="text" id="fallback-code" placeholder="VD: 0234">
+                </div>
+            </div>
             
             <button class="btn btn-primary" onclick="switchTab('tab-scan')" style="margin-top: 10px;">Lưu & Mở Giao Diện Chấm ➔</button>
         </div>
@@ -169,7 +177,7 @@
             
             <div class="grid-2" style="margin-bottom: 10px;">
                 <button class="btn btn-primary" onclick="openFullscreenCamera()">📷 Mở Máy Quét</button>
-                <label class="btn btn-success" style="margin: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;" for="file-images">🖼️ Chọn Từ Máy</label>
+                <label class="btn btn-success" style="margin: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;" for="file-images">🖼️ Chọn Ảnh</label>
                 <input type="file" id="file-images" accept="image/*" capture="environment" multiple style="display: none;" onchange="handleImageFiles(this)">
             </div>
             
@@ -188,8 +196,9 @@
                     <div class="part-box"><div class="p-title">PHẦN II</div><div class="p-val" id="ui-p2-score">0đ</div></div>
                     <div class="part-box"><div class="p-title">PHẦN III</div><div class="p-val" id="ui-p3-score">0đ</div></div>
                 </div>
+                <div id="ui-warnings" style="margin-top: 8px; font-size: 12px; color: #d93025; font-weight: 600; text-align: center;"></div>
                 <div class="grid-2" style="margin-top: 10px;">
-                    <button class="btn btn-primary" onclick="openFullscreenCamera()">🔄 Quét Tờ Khác</button>
+                    <button class="btn btn-primary" onclick="openFullscreenCamera()">🔄 Quét Tiếp</button>
                     <button class="btn btn-secondary" onclick="downloadResultImage()">⬇️ Lưu Ảnh</button>
                 </div>
             </div>
@@ -220,9 +229,9 @@
         <div id="cam-overlay"></div>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Lọt khung giấy vào viền đứt nét để chấm</p>
+        <p id="hud-text">Lọt 4 GÓC ĐEN ngoài cùng vào viền trắng</p>
         <div class="grid-2">
-            <button class="btn btn-danger" style="padding: 12px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Mẫu</button>
+            <button class="btn btn-danger" style="padding: 12px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Nhanh</button>
             <button class="btn btn-secondary" style="padding: 12px; font-size: 15px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
         </div>
     </div>
@@ -239,6 +248,7 @@ window.cvReady = false;
 var answerKey = {}; var gradedRows = []; var videoStream = null;
 
 function getNumVal(id, defVal) { let el = document.getElementById(id); return (el && el.value) ? parseFloat(el.value) : defVal; }
+function getStrVal(id, defVal) { let el = document.getElementById(id); return (el && el.value) ? el.value.trim() : defVal; }
 function switchTab(tabId) {
     document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -292,7 +302,7 @@ function manualCapture() {
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
     closeFullscreenCamera(); 
-    processImageOMRV13(canvas);
+    processImageOMRV13_1(canvas);
 }
 
 async function handleImageFiles(inputElement) {
@@ -302,110 +312,114 @@ async function handleImageFiles(inputElement) {
     img.onload = () => {
         let canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
         canvas.getContext('2d').drawImage(img, 0, 0);
-        processImageOMRV13(canvas);
+        processImageOMRV13_1(canvas);
     };
     img.src = URL.createObjectURL(files[0]);
     inputElement.value = ''; 
 }
 
 // =====================================================================
-// LÕI V13.0: ĐỊNH VỊ VỆ TINH DỰA TRÊN 20 Ô ĐEN CỤC BỘ
+// LÕI V13.1: ÉP PHẲNG BẰNG 4 GÓC + LƯỚI TĨNH THEO KHỐI
 // =====================================================================
-function processImageOMRV13(sourceCanvas) {
+function processImageOMRV13_1(sourceCanvas) {
     try {
-        const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+        const TARGET_W = 800; const TARGET_H = 1130;
         const W = sourceCanvas.width; const H = sourceCanvas.height;
+        const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
         const imgData = sCtx.getImageData(0, 0, W, H);
         
-        let minConf = 0.20;
+        let minConf = getNumVal('cfg-conf', 0.20);
         let diemP1 = getNumVal('cfg-p1', 0.25);
         let diemP2 = [getNumVal('cfg-p2-1', 0.1), getNumVal('cfg-p2-2', 0.25), getNumVal('cfg-p2-3', 0.5), getNumVal('cfg-p2-4', 1.0)];
         let diemP3 = getNumVal('cfg-p3', 0.5);
+        let fallbackCode = getStrVal('fallback-code', "");
 
         // Lấy tọa độ Offset từ UI
-        let offHeadX = getNumVal('off-head-x', 25); let offHeadY = getNumVal('off-head-y', 30);
-        let offP1X = getNumVal('off-p1-x', 15); let offP1Y = getNumVal('off-p1-y', 25);
-        let offP2X = getNumVal('off-p2-x', 10); let offP2Y = getNumVal('off-p2-y', 35);
-        let offP3X = getNumVal('off-p3-x', 20); let offP3Y = getNumVal('off-p3-y', 25);
+        let offSbdX = getNumVal('off-sbd-x', 0); let offSbdY = getNumVal('off-sbd-y', 0);
+        let offP1X = getNumVal('off-p1-x', 0); let offP1Y = getNumVal('off-p1-y', 0);
+        let offP2X = getNumVal('off-p2-x', 0); let offP2Y = getNumVal('off-p2-y', 0);
+        let offP3X = getNumVal('off-p3-x', 0); let offP3Y = getNumVal('off-p3-y', 0);
 
-        // 1. Dùng OpenCV tìm viền các ô đen cục bộ
+        // BƯỚC 1: TÌM 4 GÓC VÀ ÉP PHẲNG (WARP)
         let srcMat = cv.matFromImageData(imgData);
         let grayMat = new cv.Mat(); cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
         let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 15);
         let contours = new cv.MatVector(); let hierarchy = new cv.Mat();
         cv.findContours(threshMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
         
-        let localAnchors = [];
-        // Kích thước ô đen vệ tinh thường khá nhỏ gọn, lọc chính xác hình vuông nhỏ
-        let minArea = (W * H) / 100000; 
-        let maxArea = (W * H) / 5000;
+        let squareCenters = [];
+        // Điều kiện lỏng hơn một chút để luôn lấy được 4 cục đen to ngoài cùng
+        let minArea = (W * H) / 10000; 
+        let maxArea = (W * H) / 500;
 
         for (let i = 0; i < contours.size(); i++) {
             let cnt = contours.get(i); let area = cv.contourArea(cnt);
             if (area > minArea && area < maxArea) { 
                 let rect = cv.boundingRect(cnt); let aspectRatio = rect.width / rect.height;
-                if (aspectRatio >= 0.7 && aspectRatio <= 1.3) {
+                if (aspectRatio >= 0.5 && aspectRatio <= 1.5) {
                     let M = cv.moments(cnt, false);
-                    if (M.m00 != 0) localAnchors.push({x: M.m10/M.m00, y: M.m01/M.m00, w: rect.width});
+                    if (M.m00 != 0) squareCenters.push({x: M.m10/M.m00, y: M.m01/M.m00});
                 }
             }
             cnt.delete();
         }
-        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete(); srcMat.delete();
+        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
 
-        // Vẽ các Anchor tìm được để Thầy Tùng kiểm tra
-        sCtx.fillStyle = "magenta";
-        localAnchors.forEach(a => { sCtx.fillRect(a.x - 4, a.y - 4, 8, 8); });
-
-        if (localAnchors.length < 15) {
-            alert(`Lỗi: Chỉ tìm thấy ${localAnchors.length} ô đen định vị. Cần ít nhất 20 ô trên phiếu mới. Vui lòng chụp rõ!`);
-            return;
+        if (squareCenters.length < 4) {
+            alert("Lỗi: Không nhìn thấy rõ 4 ô đen vuông to ở 4 góc giấy. Vui lòng chụp bao quát hơn.");
+            srcMat.delete(); return;
         }
 
-        // 2. PHÂN LOẠI 20 Ô ĐEN THEO HÀNG NGANG (Dựa trên thiết kế Phiếu Mới)
-        localAnchors.sort((a, b) => a.y - b.y);
+        // Tìm 4 góc chuẩn xác nhất bằng khoảng cách Euclidean đến 4 mép màn hình
+        let pTL = squareCenters.reduce((p, c) => (c.x*c.x + c.y*c.y) < (p.x*p.x + p.y*p.y) ? c : p);
+        let pTR = squareCenters.reduce((p, c) => (Math.pow(W-c.x, 2) + c.y*c.y) < (Math.pow(W-p.x, 2) + p.y*p.y) ? c : p);
+        let pBL = squareCenters.reduce((p, c) => (c.x*c.x + Math.pow(H-c.y, 2)) < (p.x*p.x + Math.pow(H-p.y, 2)) ? c : p);
+        let pBR = squareCenters.reduce((p, c) => (Math.pow(W-c.x, 2) + Math.pow(H-c.y, 2)) < (Math.pow(W-p.x, 2) + Math.pow(H-p.y, 2)) ? c : p);
+
+        let dstMat = new cv.Mat(); let dsize = new cv.Size(TARGET_W, TARGET_H);
         
-        // Nhóm theo Y (Nếu 2 ô có Y chênh lệch < 3% chiều cao ảnh thì coi như cùng 1 hàng)
-        let rows = []; let currentRow = [localAnchors[0]];
-        let yTolerance = H * 0.03; 
+        let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ pTL.x, pTL.y, pTR.x, pTR.y, pBL.x, pBL.y, pBR.x, pBR.y ]);
+        // Ép 4 góc vào khung chuẩn 800x1130
+        let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ 40, 40, 760, 40, 40, 1090, 760, 1090 ]);
 
-        for (let i = 1; i < localAnchors.length; i++) {
-            if (localAnchors[i].y - currentRow[0].y < yTolerance) {
-                currentRow.push(localAnchors[i]);
-            } else {
-                currentRow.sort((a,b) => a.x - b.x);
-                rows.push(currentRow);
-                currentRow = [localAnchors[i]];
-            }
-        }
-        currentRow.sort((a,b) => a.x - b.x); rows.push(currentRow);
+        let M = cv.getPerspectiveTransform(srcTri, dstTri);
+        cv.warpPerspective(srcMat, dstMat, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
 
-        // Chúng ta kỳ vọng: 
-        // Dòng SBD & Made (thường có 2 ô vuông cạnh nhau)
-        // Dòng Phần 1 (4 ô vuông)
-        // Dòng Phần 2 (8 ô vuông)
-        // Dòng Phần 3 (6 ô vuông)
+        const resultCanvas = document.getElementById('result-canvas');
+        resultCanvas.width = TARGET_W; resultCanvas.height = TARGET_H;
+        cv.imshow(resultCanvas, dstMat);
+        const rCtx = resultCanvas.getContext('2d', { willReadFrequently: true });
+        const flatData = rCtx.getImageData(0, 0, TARGET_W, TARGET_H).data;
+
+        srcMat.delete(); dstMat.delete(); srcTri.delete(); dstTri.delete(); M.delete();
+
+        // ==================================================
+        // BƯỚC 2: KHAI BÁO TỌA ĐỘ LƯỚI TĨNH DÀNH CHO PHIẾU MỚI
+        // Đo lường dựa trên bản PDF Phiếu NTMIX (4MĐ)
+        // Khoảng cách mỗi ô trên ảnh phẳng 800x1130 là 19px
+        // ==================================================
+        const SP = 19; // Spacing
+
+        // Cột SBD
+        const base_SBD_X = 560; const base_SBD_Y = 190;
+        // Cột Mã đề
+        const base_MAD_X = 712; const base_MAD_Y = 190;
         
-        let rowSBD = rows.find(r => r.length === 2);
-        let rowP1 = rows.find(r => r.length === 4);
-        let rowP2 = rows.find(r => r.length === 8);
-        let rowP3 = rows.find(r => r.length === 6);
+        // Phần I: 4 khối
+        const base_P1_X = [95, 276, 455, 636]; const base_P1_Y = 412;
+        // Phần II: 8 khối (Mỗi khối 2 cột)
+        const base_P2_X = [93, 185, 275, 365, 455, 545, 635, 725]; const base_P2_Y = 672;
+        // Phần III: 6 khối
+        const base_P3_X = [88, 203, 318, 433, 548, 663]; const base_P3_Y = 825;
 
-        if (!rowSBD || !rowP1 || !rowP2 || !rowP3) {
-            console.log("Cấu trúc tìm thấy:", rows.map(r => r.length));
-            alert("Lỗi: Không khớp cấu trúc Phiếu mới (SBD:2, P1:4, P2:8, P3:6).");
-            return;
-        }
 
-        // HÀM QUÉT MỰC TỪ TỌA ĐỘ TÂM
         function scanBubble(cx, cy, radius) {
             let bgSum = 0, bgCount = 0;
-            // Tính nền
-            for (let py = cy - radius*2; py < cy + radius*2; py+=3) {
-                for (let px = cx - radius*2; px < cx + radius*2; px+=3) {
-                    if (px < 0 || px >= W || py < 0 || py >= H) continue;
-                    let idx = (Math.round(py) * W + Math.round(px)) * 4; 
-                    bgSum += 0.299*imgData.data[idx] + 0.587*imgData.data[idx+1] + 0.114*imgData.data[idx+2]; 
+            for (let py = cy - radius*2; py < cy + radius*2; py+=4) {
+                for (let px = cx - radius*2; px < cx + radius*2; px+=4) {
+                    if (px < 0 || px >= TARGET_W || py < 0 || py >= TARGET_H) continue;
+                    let idx = (Math.round(py) * TARGET_W + Math.round(px)) * 4; 
+                    bgSum += 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2]; 
                     bgCount++;
                 }
             }
@@ -414,93 +428,166 @@ function processImageOMRV13(sourceCanvas) {
             let darkCount = 0, total = 0;
             for (let y = cy - radius; y < cy + radius; y++) {
                 for (let x = cx - radius; x < cx + radius; x++) {
-                    if (x < 0 || x >= W || y < 0 || y >= H) continue;
-                    let idx = (Math.round(y) * W + Math.round(x)) * 4; 
-                    let gray = 0.299*imgData.data[idx] + 0.587*imgData.data[idx+1] + 0.114*imgData.data[idx+2];
+                    if (x < 0 || x >= TARGET_W || y < 0 || y >= TARGET_H) continue;
+                    let idx = (Math.round(y) * TARGET_W + Math.round(x)) * 4; 
+                    let gray = 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2];
                     if (gray < localThresh) darkCount++; total++;
                 }
             }
             return total > 0 ? darkCount / total : 0;
         }
 
-        function drawBox(x, y, size, color) {
-            sCtx.lineWidth = 2; sCtx.strokeStyle = color;
-            sCtx.strokeRect(x - size/2, y - size/2, size, size);
+        function drawBox(x, y, status) {
+            rCtx.lineWidth = 1; rCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; rCtx.strokeRect(x-7, y-7, 14, 14); // Luôn vẽ ô vuông mờ để xem lưới
+            rCtx.lineWidth = 2;
+            if (status === 'correct') { rCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; rCtx.strokeRect(x-7, y-7, 14, 14); }
+            else if (status === 'wrong') { rCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; rCtx.strokeRect(x-7, y-7, 14, 14); }
+            else if (status === 'miss') { rCtx.strokeStyle = "rgba(255, 215, 0, 1)"; rCtx.strokeRect(x-6, y-6, 12, 12); }
+            else if (status === 'info') { rCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; rCtx.strokeRect(x-7, y-7, 14, 14); }
         }
 
-        // BƯỚC 3: ĐỌC TỪNG KHỐI BẰNG ANCHOR CỦA CHÍNH NÓ
-        
+        // ĐỌC SBD
         let scannedSbd = "";
-        let sbdAnchor = rowSBD[0]; 
-        let spaceX_sbd = W * 0.022; // Bước nhảy ngang giữa các bọt
-        let spaceY_sbd = H * 0.016; // Bước nhảy dọc
-        
         for (let col = 0; col < 8; col++) {
-            let bx = sbdAnchor.x + offHeadX + (col * spaceX_sbd);
-            let maxS = 0, maxRow = 0;
+            let bx = base_SBD_X + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
             for(let row = 0; row < 10; row++) {
-                let by = sbdAnchor.y + offHeadY + (row * spaceY_sbd);
-                let score = scanBubble(bx, by, sbdAnchor.w * 0.4);
+                let by = base_SBD_Y + offSbdY + (row * SP);
+                let score = scanBubble(bx, by, 6);
                 if (score > maxS) { maxS = score; maxRow = row; }
             }
             scannedSbd += (maxS > minConf) ? String(maxRow) : "0";
-            drawBox(bx, sbdAnchor.y + offHeadY + (maxRow * spaceY_sbd), 10, maxS > minConf ? "green" : "red");
+            for(let row = 0; row < 10; row++) { drawBox(bx, base_SBD_Y + offSbdY + (row * SP), (maxS>minConf && row===maxRow) ? 'info' : 'empty'); }
         }
 
+        // ĐỌC MÃ ĐỀ
         let scannedMade = "";
-        let madeAnchor = rowSBD[1]; 
         for (let col = 0; col < 4; col++) {
-            let bx = madeAnchor.x + offHeadX + (col * spaceX_sbd);
-            let maxS = 0, maxRow = 0;
+            let bx = base_MAD_X + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
             for(let row = 0; row < 10; row++) {
-                let by = madeAnchor.y + offHeadY + (row * spaceY_sbd);
-                let score = scanBubble(bx, by, madeAnchor.w * 0.4);
+                let by = base_MAD_Y + offSbdY + (row * SP);
+                let score = scanBubble(bx, by, 6);
                 if (score > maxS) { maxS = score; maxRow = row; }
             }
             scannedMade += (maxS > minConf) ? String(maxRow) : "0";
-            drawBox(bx, madeAnchor.y + offHeadY + (maxRow * spaceY_sbd), 10, maxS > minConf ? "green" : "red");
+            for(let row = 0; row < 10; row++) { drawBox(bx, base_MAD_Y + offSbdY + (row * SP), (maxS>minConf && row===maxRow) ? 'info' : 'empty'); }
         }
 
-        let code = scannedMade;
+        let code = scannedMade.replace(/\?/g, '0'); let warnings = [];
+        if (!answerKey[code]) { if (fallbackCode && answerKey[fallbackCode]) code = fallbackCode; else warnings.push(`Mã đề ${scannedMade} không có!`); }
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
-        
-        // ĐỌC PHẦN 1 (Dựa trên 4 Anchor P1)
+
+        // ĐỌC PHẦN 1
         let scoreP1 = 0; let right1 = 0;
-        let spaceX_p1 = W * 0.025; let spaceY_p1 = H * 0.018;
-        
         for (let b = 0; b < 4; b++) {
-            let anchor = rowP1[b];
+            let bX = base_P1_X[b] + offP1X;
             for (let row = 0; row < 10; row++) {
-                let by = anchor.y + offP1Y + (row * spaceY_p1);
-                let scores = [0,1,2,3].map(c => scanBubble(anchor.x + offP1X + c*spaceX_p1, by, anchor.w*0.4));
+                let bY = base_P1_Y + offP1Y + (row * SP);
+                let scores = [0,1,2,3].map(c => scanBubble(bX + c*SP, bY, 6));
                 let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
-                if (maxS > minConf) {
-                    drawBox(anchor.x + offP1X + maxIdx*spaceX_p1, by, 10, "green");
-                    let ans = ['A','B','C','D'][maxIdx];
-                    if (ans === key.p1[b*10 + row]) right1++;
-                }
+                let isFilled = maxS > minConf;
+                let corrLabel = (b*10 + row < key.p1.length) ? key.p1[b*10 + row] : null; 
+                let corrIdx = ['A','B','C','D'].indexOf(corrLabel);
+
+                [0,1,2,3].forEach(c => {
+                    if (isFilled && c === maxIdx) {
+                        if (c === corrIdx) { right1++; drawBox(bX + c*SP, bY, 'correct'); } else { drawBox(bX + c*SP, bY, 'wrong'); }
+                    } else if (c === corrIdx) { drawBox(bX + c*SP, bY, 'miss'); } else { drawBox(bX + c*SP, bY, 'empty'); }
+                });
             }
         }
         scoreP1 = +(right1 * diemP1).toFixed(2);
 
-        // ĐỌC PHẦN 2 (Dựa trên 8 Anchor P2)
-        // (Do giới hạn khung mã, tôi dựng cơ bản cấu trúc. Thầy chỉnh hệ số offset nhé)
-        let scoreP2 = 0;
-        // ĐỌC PHẦN 3 (Dựa trên 6 Anchor P3)
-        let scoreP3 = 0;
+        // ĐỌC PHẦN 2 (8 Khối, mỗi khối 2 cột Đ/S)
+        let scoreP2 = 0; let right2Details = 0; let key2Str = key.p2.join(''); let student2Str = '';
+        for (let b = 0; b < 8; b++) {
+            let bX = base_P2_X[b] + offP2X;
+            for (let row = 0; row < 4; row++) {
+                let bY = base_P2_Y + offP2Y + (row * SP);
+                let scores = [0,1].map(c => scanBubble(bX + c*SP, bY, 6));
+                let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
+                let isFilled = maxS > minConf;
+                let gIdx = b * 4 + row; let expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
+                
+                let val = isFilled ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
+                if (b < key.p2.length) student2Str += val;
 
-        let totalScore = scoreP1 + scoreP2 + scoreP3;
+                [0,1].forEach(c => {
+                    let thisVal = (c === 0) ? 'Đ' : 'S';
+                    if (isFilled && c === maxIdx) {
+                        if (thisVal === expected) { drawBox(bX + c*SP, bY, 'correct'); } else { drawBox(bX + c*SP, bY, 'wrong'); }
+                    } else if (thisVal === expected) { drawBox(bX + c*SP, bY, 'miss'); } else { drawBox(bX + c*SP, bY, 'empty'); }
+                });
+            }
+        }
+        for (let i = 0; i < key2Str.length; i += 4) {
+            let stuQ = student2Str.slice(i, i + 4), keyQ = key2Str.slice(i, i + 4), cCount = 0;
+            for (let j = 0; j < Math.min(stuQ.length, keyQ.length); j++) { if (stuQ[j] === keyQ[j] && stuQ[j] !== 'X') cCount++; }
+            right2Details += cCount; if (cCount >= 1 && cCount <= 4) scoreP2 += diemP2[cCount - 1];
+        }
+        scoreP2 = +scoreP2.toFixed(2);
 
-        // HIỂN THỊ KẾT QUẢ
-        const resultCanvas = document.getElementById('result-canvas');
-        resultCanvas.width = W; resultCanvas.height = H;
-        resultCanvas.getContext('2d').drawImage(sourceCanvas, 0, 0);
-        resultCanvas.style.display = 'block';
+        // ĐỌC PHẦN 3 (6 Khối)
+        let scoreP3 = 0; let right3 = 0; let validP3Count = 0; 
+        for (let q = 0; q < 6; q++) { 
+            let rawKey = (q < key.p3.length) ? String(key.p3[q]) : ""; let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
+            if (cleanKey) validP3Count++;
+            
+            let bX = base_P3_X[q] + offP3X; let bY = base_P3_Y + offP3Y;
+            let stuAnsStr = ""; let expectedMinus = cleanKey.startsWith('-'); 
+            
+            // Dấu trừ
+            let minusScore = scanBubble(bX, bY, 6); let filledMinus = minusScore > minConf;
+            if (filledMinus) { drawBox(bX, bY, expectedMinus ? 'correct' : 'wrong'); stuAnsStr += "-"; } 
+            else if (expectedMinus) { drawBox(bX, bY, 'miss'); } else { drawBox(bX, bY, 'empty'); }
+            
+            let expectedCols = cleanKey.replace(/^-/, '').split(''); 
+            for (let colIdx = 0; colIdx < 4; colIdx++) {
+                let x = bX + (colIdx * SP); let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
+                
+                // Dấu phẩy ở hàng 2
+                let commaScore = scanBubble(x, bY + SP, 6);
+                // Các số từ 0-9 ở hàng 3-12
+                let scoresDigits = [0,1,2,3,4,5,6,7,8,9].map(i => scanBubble(x, bY + (i+2)*SP, 6));
+                
+                let maxDigitScore = Math.max(...scoresDigits); let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
+                let isFilled = false; let filledChar = ''; let filledY = null;
+                
+                if (commaScore > minConf && commaScore > maxDigitScore) { isFilled = true; filledChar = ','; filledY = bY + SP; } 
+                else if (maxDigitScore > minConf) { isFilled = true; filledChar = String(maxDigitIdx); filledY = bY + (maxDigitIdx+2)*SP; }
 
-        document.getElementById('score-dashboard').style.display = 'block';
+                if (isFilled) {
+                    stuAnsStr += filledChar;
+                    drawBox(x, filledY, (filledChar === expectedChar) ? 'correct' : 'wrong');
+                }
+                
+                if (commaScore <= minConf && expectedChar !== ',') drawBox(x, bY + SP, 'empty');
+                else if (expectedChar === ',' && !isFilled) drawBox(x, bY + SP, 'miss');
+
+                [0,1,2,3,4,5,6,7,8,9].forEach(i => {
+                    let cy = bY + (i+2)*SP;
+                    if (!isFilled || filledY !== cy) {
+                         drawBox(x, cy, (String(i) === expectedChar) ? 'miss' : 'empty');
+                    }
+                });
+            }
+            if (cleanKey && stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
+        }
+        scoreP3 = +scoreP3.toFixed(2);
+        
+        let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
+
+        // Hiển thị
+        rCtx.fillStyle = "#ffffff"; rCtx.fillRect(12, 85, 230, 165);
+        rCtx.lineWidth = 3; rCtx.strokeStyle = "#dc2626"; rCtx.strokeRect(12, 85, 230, 165);
+        rCtx.fillStyle = "#dc2626"; rCtx.font = "bold 26px Arial"; rCtx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
+        rCtx.font = "bold 19px Arial"; rCtx.fillText(`P.I:   ${scoreP1}đ`, 28, 162); rCtx.fillText(`P.II:  ${scoreP2}đ`, 28, 195); rCtx.fillText(`P.III: ${scoreP3}đ`, 28, 228);
+
+        resultCanvas.style.display = 'block'; document.getElementById('score-dashboard').style.display = 'block';
         document.getElementById('ui-total').textContent = `${totalScore}đ`;
         document.getElementById('ui-sbd-made').textContent = `SBD: ${scannedSbd} | Mã đề: ${code}`;
-        document.getElementById('ui-p1-score').textContent = `${scoreP1}đ`;
+        document.getElementById('ui-p1-score').textContent = `${scoreP1}đ`; document.getElementById('ui-p2-score').textContent = `${scoreP2}đ`; document.getElementById('ui-p3-score').textContent = `${scoreP3}đ`;
+
+        if (warnings.length > 0) { document.getElementById('ui-warnings').innerHTML = `⚠️ ${warnings.join(' | ')}`; } else { document.getElementById('ui-warnings').textContent = ""; }
 
     } catch(err) { alert("Lỗi chấm bài: " + err.message); }
 }
