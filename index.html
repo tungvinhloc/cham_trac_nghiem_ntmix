@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V27.0 - Auto-Scan AI Thích Ứng Sáng</title>
+    <title>NTMIX V28.0 - Auto-Scan Vững Chắc 4 Góc</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -51,7 +51,8 @@
         .btn-danger { background: var(--danger); }
         .btn-warning { background: #f59e0b; color: white; }
         .btn-secondary { background: #64748b; }
-        .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; font-weight:bold; }
+        .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; font-weight:bold; transition: 0.2s;}
+        .btn-upload:active { background: #e2e8f0; transform: scale(0.98); }
 
         .file-input-hidden { width: 0.1px; height: 0.1px; opacity: 0; overflow: hidden; position: absolute; z-index: -1; }
 
@@ -59,18 +60,22 @@
         #video-container { position: relative; flex: 1; width: 100%; height: 100%; background: #000; overflow: hidden; }
         #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
         
-        /* KHUNG NGẮM THÔNG MINH MỚI */
         #cam-overlay { 
             position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
             width: 86vw; max-width: 580px; aspect-ratio: 800 / 1130;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); 
-            border: 3px solid rgba(255, 255, 255, 0.4); 
-            border-radius: 8px; pointer-events: none; z-index: 10;
-            transition: all 0.2s;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); 
+            border: 2px dashed rgba(255, 255, 255, 0.4); pointer-events: none; z-index: 10;
         }
 
+        /* KHÔI PHỤC 4 Ô MỤC TIÊU GÓC */
+        .tn-corner { position: absolute; width: 22%; aspect-ratio: 1 / 1; background: rgba(255, 255, 255, 0.15); border: 2px dashed rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; }
+        .tn-corner::after { content: '+'; color: rgba(255,255,255,0.6); font-size: 28px; font-weight: bold; }
+        .tn-corner.tl { top: -4%; left: -4%; } .tn-corner.tr { top: -4%; right: -4%; } .tn-corner.bl { bottom: -4%; left: -4%; } .tn-corner.br { bottom: -4%; right: -4%; }
+
         .cam-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px 10px 25px 10px; background: linear-gradient(transparent, rgba(0,0,0,0.95)); text-align: center; z-index: 20; }
-        #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .speed-select { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 8px; border-radius: 8px; font-weight: bold; outline: none; margin-bottom: 12px; width: 80%; max-width: 300px; text-align: center; }
+        .speed-select option { color: black; }
 
         #scan-status { font-size: 14px; font-weight: 700; color: #d93025; text-align: center; margin-bottom: 12px; padding: 16px 10px; border: 2px dashed #fca5a5; border-radius: 8px; background: #fef2f2; }
         .score-dashboard { display: none; background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 12px; margin-top: 10px; }
@@ -101,13 +106,14 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V27.0 - Auto-Scan AI & Lưới Vệ Tinh</span>
+    <span class="badge-cv">V28.0 - Auto-Scan Vững Chắc 4 Góc</span>
 </header>
 
 <div class="container">
     <div id="tab-config" class="tab-pane active">
         <div class="card">
             <div class="card-title">1. Nạp Đáp Án & DSHS</div>
+            
             <div class="form-group">
                 <div class="btn-upload" onclick="document.getElementById('file-key').click()">
                     <span id="label-file-key">📁 Bấm Chọn File Excel Đáp Án</span>
@@ -128,15 +134,14 @@
         <div class="card">
             <div class="card-title">2. Cấu hình Máy Quét & Lưới Vệ Tinh</div>
             
-            <!-- CHUYỂN CẤU HÌNH TỐC ĐỘ QUÉT RA ĐÂY CHO DỄ DÙNG -->
             <div class="form-group" style="background: #ecfdf5; padding: 10px; border-radius: 8px; border: 1px dashed #10b981;">
-                <label style="color: #047857;">📷 Độ nhạy tự động quét (Auto-Scan):</label>
+                <label style="color: #047857;">📷 Tốc độ Quét Tự Động:</label>
                 <select id="cam-speed-select" style="border-color: #34d399;">
                     <option value="2">⚡ Nhanh (Lướt qua là chụp)</option>
-                    <option value="4" selected>🎯 Vừa (Khuyên dùng)</option>
-                    <option value="8">🐢 Chậm (Chống rung tay)</option>
+                    <option value="5" selected>🎯 Vừa (Khuyên dùng)</option>
+                    <option value="10">🐢 Chậm (Chống rung tay)</option>
                 </select>
-                <small style="color: #065f46; display: block; margin-top: 4px;">Máy sẽ tự chụp khi đếm đủ các ô đen định vị.</small>
+                <small style="color: #065f46; display: block; margin-top: 4px;">Máy sẽ tự chụp khi 4 góc đen lọt vào 4 mục tiêu (+)</small>
             </div>
 
             <div class="form-group" style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px dashed #f59e0b; margin-top: 10px;">
@@ -235,11 +240,15 @@
 <div id="camera-fullscreen-ui">
     <div id="video-container">
         <video id="video" autoplay playsinline muted></video>
-        <!-- KHUNG NGẮM MỚI -->
-        <div id="cam-overlay"></div>
+        <div id="cam-overlay">
+            <div class="tn-corner tl" id="cb-tl"></div>
+            <div class="tn-corner tr" id="cb-tr"></div>
+            <div class="tn-corner bl" id="cb-bl"></div>
+            <div class="tn-corner br" id="cb-br"></div>
+        </div>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Hướng camera lấy trọn vẹn tờ giấy</p>
+        <p id="hud-text">Lọt 4 GÓC ĐEN TO vào 4 mục tiêu (+)</p>
         <div class="grid-2">
             <button class="btn btn-danger" style="padding: 12px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Bằng Tay</button>
             <button class="btn btn-secondary" style="padding: 12px; font-size: 15px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
@@ -270,10 +279,9 @@ function switchTab(tabId) {
 
 function playBeep() { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = "sine"; osc.frequency.setValueAtTime(1250, ctx.currentTime); gain.gain.setValueAtTime(0.2, ctx.currentTime); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.12); } catch (e) {} }
 
-// FILE EXCEL ĐÁP ÁN
 function loadExcelKey(input) {
     const file = input.files[0]; if (!file) return;
-    if (typeof XLSX === 'undefined') { alert("Thư viện Excel đang tải, chờ chút!"); return; }
+    if (typeof XLSX === 'undefined') { alert("Thư viện Excel đang tải, vui lòng chờ 1-2 giây rồi thử lại!"); input.value = ''; return; }
     document.getElementById('label-file-key').innerHTML = `✅ Đã chọn: <b>${file.name}</b>`;
     const reader = new FileReader();
     reader.onload = function(evt) {
@@ -301,10 +309,9 @@ function loadExcelKey(input) {
     reader.readAsArrayBuffer(file); input.value = ''; 
 }
 
-// FILE DSHS
 function loadExcelDSHS(input) {
     const file = input.files[0]; if (!file) return;
-    if (typeof XLSX === 'undefined') { alert("Thư viện Excel đang tải, chờ chút!"); return; }
+    if (typeof XLSX === 'undefined') { alert("Thư viện Excel đang tải, vui lòng chờ 1-2 giây rồi thử lại!"); input.value = ''; return; }
     document.getElementById('label-file-dshs').innerHTML = `✅ Đã chọn: <b>${file.name}</b>`;
     const reader = new FileReader();
     reader.onload = function(evt) {
@@ -330,7 +337,7 @@ async function openFullscreenCamera() {
     try {
         videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } } });
         video.srcObject = videoStream; ui.style.display = 'flex';
-        video.onloadedmetadata = () => { video.play(); startSmartAutoScan(); };
+        video.onloadedmetadata = () => { video.play(); startCornerAutoScan(); };
     } catch (err) { alert("Lỗi Camera. Vui lòng cấp quyền hoặc dùng tính năng Chọn Ảnh."); }
 }
 
@@ -340,76 +347,76 @@ function closeFullscreenCamera() {
     document.getElementById('camera-fullscreen-ui').style.display = 'none';
 }
 
-// LÕI AUTO-SCAN MỚI (Tự động nhận diện cấu trúc, không đếm điểm mù)
-function startSmartAutoScan() {
+function startCornerAutoScan() {
     if (autoScanTimer) clearInterval(autoScanTimer);
-    const video = document.getElementById('video'); 
-    const hudText = document.getElementById('hud-text');
+    const video = document.getElementById('video'); const hudText = document.getElementById('hud-text');
     const overlay = document.getElementById('cam-overlay');
     stableFrames = 0;
-
-    // Canvas nhỏ để AI xử lý siêu tốc không giật lag
-    let tcv = document.createElement('canvas'); tcv.width = 400; tcv.height = 600;
-    let tCtx = tcv.getContext('2d', { willReadFrequently: true });
 
     autoScanTimer = setInterval(() => {
         if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
         
-        let targetFrames = parseInt(document.getElementById('cam-speed-select').value) || 4;
-        
-        tCtx.drawImage(video, 0, 0, 400, 600);
-        let imgData = tCtx.getImageData(0, 0, 400, 600);
-        
-        // Dùng OpenCV tìm hình vuông đen trên toàn màn hình
-        let srcMat = cv.matFromImageData(imgData);
-        let grayMat = new cv.Mat(); cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
-        let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 21, 10);
-        let contours = new cv.MatVector(); let hierarchy = new cv.Mat();
-        cv.findContours(threshMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-        
-        let squaresFound = 0;
-        // Phiếu có 4 góc to + khoảng 20 vệ tinh nhỏ.
-        for (let i = 0; i < contours.size(); i++) {
-            let rect = cv.boundingRect(contours.get(i));
-            let aspect = rect.width / rect.height;
-            let area = rect.width * rect.height;
-            // Nếu là hình xấp xỉ vuông và có diện tích vừa phải
-            if (aspect > 0.5 && aspect < 1.5 && area > 20 && area < 1000) {
-                squaresFound++;
-            }
-        }
-        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete(); srcMat.delete();
+        // Lấy tốc độ từ cấu hình
+        let targetFrames = parseInt(document.getElementById('cam-speed-select').value) || 5;
+        let videoRatio = video.videoWidth / video.videoHeight; let elementRatio = video.clientWidth / video.clientHeight;
+        let sWidth, sHeight, sx, sy;
+        if (videoRatio > elementRatio) { sHeight = video.videoHeight; sWidth = sHeight * elementRatio; sx = (video.videoWidth - sWidth) / 2; sy = 0; } 
+        else { sWidth = video.videoWidth; sHeight = sWidth / elementRatio; sx = 0; sy = (video.videoHeight - sHeight) / 2; }
 
-        // Nếu máy ảnh thấy >= 10 ô vuông định vị (tính cả góc và vệ tinh), nó hiểu là tờ giấy đã lọt vào khung.
-        if (squaresFound >= 10) {
+        let rectV = video.getBoundingClientRect(); let scaleX = sWidth / rectV.width; let scaleY = sHeight / rectV.height;
+
+        // Phân tích độ đen bên trong từng ô mục tiêu (+)
+        function analyzeCornerBox(boxId) {
+            let box = document.getElementById(boxId); let rectB = box.getBoundingClientRect();
+            let cropX = sx + (rectB.left - rectV.left) * scaleX; let cropY = sy + (rectB.top - rectV.top) * scaleY;
+            let cropW = rectB.width * scaleX; let cropH = rectB.height * scaleY;
+            
+            if(cropX < 0 || cropY < 0 || cropW <= 0 || cropH <= 0 || (cropX + cropW) > video.videoWidth || (cropY + cropH) > video.videoHeight) return false;
+
+            let tcv = document.createElement('canvas'); tcv.width = 60; tcv.height = 60;
+            let ctx = tcv.getContext('2d', { willReadFrequently: true }); ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 60, 60);
+            let imgData = ctx.getImageData(0, 0, 60, 60).data;
+            
+            let darkCount = 0;
+            for (let i = 0; i < 60*60*4; i+=4) { if(imgData[i+1] < 120) darkCount++; }
+            let isValid = (darkCount > 80 && darkCount < 1800); 
+            
+            if(isValid) { box.style.borderColor = "rgba(0, 255, 0, 0.9)"; box.style.backgroundColor = "rgba(0, 255, 0, 0.3)"; } 
+            else { box.style.borderColor = "rgba(255, 255, 255, 0.8)"; box.style.backgroundColor = "rgba(255, 255, 255, 0.2)"; }
+            return isValid;
+        }
+
+        if (analyzeCornerBox('cb-tl') && analyzeCornerBox('cb-tr') && analyzeCornerBox('cb-bl') && analyzeCornerBox('cb-br')) {
             stableFrames++; 
-            hudText.innerHTML = `🎯 Đã nhận diện phiếu... (${stableFrames}/${targetFrames})`; 
+            hudText.innerHTML = `🎯 Đã khóa góc... (${stableFrames}/${targetFrames})`; 
             hudText.style.color = "#0f9d58";
-            overlay.style.borderColor = "rgba(0, 255, 0, 0.9)";
-            overlay.style.boxShadow = "0 0 0 9999px rgba(0,0,0,0.8)";
             
             if (stableFrames >= targetFrames) {
                 clearInterval(autoScanTimer); hudText.innerHTML = "⚡ ĐÃ CHỤP!"; playBeep();
-                let canvas = document.createElement('canvas'); 
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                closeFullscreenCamera(); processHybridEngine(canvas);
+                let rectO = overlay.getBoundingClientRect();
+                let cropX = sx + (rectO.left - rectV.left) * scaleX; let cropY = sy + (rectO.top - rectV.top) * scaleY;
+                let cropW = rectO.width * scaleX; let cropH = rectO.height * scaleY;
+                let paddingW = cropW * 0.15; let paddingH = cropH * 0.15;
+                let finalX = Math.max(0, cropX - paddingW); let finalY = Math.max(0, cropY - paddingH);
+                let finalW = Math.min(video.videoWidth - finalX, cropW + paddingW*2);
+                let finalH = Math.min(video.videoHeight - finalY, cropH + paddingH*2);
+
+                let finalCanvas = document.createElement('canvas'); finalCanvas.width = finalW; finalCanvas.height = finalH;
+                finalCanvas.getContext('2d').drawImage(video, finalX, finalY, finalW, finalH, 0, 0, finalW, finalH);
+                closeFullscreenCamera(); processHybridEngine(finalCanvas);
             }
         } else {
             if (stableFrames > 0) stableFrames--;
-            hudText.innerHTML = "Hướng camera lấy trọn vẹn tờ giấy"; 
+            hudText.innerHTML = "Lọt 4 GÓC ĐEN TO vào 4 mục tiêu (+)"; 
             hudText.style.color = "#fff";
-            overlay.style.borderColor = "rgba(255, 255, 255, 0.4)";
-            overlay.style.boxShadow = "0 0 0 9999px rgba(0,0,0,0.65)";
         }
-    }, 150);
+    }, 100);
 }
 
 function manualCapture() {
     let video = document.getElementById('video');
     if (!videoStream || !video.videoWidth) return;
     if (autoScanTimer) clearInterval(autoScanTimer); playBeep();
-    
     let canvas = document.createElement('canvas'); 
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
@@ -475,7 +482,6 @@ function processHybridEngine(sourceCanvas) {
         let offP2X = getNumVal('off-p2-x', 0); let offP2Y = getNumVal('off-p2-y', 0);
         let offP3X = getNumVal('off-p3-x', 0); let offP3Y = getNumVal('off-p3-y', 0);
 
-        // 1. TÌM 4 GÓC WARP VĨ MÔ TỪ ẢNH GỐC
         let srcMat = cv.matFromImageData(imgData);
         let grayMat = new cv.Mat(); cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
         let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 15);
@@ -499,22 +505,19 @@ function processHybridEngine(sourceCanvas) {
         contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete(); srcMat.delete();
 
         if (squareCenters.length < 4) {
-            alert("Lỗi: Không tìm thấy rõ 4 ô vuông đen to ở 4 góc giấy. Đảm bảo ánh sáng tốt và không bị che góc!");
+            alert("Lỗi OpenCV: Không tìm thấy rõ 4 ô vuông đen to ở 4 góc giấy. Đảm bảo ánh sáng tốt và giấy nằm gọn trong khung!");
             return;
         }
 
-        // TÌM 4 GÓC CHUẨN XÁC THEO KHOẢNG CÁCH EUCLIDEAN
         let pTL = squareCenters.reduce((p, c) => (c.x*c.x + c.y*c.y) < (p.x*p.x + p.y*p.y) ? c : p);
         let pTR = squareCenters.reduce((p, c) => (Math.pow(W-c.x, 2) + c.y*c.y) < (Math.pow(W-p.x, 2) + p.y*p.y) ? c : p);
         let pBL = squareCenters.reduce((p, c) => (c.x*c.x + Math.pow(H-c.y, 2)) < (p.x*p.x + Math.pow(H-p.y, 2)) ? c : p);
         let pBR = squareCenters.reduce((p, c) => (Math.pow(W-c.x, 2) + Math.pow(H-c.y, 2)) < (Math.pow(W-p.x, 2) + Math.pow(H-p.y, 2)) ? c : p);
 
-        // 2. MA TRẬN WARP
         let idealPoints = [ {x:40, y:40}, {x:760, y:40}, {x:40, y:1090}, {x:760, y:1090} ];
         let rawPoints = [ pTL, pTR, pBL, pBR ];
         const H_Matrix = createPerspectiveTransform(idealPoints, rawPoints);
 
-        // TỌA ĐỘ ƯỚC LƯỢNG (PHIEU_NTMIX_NEW_2)
         const est_SBD_X = 548; const est_SBD_Y = 168;
         const est_MAD_X = 693; const est_MAD_Y = 168;
         const est_P1_X = [68, 250, 432, 615]; const est_P1_Y = 398;
@@ -579,8 +582,6 @@ function processHybridEngine(sourceCanvas) {
             else if (status === 'info') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); }
         }
 
-        // BƯỚC 4: ĐỌC ĐIỂM
-        
         // ĐỌC SBD
         let anchorSBD = snapToTrueAnchor(est_SBD_X, est_SBD_Y);
         let scannedSbd = "";
