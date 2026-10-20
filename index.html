@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V23.0 - Hoàn Hảo Cùng Phiếu Mới</title>
+    <title>NTMIX V24.0 - Warp Cục Bộ Từng Khối</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -53,7 +53,6 @@
         .btn-secondary { background: #64748b; }
         .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; font-weight:bold; }
 
-        /* HUD KHUYẾN NGHỊ CHO PHIẾU MỚI (Tỷ lệ 800/1130) */
         #camera-fullscreen-ui { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; flex-direction: column; overflow: hidden; }
         #video-container { position: relative; flex: 1; width: 100%; height: 100%; background: #000; overflow: hidden; }
         #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -65,7 +64,7 @@
             border: 2px dashed rgba(255, 255, 255, 0.4); pointer-events: none; z-index: 10;
         }
 
-        .tn-corner { position: absolute; width: 18%; aspect-ratio: 1 / 1; background: rgba(255, 255, 255, 0.2); border: 2px dashed rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; }
+        .tn-corner { position: absolute; width: 15%; aspect-ratio: 1 / 1; background: rgba(255, 255, 255, 0.2); border: 2px dashed rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; }
         .tn-corner::after { content: '+'; color: rgba(255,255,255,0.6); font-size: 24px; font-weight: bold; }
         .tn-corner.tl { top: -2%; left: -2%; } .tn-corner.tr { top: -2%; right: -2%; } .tn-corner.bl { bottom: -2%; left: -2%; } .tn-corner.br { bottom: -2%; right: -2%; }
 
@@ -103,7 +102,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V23.0 - AutoScan & Tọa Độ Vệ Tinh (Phiếu Mới)</span>
+    <span class="badge-cv">V24.0 - Warp Cục Bộ Từng Khối</span>
 </header>
 
 <div class="container">
@@ -124,8 +123,7 @@
         </div>
 
         <div class="card">
-            <div class="card-title">2. Tinh chỉnh Lưới Vệ Tinh</div>
-            <p style="font-size: 11px; color: #d93025; margin-bottom: 8px; font-weight:bold;">Tọa độ lưới được tối ưu ĐỘC QUYỀN cho Phiếu Mới. Thầy chỉ cần tăng/giảm nếu máy in in ra bị co giãn.</p>
+            <div class="card-title">2. Tinh chỉnh Lưới Vệ Tinh (Đơn vị Pixel)</div>
             
             <div class="form-group" style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px dashed #f59e0b;">
                 <label style="color: #b45309;">📏 Giãn cách ô bọt nước (Spacing):</label>
@@ -134,7 +132,7 @@
 
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; margin-top: 10px;">
                 <label>📍 Khoảng cách SBD & Mã Đề (X / Y):</label>
-                <div class="grid-2"><input type="number" id="sbd-dx" value="18"><input type="number" id="sbd-dy" value="28"></div>
+                <div class="grid-2"><input type="number" id="sbd-dx" value="18"><input type="number" id="sbd-dy" value="26"></div>
                 <label style="margin-top: 8px;">📍 Khoảng cách Phần I (X / Y):</label>
                 <div class="grid-2"><input type="number" id="p1-dx" value="18"><input type="number" id="p1-dy" value="28"></div>
                 <label style="margin-top: 8px;">📍 Khoảng cách Phần II (X / Y):</label>
@@ -231,7 +229,7 @@
         </div>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Lọt 4 GÓC ĐEN TO ngoài cùng vào 4 mục tiêu (+)</p>
+        <p id="hud-text">Lọt 4 GÓC ĐEN vào 4 mục tiêu (+)</p>
         <select id="cam-speed-select" class="speed-select">
             <option value="2">⚡ Nhanh (Chạm là quét)</option>
             <option value="5" selected>🎯 Vừa (Ổn định)</option>
@@ -385,7 +383,7 @@ function startCornerAutoScan() {
 
                 let finalCanvas = document.createElement('canvas'); finalCanvas.width = finalW; finalCanvas.height = finalH;
                 finalCanvas.getContext('2d').drawImage(video, finalX, finalY, finalW, finalH, 0, 0, finalW, finalH);
-                closeFullscreenCamera(); processHybridEngine(finalCanvas);
+                closeFullscreenCamera(); processLocalWarpEngine(finalCanvas);
             }
         } else {
             if (stableFrames > 0) stableFrames--;
@@ -402,7 +400,7 @@ function manualCapture() {
     let canvas = document.createElement('canvas'); 
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    closeFullscreenCamera(); processHybridEngine(canvas);
+    closeFullscreenCamera(); processLocalWarpEngine(canvas);
 }
 
 async function handleImageFiles(inputElement) {
@@ -412,37 +410,17 @@ async function handleImageFiles(inputElement) {
     img.onload = () => {
         let canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
         canvas.getContext('2d').drawImage(img, 0, 0);
-        processHybridEngine(canvas);
+        processLocalWarpEngine(canvas);
     };
     img.src = URL.createObjectURL(files[0]);
     inputElement.value = ''; 
 }
 
-function createPerspectiveTransform(src, dst) {
-    let a = [];
-    for (let i = 0; i < 4; i++) {
-        let x = src[i].x, y = src[i].y; let u = dst[i].x, v = dst[i].y;
-        a.push([x, y, 1, 0, 0, 0, -u*x, -u*y, u]); a.push([0, 0, 0, x, y, 1, -v*x, -v*y, v]);
-    }
-    for (let i = 0; i < 8; i++) {
-        let maxRow = i;
-        for (let j = i + 1; j < 8; j++) { if (Math.abs(a[j][i]) > Math.abs(a[maxRow][i])) maxRow = j; }
-        let temp = a[i]; a[i] = a[maxRow]; a[maxRow] = temp;
-        for (let j = i + 1; j < 8; j++) { let f = a[j][i] / a[i][i]; for (let k = i; k <= 8; k++) a[j][k] -= a[i][k] * f; }
-    }
-    let h = new Array(8);
-    for (let i = 7; i >= 0; i--) { let sum = 0; for (let j = i + 1; j < 8; j++) sum += a[i][j] * h[j]; h[i] = (a[i][8] - sum) / a[i][i]; }
-    return h;
-}
+// =====================================================================
+// LÕI V24.0: WARP CỤC BỘ (LOCAL WARP ARCHITECTURE)
+// =====================================================================
 
-function mapCoord(H_Matrix, x, y) {
-    let denominator = H_Matrix[6]*x + H_Matrix[7]*y + 1;
-    let nx = (H_Matrix[0]*x + H_Matrix[1]*y + H_Matrix[2]) / denominator;
-    let ny = (H_Matrix[3]*x + H_Matrix[4]*y + H_Matrix[5]) / denominator;
-    return { x: nx, y: ny };
-}
-
-function processHybridEngine(sourceCanvas) {
+function processLocalWarpEngine(sourceCanvas) {
     try {
         const TARGET_W = 800; const TARGET_H = 1130;
         const W = sourceCanvas.width; const H = sourceCanvas.height;
@@ -457,20 +435,20 @@ function processHybridEngine(sourceCanvas) {
         let fallbackCode = getStrVal('fallback-code', "");
 
         let SP = getNumVal('cfg-spacing', 18); 
-        let sbd_dx = getNumVal('sbd-dx', 18); let sbd_dy = getNumVal('sbd-dy', 28);
+        let sbd_dx = getNumVal('sbd-dx', 18); let sbd_dy = getNumVal('sbd-dy', 26);
         let p1_dx = getNumVal('p1-dx', 18); let p1_dy = getNumVal('p1-dy', 28);
         let p2_dx = getNumVal('p2-dx', 18); let p2_dy = getNumVal('p2-dy', 28);
         let p3_dx = getNumVal('p3-dx', 18); let p3_dy = getNumVal('p3-dy', 28);
 
-        // 1. TÌM 4 GÓC WARP VĨ MÔ
+        // 1. TÌM TOÀN BỘ CÁC Ô ĐEN TRÊN ẢNH
         let srcMat = cv.matFromImageData(imgData);
         let grayMat = new cv.Mat(); cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
         let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 15);
         let contours = new cv.MatVector(); let hierarchy = new cv.Mat();
         cv.findContours(threshMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
         
-        let squareCenters = [];
-        let minArea = (W * H) / 10000; let maxArea = (W * H) / 300; 
+        let anchors = [];
+        let minArea = (W * H) / 80000; let maxArea = (W * H) / 1000; 
 
         for (let i = 0; i < contours.size(); i++) {
             let cnt = contours.get(i); let area = cv.contourArea(cnt);
@@ -478,178 +456,210 @@ function processHybridEngine(sourceCanvas) {
                 let rect = cv.boundingRect(cnt); let aspectRatio = rect.width / rect.height;
                 if (aspectRatio >= 0.5 && aspectRatio <= 1.5) {
                     let M = cv.moments(cnt, false);
-                    if (M.m00 != 0) squareCenters.push({x: M.m10/M.m00, y: M.m01/M.m00});
+                    if (M.m00 != 0) anchors.push({x: M.m10/M.m00, y: M.m01/M.m00});
                 }
             }
             cnt.delete();
         }
-        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete(); srcMat.delete();
+        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
 
-        if (squareCenters.length < 4) {
-            alert("Lỗi: Không tìm thấy rõ 4 ô vuông đen to ở 4 góc giấy. Vui lòng chụp rõ nét hơn!");
-            return;
+        if (anchors.length < 15) {
+            alert("Lỗi: Không tìm thấy đủ các ô định vị. Vui lòng chụp rõ nét hơn!");
+            srcMat.delete(); return;
         }
 
-        let pTL = squareCenters.reduce((p, c) => (c.x*c.x + c.y*c.y) < (p.x*p.x + p.y*p.y) ? c : p);
-        let pTR = squareCenters.reduce((p, c) => (Math.pow(W-c.x, 2) + c.y*c.y) < (Math.pow(W-p.x, 2) + p.y*p.y) ? c : p);
-        let pBL = squareCenters.reduce((p, c) => (c.x*c.x + Math.pow(H-c.y, 2)) < (p.x*p.x + Math.pow(H-p.y, 2)) ? c : p);
-        let pBR = squareCenters.reduce((p, c) => (Math.pow(W-c.x, 2) + Math.pow(H-c.y, 2)) < (Math.pow(W-p.x, 2) + Math.pow(H-p.y, 2)) ? c : p);
+        // 2. GOM NHÓM THEO Y
+        anchors.sort((a, b) => a.y - b.y);
+        let rows = []; let currentRow = [anchors[0]];
+        let yTolerance = H * 0.03; 
 
-        // 2. MA TRẬN WARP
-        let idealPoints = [ {x:40, y:40}, {x:760, y:40}, {x:40, y:1090}, {x:760, y:1090} ];
-        let rawPoints = [ pTL, pTR, pBL, pBR ];
-        const H_Matrix = createPerspectiveTransform(idealPoints, rawPoints);
+        for (let i = 1; i < anchors.length; i++) {
+            if (anchors[i].y - currentRow[0].y < yTolerance) {
+                currentRow.push(anchors[i]);
+            } else {
+                currentRow.sort((a,b) => a.x - b.x); rows.push(currentRow);
+                currentRow = [anchors[i]];
+            }
+        }
+        currentRow.sort((a,b) => a.x - b.x); rows.push(currentRow);
 
-        // TỌA ĐỘ ƯỚC LƯỢNG CHO PHIẾU MỚI (PHIEU_NTMIX_NEW)
-        const est_SBD_X = 548; const est_SBD_Y = 168;
-        const est_MAD_X = 693; const est_MAD_Y = 168;
-        const est_P1_X = [68, 250, 432, 615]; const est_P1_Y = 398;
-        const est_P2_X = [70, 160, 252, 342, 432, 523, 615, 705]; const est_P2_Y = 645;
-        const est_P3_X = [84, 203, 321, 440, 558, 676]; const est_P3_Y = 785;
+        let rowSBD = rows.find(r => r.length === 2);
+        let rowP1 = rows.find(r => r.length === 4);
+        let rowP2 = rows.find(r => r.length === 8);
+        let rowP3 = rows.find(r => r.length === 6);
 
-        let scaleRatio = (Math.sqrt(Math.pow(pTR.x - pTL.x, 2) + Math.pow(pTR.y - pTL.y, 2))) / 800; 
+        if (!rowSBD || !rowP1 || !rowP2 || !rowP3) {
+            alert(`Lỗi nhận diện cấu trúc. Hãy đảm bảo chụp đủ sáng và rõ nét.`);
+            srcMat.delete(); return;
+        }
 
-        function getDarknessRaw(cx, cy, rawRadius) {
+        // CANVAS KẾT QUẢ ĐỂ VẼ TRỰC QUAN
+        const resultCanvas = document.getElementById('result-canvas');
+        resultCanvas.width = W; resultCanvas.height = H;
+        const rCtx = resultCanvas.getContext('2d', { willReadFrequently: true });
+        rCtx.drawImage(sourceCanvas, 0, 0);
+
+        function scanBubbleRaw(cx, cy, radius, flatDataLocal, localW) {
             let darkCount = 0, total = 0;
-            let rx = Math.round(cx); let ry = Math.round(cy); let rad = Math.round(rawRadius);
+            let rx = Math.round(cx); let ry = Math.round(cy); let rad = Math.round(radius);
             for (let y = ry - rad; y < ry + rad; y++) {
                 for (let x = rx - rad; x < rx + rad; x++) {
-                    if (x < 0 || x >= W || y < 0 || y >= H) continue;
-                    let idx = (y * W + x) * 4; 
-                    let gray = 0.299*rawData[idx] + 0.587*rawData[idx+1] + 0.114*rawData[idx+2];
+                    let idx = (y * localW + x) * 4; 
+                    let gray = 0.299*flatDataLocal[idx] + 0.587*flatDataLocal[idx+1] + 0.114*flatDataLocal[idx+2];
                     if (gray < 140) darkCount++; total++; 
                 }
             }
             return total > 0 ? darkCount / total : 0;
         }
 
-        function snapToTrueAnchor(idealX, idealY) {
-            let predPt = mapCoord(H_Matrix, idealX, idealY); 
-            let searchRad = Math.max(10, Math.round(30 * scaleRatio)); 
-            let scanRad = Math.max(3, Math.round(8 * scaleRatio)); 
+        function drawBoxOnResult(x, y, r, status, M_Inv) {
+            // Cần nghịch đảo tọa độ từ Local Warp về lại tọa độ của Result Canvas (Original) để vẽ
+            let px = M_Inv.doubleAt(0,0)*x + M_Inv.doubleAt(0,1)*y + M_Inv.doubleAt(0,2);
+            let py = M_Inv.doubleAt(1,0)*x + M_Inv.doubleAt(1,1)*y + M_Inv.doubleAt(1,2);
+            let pz = M_Inv.doubleAt(2,0)*x + M_Inv.doubleAt(2,1)*y + M_Inv.doubleAt(2,2);
+            let nx = px/pz; let ny = py/pz;
 
-            let bestScore = 0; let bestX = predPt.x; let bestY = predPt.y;
-            for(let dy = -searchRad; dy <= searchRad; dy+=2) {
-                for(let dx = -searchRad; dx <= searchRad; dx+=2) {
-                    let score = getDarknessRaw(predPt.x + dx, predPt.y + dy, scanRad);
-                    if(score > bestScore) { bestScore = score; bestX = predPt.x + dx; bestY = predPt.y + dy; }
-                }
-            }
+            // Ước lượng bán kính trên ảnh gốc
+            let nr = r * Math.sqrt(M_Inv.doubleAt(0,0)*M_Inv.doubleAt(0,0) + M_Inv.doubleAt(1,0)*M_Inv.doubleAt(1,0));
+
+            rCtx.lineWidth = 1; rCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; rCtx.strokeRect(nx-nr, ny-nr, nr*2, nr*2); 
+            rCtx.lineWidth = 3;
+            if (status === 'correct') { rCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; rCtx.strokeRect(nx-nr, ny-nr, nr*2, nr*2); }
+            else if (status === 'wrong') { rCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; rCtx.strokeRect(nx-nr, ny-nr, nr*2, nr*2); }
+            else if (status === 'miss') { rCtx.strokeStyle = "rgba(255, 215, 0, 1)"; rCtx.strokeRect(nx-nr+1, ny-nr+1, nr*2-2, nr*2-2); }
+            else if (status === 'info') { rCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; rCtx.strokeRect(nx-nr, ny-nr, nr*2, nr*2); }
+        }
+
+        // HÀM WARP CỤC BỘ TỪNG KHỐI
+        function processLocalBlock(anchors, expectedPoints, localWidth, localHeight, processCallback) {
+            let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                anchors[0].x, anchors[0].y, 
+                anchors[1].x, anchors[1].y, 
+                anchors[2].x, anchors[2].y, 
+                anchors[3].x, anchors[3].y
+            ]);
+            let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, expectedPoints);
             
-            sCtx.lineWidth = 3; sCtx.strokeStyle = "rgba(0, 191, 255, 0.9)";
-            sCtx.strokeRect(bestX - scanRad, bestY - scanRad, scanRad*2, scanRad*2);
-            return {x: bestX, y: bestY};
-        }
+            let M = cv.getPerspectiveTransform(srcTri, dstTri);
+            let M_Inv = new cv.Mat(); cv.invert(M, M_Inv); // Ma trận nghịch đảo để vẽ ngược lại
 
-        function scanBubbleRel(anchor, relX, relY) {
-            let targetX = anchor.x + (relX * scaleRatio);
-            let targetY = anchor.y + (relY * scaleRatio);
+            let dstMat = new cv.Mat(); let dsize = new cv.Size(localWidth, localHeight);
+            cv.warpPerspective(srcMat, dstMat, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
             
-            let dx = targetX - anchor.x; let dy = targetY - anchor.y;
-            let angle = Math.atan2(pTR.y - pTL.y, pTR.x - pTL.x);
-            let finalX = anchor.x + dx * Math.cos(angle) - dy * Math.sin(angle);
-            let finalY = anchor.y + dx * Math.sin(angle) + dy * Math.cos(angle);
+            let tcv = document.createElement('canvas'); tcv.width = localWidth; tcv.height = localHeight;
+            cv.imshow(tcv, dstMat);
+            let flatDataLocal = tcv.getContext('2d').getImageData(0, 0, localWidth, localHeight).data;
 
-            let scanRad = Math.max(3, Math.round(7 * scaleRatio));
-            let score = getDarknessRaw(finalX, finalY, scanRad);
-            return { score: score, x: finalX, y: finalY, r: scanRad };
+            processCallback(flatDataLocal, localWidth, localHeight, M_Inv);
+
+            srcTri.delete(); dstTri.delete(); M.delete(); dstMat.delete(); M_Inv.delete();
         }
 
-        function drawBubbleResult(res, status) {
-            sCtx.lineWidth = 2; sCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; 
-            sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); 
-            sCtx.lineWidth = 3;
-            if (status === 'correct') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); }
-            else if (status === 'wrong') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); }
-            else if (status === 'miss') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.strokeRect(res.x - res.r + 1, res.y - res.r + 1, res.r*2 - 2, res.r*2 - 2); }
-            else if (status === 'info') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); }
-        }
-
-        // BƯỚC 4: ĐỌC ĐIỂM
+        // ======================== XỬ LÝ KHỐI SBD & MÃ ĐỀ ========================
+        let scannedSbd = "", scannedMade = "";
+        let sbd_w = 260, sbd_h = 240;
+        let sbd_expected = [20, 20, 175, 20, 20, 220, 175, 220]; // Tọa độ lý tưởng của 4 góc khối SBD
         
-        // ĐỌC SBD
-        let anchorSBD = snapToTrueAnchor(est_SBD_X, est_SBD_Y);
-        let scannedSbd = "";
-        for (let col = 0; col < 8; col++) {
-            let relX = col * sbd_dx; let maxS = 0, maxRow = 0, bestRes = null;
-            let results = [];
-            for(let row = 0; row < 10; row++) {
-                let relY = sbd_dy + (row * SP);
-                let res = scanBubbleRel(anchorSBD, relX, relY);
-                results.push(res);
-                if (res.score > maxS) { maxS = res.score; maxRow = row; bestRes = res; }
-            }
-            scannedSbd += (maxS > minConf) ? String(maxRow) : "0";
-            results.forEach((res, row) => drawBubbleResult(res, (maxS>minConf && row===maxRow) ? 'info' : 'empty'));
-        }
+        // Cần 4 điểm để warp. Lấy 2 ô định vị SBD và nội suy 2 điểm dưới
+        let sP_TL = rowSBD[0]; let sP_TR = rowSBD[1];
+        let vecX = sP_TR.x - sP_TL.x; let vecY = sP_TR.y - sP_TL.y;
+        let sP_BL = {x: sP_TL.x - vecY*1.2, y: sP_TL.y + vecX*1.2}; // Hạ vuông góc xuống
+        let sP_BR = {x: sP_TR.x - vecY*1.2, y: sP_TR.y + vecX*1.2};
 
-        // ĐỌC MÃ ĐỀ
-        let anchorMade = snapToTrueAnchor(est_MAD_X, est_MAD_Y);
-        let scannedMade = "";
-        for (let col = 0; col < 4; col++) {
-            let relX = col * sbd_dx; let maxS = 0, maxRow = 0;
-            let results = [];
-            for(let row = 0; row < 10; row++) {
-                let relY = sbd_dy + (row * SP);
-                let res = scanBubbleRel(anchorMade, relX, relY);
-                results.push(res);
-                if (res.score > maxS) { maxS = res.score; maxRow = row; }
+        processLocalBlock([sP_TL, sP_TR, sP_BL, sP_BR], sbd_expected, sbd_w, sbd_h, (flatDataLocal, w, h, M_Inv) => {
+            // Quét SBD (Bắt đầu từ 20, 20)
+            for (let col = 0; col < 8; col++) {
+                let bx = 20 + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
+                for(let row = 0; row < 10; row++) {
+                    let by = 20 + sbd_dy + (row * SP);
+                    let score = scanBubbleRaw(bx, by, 7, flatDataLocal, w);
+                    if (score > maxS) { maxS = score; maxRow = row; }
+                }
+                scannedSbd += (maxS > minConf) ? String(maxRow) : "0";
+                for(let row = 0; row < 10; row++) { drawBoxOnResult(bx, 20 + sbd_dy + (row * SP), 7, (maxS>minConf && row===maxRow) ? 'info' : 'empty', M_Inv); }
             }
-            scannedMade += (maxS > minConf) ? String(maxRow) : "0";
-            results.forEach((res, row) => drawBubbleResult(res, (maxS>minConf && row===maxRow) ? 'info' : 'empty'));
-        }
+            // Quét Mã Đề
+            for (let col = 0; col < 4; col++) {
+                let bx = 175 + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
+                for(let row = 0; row < 10; row++) {
+                    let by = 20 + sbd_dy + (row * SP);
+                    let score = scanBubbleRaw(bx, by, 7, flatDataLocal, w);
+                    if (score > maxS) { maxS = score; maxRow = row; }
+                }
+                scannedMade += (maxS > minConf) ? String(maxRow) : "0";
+                for(let row = 0; row < 10; row++) { drawBoxOnResult(bx, 20 + sbd_dy + (row * SP), 7, (maxS>minConf && row===maxRow) ? 'info' : 'empty', M_Inv); }
+            }
+        });
 
         let code = scannedMade.replace(/\?/g, '0'); let warnings = [];
         if (!answerKey[code]) { if (fallbackCode && answerKey[fallbackCode]) code = fallbackCode; else warnings.push(`Mã đề ${scannedMade} không có!`); }
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
         let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
-        // ĐỌC P1 (Theo phiếu mới: Anchor cạnh chữ A)
+        // ======================== XỬ LÝ KHỐI P1 ========================
         let scoreP1 = 0; let right1 = 0;
-        for (let b = 0; b < 4; b++) {
-            let anchorP1 = snapToTrueAnchor(est_P1_X[b], est_P1_Y);
-            for (let row = 0; row < 10; row++) {
-                let relY = p1_dy + (row * SP);
-                let results = [1,2,3,4].map(c => scanBubbleRel(anchorP1, c*p1_dx, relY)); // Bắt đầu từ cột 1 (Bỏ qua cột 0 là ô đen)
-                let maxS = Math.max(...results.map(r => r.score)); 
-                let maxIdx = results.findIndex(r => r.score === maxS);
-                let isFilled = maxS > minConf;
-                
-                let corrLabel = (b*10 + row < key.p1.length) ? key.p1[b*10 + row] : null; 
-                let corrIdx = ['A','B','C','D'].indexOf(corrLabel);
+        let p1_w = 600, p1_h = 240;
+        let p1_expected = [20, 20, 560, 20, 20, 220, 560, 220]; 
+        
+        let p1_TL = rowP1[0]; let p1_TR = rowP1[3];
+        let p1_vecX = p1_TR.x - p1_TL.x; let p1_vecY = p1_TR.y - p1_TL.y;
+        let p1_BL = {x: p1_TL.x - p1_vecY*0.4, y: p1_TL.y + p1_vecX*0.4}; 
+        let p1_BR = {x: p1_TR.x - p1_vecY*0.4, y: p1_TR.y + p1_vecX*0.4};
 
-                results.forEach((res, c) => {
-                    if (isFilled && c === maxIdx) {
-                        if (c === corrIdx) { right1++; drawBubbleResult(res, 'correct'); } else { drawBubbleResult(res, 'wrong'); }
-                    } else if (c === corrIdx) { drawBubbleResult(res, 'miss'); } else { drawBubbleResult(res, 'empty'); }
-                });
+        processLocalBlock([p1_TL, p1_TR, p1_BL, p1_BR], p1_expected, p1_w, p1_h, (flatDataLocal, w, h, M_Inv) => {
+            let anchor_Xs = [20, 200, 380, 560]; // Vị trí 4 ô neo P1 trên bản Warp
+            for (let b = 0; b < 4; b++) {
+                for (let row = 0; row < 10; row++) {
+                    let by = 20 + p1_dy + (row * SP);
+                    let scores = [0,1,2,3].map(c => scanBubbleRaw(anchor_Xs[b] + offP1X + c*SP, by, 7, flatDataLocal, w));
+                    let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
+                    let isFilled = maxS > minConf;
+                    let corrLabel = (b*10 + row < key.p1.length) ? key.p1[b*10 + row] : null; 
+                    let corrIdx = ['A','B','C','D'].indexOf(corrLabel);
+
+                    [0,1,2,3].forEach(c => {
+                        let bx = anchor_Xs[b] + offP1X + c*SP;
+                        if (isFilled && c === maxIdx) {
+                            if (c === corrIdx) { right1++; drawBoxOnResult(bx, by, 7, 'correct', M_Inv); } else { drawBoxOnResult(bx, by, 7, 'wrong', M_Inv); }
+                        } else if (c === corrIdx) { drawBoxOnResult(bx, by, 7, 'miss', M_Inv); } else { drawBoxOnResult(bx, by, 7, 'empty', M_Inv); }
+                    });
+                }
             }
-        }
+        });
         scoreP1 = +(right1 * diemP1).toFixed(2);
 
-        // ĐỌC P2 (Theo phiếu mới: Anchor cạnh chữ Đ)
+        // ======================== XỬ LÝ KHỐI P2 ========================
         let scoreP2 = 0; let right2Details = 0; let key2Str = key.p2.join(''); let student2Str = '';
-        for (let b = 0; b < 8; b++) {
-            let anchorP2 = snapToTrueAnchor(est_P2_X[b], est_P2_Y);
-            for (let row = 0; row < 4; row++) {
-                let relY = p2_dy + (row * SP);
-                let results = [1,2].map(c => scanBubbleRel(anchorP2, c*p2_dx, relY)); // Cột 1 (Đ), Cột 2 (S)
-                let maxS = Math.max(...results.map(r=>r.score)); 
-                let maxIdx = results.findIndex(r=>r.score===maxS);
-                let isFilled = maxS > minConf;
-                
-                let gIdx = b * 4 + row; let expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
-                let val = isFilled ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
-                if (b < key.p2.length) student2Str += val;
+        let p2_w = 700, p2_h = 150;
+        let p2_expected = [20, 20, 650, 20, 20, 130, 650, 130]; 
+        
+        let p2_TL = rowP2[0]; let p2_TR = rowP2[7];
+        let p2_vecX = p2_TR.x - p2_TL.x; let p2_vecY = p2_TR.y - p2_TL.y;
+        let p2_BL = {x: p2_TL.x - p2_vecY*0.15, y: p2_TL.y + p2_vecX*0.15}; 
+        let p2_BR = {x: p2_TR.x - p2_vecY*0.15, y: p2_TR.y + p2_vecX*0.15};
 
-                results.forEach((res, c) => {
-                    let thisVal = (c === 0) ? 'Đ' : 'S';
-                    if (isFilled && c === maxIdx) {
-                        if (thisVal === expected) { drawBubbleResult(res, 'correct'); } else { drawBubbleResult(res, 'wrong'); }
-                    } else if (thisVal === expected) { drawBubbleResult(res, 'miss'); } else { drawBubbleResult(res, 'empty'); }
-                });
+        processLocalBlock([p2_TL, p2_TR, p2_BL, p2_BR], p2_expected, p2_w, p2_h, (flatDataLocal, w, h, M_Inv) => {
+            let anchor_Xs = [20, 110, 200, 290, 380, 470, 560, 650]; 
+            for (let b = 0; b < 8; b++) {
+                for (let row = 0; row < 4; row++) {
+                    let by = 20 + p2_dy + (row * SP);
+                    let scores = [0,1].map(c => scanBubbleRaw(anchor_Xs[b] + offP2X + c*SP, by, 7, flatDataLocal, w));
+                    let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
+                    let isFilled = maxS > minConf;
+                    
+                    let gIdx = b * 4 + row; let expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
+                    let val = isFilled ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
+                    if (b < key.p2.length) student2Str += val;
+
+                    [0,1].forEach(c => {
+                        let bx = anchor_Xs[b] + offP2X + c*SP; let thisVal = (c === 0) ? 'Đ' : 'S';
+                        if (isFilled && c === maxIdx) {
+                            if (thisVal === expected) { drawBoxOnResult(bx, by, 7, 'correct', M_Inv); } else { drawBoxOnResult(bx, by, 7, 'wrong', M_Inv); }
+                        } else if (thisVal === expected) { drawBoxOnResult(bx, by, 7, 'miss', M_Inv); } else { drawBoxOnResult(bx, by, 7, 'empty', M_Inv); }
+                    });
+                }
             }
-        }
+        });
         for (let i = 0; i < key2Str.length; i += 4) {
             let stuQ = student2Str.slice(i, i + 4), keyQ = key2Str.slice(i, i + 4), cCount = 0;
             for (let j = 0; j < Math.min(stuQ.length, keyQ.length); j++) { if (stuQ[j] === keyQ[j] && stuQ[j] !== 'X') cCount++; }
@@ -657,68 +667,72 @@ function processHybridEngine(sourceCanvas) {
         }
         scoreP2 = +scoreP2.toFixed(2);
 
-        // ĐỌC P3 (Theo phiếu mới: Anchor trên cùng dấu - )
+        // ======================== XỬ LÝ KHỐI P3 ========================
         let scoreP3 = 0; let right3 = 0; let validP3Count = 0; 
-        for (let q = 0; q < 6; q++) { 
-            let anchorP3 = snapToTrueAnchor(est_P3_X[q], est_P3_Y);
-            let rawKey = (q < key.p3.length) ? String(key.p3[q]) : ""; let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
-            if (cleanKey) validP3Count++;
-            
-            let stuAnsStr = ""; let expectedMinus = cleanKey.startsWith('-'); 
-            
-            // Dấu trừ ngay dưới ô vuông đen
-            let resMinus = scanBubbleRel(anchorP3, 0, p3_dy);
-            let filledMinus = resMinus.score > minConf;
-            if (filledMinus) { drawBubbleResult(resMinus, expectedMinus ? 'correct' : 'wrong'); stuAnsStr += "-"; } 
-            else if (expectedMinus) { drawBubbleResult(resMinus, 'miss'); } else { drawBubbleResult(resMinus, 'empty'); }
-            
-            let expectedCols = cleanKey.replace(/^-/, '').split(''); 
-            for (let colIdx = 0; colIdx < 4; colIdx++) {
-                let relX = (colIdx + 1) * p3_dx; // Dịch sang các cột 1, 2, 3, 4
-                let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
-                
-                let resComma = scanBubbleRel(anchorP3, relX, p3_dy + SP);
-                let resDigits = [0,1,2,3,4,5,6,7,8,9].map(i => scanBubbleRel(anchorP3, relX, p3_dy + (i+2)*SP));
-                
-                let maxDigitScore = Math.max(...resDigits.map(r=>r.score)); 
-                let maxDigitIdx = resDigits.findIndex(r=>r.score === maxDigitScore);
-                
-                let isFilled = false; let filledChar = ''; let filledRes = null;
-                
-                if (resComma.score > minConf && resComma.score > maxDigitScore) { isFilled = true; filledChar = ','; filledRes = resComma; } 
-                else if (maxDigitScore > minConf) { isFilled = true; filledChar = String(maxDigitIdx); filledRes = resDigits[maxDigitIdx]; }
+        let p3_w = 600, p3_h = 240;
+        let p3_expected = [20, 20, 560, 20, 20, 220, 560, 220]; 
+        
+        let p3_TL = rowP3[0]; let p3_TR = rowP3[5];
+        let p3_vecX = p3_TR.x - p3_TL.x; let p3_vecY = p3_TR.y - p3_TL.y;
+        let p3_BL = {x: p3_TL.x - p3_vecY*0.4, y: p3_TL.y + p3_vecX*0.4}; 
+        let p3_BR = {x: p3_TR.x - p3_vecY*0.4, y: p3_TR.y + p3_vecX*0.4};
 
-                if (isFilled) {
-                    stuAnsStr += filledChar;
-                    drawBubbleResult(filledRes, (filledChar === expectedChar) ? 'correct' : 'wrong');
-                }
+        processLocalBlock([p3_TL, p3_TR, p3_BL, p3_BR], p3_expected, p3_w, p3_h, (flatDataLocal, w, h, M_Inv) => {
+            let anchor_Xs = [20, 128, 236, 344, 452, 560]; 
+            for (let q = 0; q < 6; q++) { 
+                let rawKey = (q < key.p3.length) ? String(key.p3[q]) : ""; let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
+                if (cleanKey) validP3Count++;
                 
-                if (resComma.score <= minConf && expectedChar !== ',') drawBubbleResult(resComma, 'empty');
-                else if (expectedChar === ',' && !isFilled) drawBubbleResult(resComma, 'miss');
+                let stuAnsStr = ""; let expectedMinus = cleanKey.startsWith('-'); 
+                
+                let resMinusScore = scanBubbleRaw(anchor_Xs[q] + offP3X, 20 + p3_dy, 7, flatDataLocal, w);
+                let filledMinus = resMinusScore > minConf;
+                if (filledMinus) { drawBoxOnResult(anchor_Xs[q] + offP3X, 20 + p3_dy, 7, expectedMinus ? 'correct' : 'wrong', M_Inv); stuAnsStr += "-"; } 
+                else if (expectedMinus) { drawBoxOnResult(anchor_Xs[q] + offP3X, 20 + p3_dy, 7, 'miss', M_Inv); } else { drawBoxOnResult(anchor_Xs[q] + offP3X, 20 + p3_dy, 7, 'empty', M_Inv); }
+                
+                let expectedCols = cleanKey.replace(/^-/, '').split(''); 
+                for (let colIdx = 0; colIdx < 4; colIdx++) {
+                    let bx = anchor_Xs[q] + offP3X + (colIdx * SP); let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
+                    
+                    let commaScore = scanBubbleRaw(bx, 20 + p3_dy + SP, 7, flatDataLocal, w);
+                    let scoresDigits = [0,1,2,3,4,5,6,7,8,9].map(i => scanBubbleRaw(bx, 20 + p3_dy + (i+2)*SP, 7, flatDataLocal, w));
+                    
+                    let maxDigitScore = Math.max(...scoresDigits); let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
+                    let isFilled = false; let filledChar = ''; let filledY = null;
+                    
+                    if (commaScore > minConf && commaScore > maxDigitScore) { isFilled = true; filledChar = ','; filledY = 20 + p3_dy + SP; } 
+                    else if (maxDigitScore > minConf) { isFilled = true; filledChar = String(maxDigitIdx); filledY = 20 + p3_dy + (maxDigitIdx+2)*SP; }
 
-                resDigits.forEach((res, i) => {
-                    if (!isFilled || filledRes !== res) {
-                         drawBubbleResult(res, (String(i) === expectedChar) ? 'miss' : 'empty');
+                    if (isFilled) {
+                        stuAnsStr += filledChar;
+                        drawBoxOnResult(bx, filledY, 7, (filledChar === expectedChar) ? 'correct' : 'wrong', M_Inv);
                     }
-                });
+                    
+                    if (commaScore <= minConf && expectedChar !== ',') drawBoxOnResult(bx, 20 + p3_dy + SP, 7, 'empty', M_Inv);
+                    else if (expectedChar === ',' && !isFilled) drawBoxOnResult(bx, 20 + p3_dy + SP, 7, 'miss', M_Inv);
+
+                    [0,1,2,3,4,5,6,7,8,9].forEach(i => {
+                        let cy = 20 + p3_dy + (i+2)*SP;
+                        if (!isFilled || filledY !== cy) {
+                             drawBoxOnResult(bx, cy, 7, (String(i) === expectedChar) ? 'miss' : 'empty', M_Inv);
+                        }
+                    });
+                }
+                if (cleanKey && stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
             }
-            if (cleanKey && stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
-        }
+        });
         scoreP3 = +scoreP3.toFixed(2);
         
         let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
+        srcMat.delete();
 
-        sCtx.fillStyle = "rgba(255, 255, 255, 0.95)"; sCtx.fillRect(10, 80, 280, 200);
-        sCtx.lineWidth = 4; sCtx.strokeStyle = "#dc2626"; sCtx.strokeRect(10, 80, 280, 200);
-        sCtx.fillStyle = "#dc2626"; sCtx.font = "bold 32px Arial"; sCtx.fillText(`TỔNG: ${totalScore}đ`, 25, 130);
-        sCtx.font = "bold 24px Arial"; sCtx.fillText(`P.I:   ${scoreP1}đ`, 30, 180); sCtx.fillText(`P.II:  ${scoreP2}đ`, 30, 220); sCtx.fillText(`P.III: ${scoreP3}đ`, 30, 260);
+        // Hiển thị khung Tổng kết
+        rCtx.fillStyle = "rgba(255, 255, 255, 0.95)"; rCtx.fillRect(10, 80, 280, 200);
+        rCtx.lineWidth = 4; rCtx.strokeStyle = "#dc2626"; rCtx.strokeRect(10, 80, 280, 200);
+        rCtx.fillStyle = "#dc2626"; rCtx.font = "bold 32px Arial"; rCtx.fillText(`TỔNG: ${totalScore}đ`, 25, 130);
+        rCtx.font = "bold 24px Arial"; rCtx.fillText(`P.I:   ${scoreP1}đ`, 30, 180); rCtx.fillText(`P.II:  ${scoreP2}đ`, 30, 220); rCtx.fillText(`P.III: ${scoreP3}đ`, 30, 260);
 
-        const resultCanvas = document.getElementById('result-canvas');
-        resultCanvas.width = W; resultCanvas.height = H;
-        resultCanvas.getContext('2d').drawImage(sourceCanvas, 0, 0);
-        resultCanvas.style.display = 'block'; 
-        
-        document.getElementById('score-dashboard').style.display = 'block';
+        resultCanvas.style.display = 'block'; document.getElementById('score-dashboard').style.display = 'block';
         document.getElementById('ui-total').textContent = `${totalScore}đ`;
         document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa có trong DSHS)";
         document.getElementById('ui-sbd-made').textContent = `SBD: ${scannedSbd} | Mã đề: ${code}`;
