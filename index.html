@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V18.0 - Auto-Scan Vệ Tinh (Phiếu Mới)</title>
+    <title>NTMIX V19.0 - Hybrid Engine (Bản Hoàn Thiện)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -53,6 +53,7 @@
         .btn-secondary { background: #64748b; }
         .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; font-weight:bold; }
 
+        /* KHU VỰC CAMERA TỰ ĐỘNG - PHỤC HỒI HOÀN CHỈNH */
         #camera-fullscreen-ui { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; flex-direction: column; overflow: hidden; }
         #video-container { position: relative; flex: 1; width: 100%; height: 100%; background: #000; overflow: hidden; }
         #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -61,8 +62,20 @@
             position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
             width: 90vw; max-width: 600px; aspect-ratio: 800 / 1130; 
             box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); 
-            border: 2px dashed rgba(255, 255, 255, 0.4); pointer-events: none; z-index: 10;
+            border: 2px dashed rgba(255, 255, 255, 0.5); pointer-events: none; z-index: 10;
         }
+
+        .tn-corner {
+            position: absolute; width: 18%; aspect-ratio: 1 / 1;
+            background: rgba(255, 255, 255, 0.2); border: 2px dashed rgba(255, 255, 255, 0.8);
+            box-shadow: 0px 0px 5px rgba(0,0,0,0.5); transition: all 0.15s ease-out;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tn-corner::after { content: '+'; color: rgba(255,255,255,0.6); font-size: 24px; font-weight: bold; }
+        .tn-corner.tl { top: 0%; left: 0%; }
+        .tn-corner.tr { top: 0%; right: 0%; }
+        .tn-corner.bl { bottom: 0%; left: 0%; }
+        .tn-corner.br { bottom: 0%; right: 0%; }
 
         .cam-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px 10px 25px 10px; background: linear-gradient(transparent, rgba(0,0,0,0.95)); text-align: center; z-index: 20; }
         #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
@@ -97,7 +110,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V18.0 - Auto-Scan Vệ Tinh & Lưới Tùy Chỉnh</span>
+    <span class="badge-cv">V19.0 - Hybrid Engine (Auto-Snap)</span>
 </header>
 
 <div class="container">
@@ -122,37 +135,37 @@
         </div>
 
         <div class="card">
-            <div class="card-title">2. Tinh chỉnh Lưới Vệ Tinh (Phiếu Mới)</div>
-            <p style="font-size: 11px; color: #d93025; margin-bottom: 8px; font-weight:bold;">Chỉnh khoảng cách từ ô đen đến các bọt nước (pixel) để khớp với camera máy.</p>
+            <div class="card-title">2. Tinh chỉnh Lưới Vệ Tinh (Pixel)</div>
+            <p style="font-size: 11px; color: #d93025; margin-bottom: 8px; font-weight:bold;">Khoảng cách tính từ TÂM ô đen định vị của khối đến tâm bọt nước đầu tiên.</p>
             
             <div class="form-group" style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px dashed #f59e0b;">
-                <label style="color: #b45309;">📏 Giãn cách ô (Spacing):</label>
-                <input type="number" id="cfg-spacing" value="18" title="Khoảng cách giữa các ô bọt nước.">
+                <label style="color: #b45309;">📏 Giãn cách ô bọt nước (Spacing):</label>
+                <input type="number" id="cfg-spacing" value="18" title="Khoảng cách chuẩn giữa 2 bong bóng liên tiếp">
             </div>
 
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; margin-top: 10px;">
-                <label>📍 SBD & Mã Đề (Dịch X / Dịch Y):</label>
+                <label>📍 Khoảng cách SBD & Mã Đề (X / Y):</label>
                 <div class="grid-2">
-                    <input type="number" id="off-sbd-x" value="20">
-                    <input type="number" id="off-sbd-y" value="25">
+                    <input type="number" id="sbd-dx" value="18">
+                    <input type="number" id="sbd-dy" value="26">
                 </div>
                 
-                <label style="margin-top: 8px;">📍 Phần I (Dịch X / Dịch Y):</label>
+                <label style="margin-top: 8px;">📍 Khoảng cách Phần I (X / Y):</label>
                 <div class="grid-2">
-                    <input type="number" id="off-p1-x" value="18">
-                    <input type="number" id="off-p1-y" value="25">
+                    <input type="number" id="p1-dx" value="18">
+                    <input type="number" id="p1-dy" value="25">
                 </div>
 
-                <label style="margin-top: 8px;">📍 Phần II (Dịch X / Dịch Y):</label>
+                <label style="margin-top: 8px;">📍 Khoảng cách Phần II (X / Y):</label>
                 <div class="grid-2">
-                    <input type="number" id="off-p2-x" value="15">
-                    <input type="number" id="off-p2-y" value="28">
+                    <input type="number" id="p2-dx" value="18">
+                    <input type="number" id="p2-dy" value="30">
                 </div>
 
-                <label style="margin-top: 8px;">📍 Phần III (Dịch X / Dịch Y):</label>
+                <label style="margin-top: 8px;">📍 Khoảng cách Phần III (X / Y):</label>
                 <div class="grid-2">
-                    <input type="number" id="off-p3-x" value="20">
-                    <input type="number" id="off-p3-y" value="30">
+                    <input type="number" id="p3-dx" value="18">
+                    <input type="number" id="p3-dy" value="32">
                 </div>
             </div>
             
@@ -239,13 +252,19 @@
     </div>
 </div>
 
+<!-- KHÔI PHỤC LẠI GIAO DIỆN QUÉT ỔN ĐỊNH VỚI 4 GÓC -->
 <div id="camera-fullscreen-ui">
     <div id="video-container">
         <video id="video" autoplay playsinline muted></video>
-        <div id="cam-overlay"></div>
+        <div id="cam-overlay">
+            <div class="tn-corner tl" id="cb-tl"></div>
+            <div class="tn-corner tr" id="cb-tr"></div>
+            <div class="tn-corner bl" id="cb-bl"></div>
+            <div class="tn-corner br" id="cb-br"></div>
+        </div>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Lọt toàn bộ trang giấy vào khung hình để tự động quét</p>
+        <p id="hud-text">Lọt 4 GÓC ĐEN TO ngoài cùng vào 4 mục tiêu (+)</p>
         <select id="cam-speed-select" class="speed-select">
             <option value="2">⚡ Nhanh (Chạm là quét)</option>
             <option value="5" selected>🎯 Vừa (Ổn định)</option>
@@ -281,7 +300,6 @@ function switchTab(tabId) {
 
 function playBeep() { try { const ctx = new (window.AudioContext || window.webkitAudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = "sine"; osc.frequency.setValueAtTime(1250, ctx.currentTime); gain.gain.setValueAtTime(0.2, ctx.currentTime); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.12); } catch (e) {} }
 
-// Nạp File Đáp Án
 document.getElementById('file-key').addEventListener('change', function(e) {
     const file = e.target.files[0]; if (!file) return;
     if (typeof XLSX === 'undefined') return;
@@ -309,7 +327,6 @@ document.getElementById('file-key').addEventListener('change', function(e) {
     reader.readAsArrayBuffer(file); e.target.value = '';
 });
 
-// Nạp File DSHS
 document.getElementById('file-dshs').addEventListener('change', function(e) {
     const file = e.target.files[0]; if (!file) return;
     if (typeof XLSX === 'undefined') return;
@@ -337,8 +354,8 @@ async function openFullscreenCamera() {
     try {
         videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } } });
         video.srcObject = videoStream; ui.style.display = 'flex';
-        video.onloadedmetadata = () => { video.play(); startAIScan(); };
-    } catch (err) { alert("Lỗi Camera. Vui lòng cấp quyền hoặc dùng Chọn Ảnh Từ Máy."); }
+        video.onloadedmetadata = () => { video.play(); startCornerAutoScan(); };
+    } catch (err) { alert("Lỗi Camera. Vui lòng cấp quyền."); }
 }
 
 function closeFullscreenCamera() {
@@ -347,63 +364,77 @@ function closeFullscreenCamera() {
     document.getElementById('camera-fullscreen-ui').style.display = 'none';
 }
 
-function startAIScan() {
+function startCornerAutoScan() {
     if (autoScanTimer) clearInterval(autoScanTimer);
     const video = document.getElementById('video'); const hudText = document.getElementById('hud-text');
     const overlay = document.getElementById('cam-overlay');
     stableFrames = 0;
 
-    let tcv = document.createElement('canvas'); tcv.width = 400; tcv.height = 600;
-    let tCtx = tcv.getContext('2d', { willReadFrequently: true });
-
     autoScanTimer = setInterval(() => {
         if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
         
         let targetFrames = parseInt(document.getElementById('cam-speed-select').value) || 5;
-        
-        tCtx.drawImage(video, 0, 0, 400, 600);
-        let imgData = tCtx.getImageData(0, 0, 400, 600);
-        let srcMat = cv.matFromImageData(imgData);
-        let grayMat = new cv.Mat(); cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
-        let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 21, 10);
-        
-        let contours = new cv.MatVector(); let hierarchy = new cv.Mat();
-        cv.findContours(threshMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-        
-        let squareCount = 0;
-        let minArea = 15; let maxArea = 600; // Bộ lọc kích thước ô vuông trên canvas 400x600
+        let videoRatio = video.videoWidth / video.videoHeight; let elementRatio = video.clientWidth / video.clientHeight;
+        let sWidth, sHeight, sx, sy;
+        if (videoRatio > elementRatio) { sHeight = video.videoHeight; sWidth = sHeight * elementRatio; sx = (video.videoWidth - sWidth) / 2; sy = 0; } 
+        else { sWidth = video.videoWidth; sHeight = sWidth / elementRatio; sx = 0; sy = (video.videoHeight - sHeight) / 2; }
 
-        for (let i = 0; i < contours.size(); i++) {
-            let cnt = contours.get(i); let area = cv.contourArea(cnt);
-            if (area > minArea && area < maxArea) {
-                let rect = cv.boundingRect(cnt); let aspect = rect.width / rect.height;
-                if (aspect > 0.7 && aspect < 1.3) squareCount++;
+        let rectV = video.getBoundingClientRect(); let scaleX = sWidth / rectV.width; let scaleY = sHeight / rectV.height;
+
+        function analyzeCornerBox(boxId) {
+            let box = document.getElementById(boxId); let rectB = box.getBoundingClientRect();
+            let cropX = sx + (rectB.left - rectV.left) * scaleX; let cropY = sy + (rectB.top - rectV.top) * scaleY;
+            let cropW = rectB.width * scaleX; let cropH = rectB.height * scaleY;
+            
+            if(cropX < 0 || cropY < 0 || cropW <= 0 || cropH <= 0 || (cropX + cropW) > video.videoWidth || (cropY + cropH) > video.videoHeight) return false;
+
+            let tcv = document.createElement('canvas'); tcv.width = 40; tcv.height = 40;
+            let ctx = tcv.getContext('2d', { willReadFrequently: true }); ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 40, 40);
+            let imgData = ctx.getImageData(0, 0, 40, 40).data;
+            
+            let innerSum = 0, innerCount = 0; let haloSum = 0, haloCount = 0;
+            for (let py = 0; py < 40; py++) {
+                for (let px = 0; px < 40; px++) {
+                    let idx = (py * 40 + px) * 4;
+                    let gray = imgData[idx+1]; 
+                    if (px >= 13 && px <= 27 && py >= 13 && py <= 27) { innerSum += gray; innerCount++; } 
+                    else { haloSum += gray; haloCount++; }
+                }
             }
-            cnt.delete();
+            let innerAvg = innerSum / innerCount; let haloAvg = haloSum / haloCount;
+            let isValid = (innerAvg < 150) && ((haloAvg - innerAvg) > 25);
+            
+            if(isValid) { box.style.borderColor = "rgba(0, 255, 0, 0.9)"; box.style.backgroundColor = "rgba(0, 255, 0, 0.3)"; } 
+            else { box.style.borderColor = "rgba(255, 255, 255, 0.8)"; box.style.backgroundColor = "rgba(255, 255, 255, 0.2)"; }
+            return isValid;
         }
-        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete(); srcMat.delete();
 
-        // Cấu trúc mới có nhiều ô định vị. Yêu cầu ít nhất 16 ô (cho phép sai số)
-        if (squareCount >= 16) {
+        if (analyzeCornerBox('cb-tl') && analyzeCornerBox('cb-tr') && analyzeCornerBox('cb-bl') && analyzeCornerBox('cb-br')) {
             stableFrames++; 
-            hudText.innerHTML = `🎯 Đã khóa... (${stableFrames}/${targetFrames})`; 
+            hudText.innerHTML = `🎯 Khóa 4 góc... (${stableFrames}/${targetFrames})`; 
             hudText.style.color = "#0f9d58";
-            overlay.style.borderColor = "rgba(0, 255, 0, 0.8)";
             
             if (stableFrames >= targetFrames) {
                 clearInterval(autoScanTimer); hudText.innerHTML = "⚡ ĐÃ CHỤP!"; playBeep();
-                let canvas = document.createElement('canvas'); 
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                closeFullscreenCamera(); processImageOMR_V18(canvas);
+                let rectO = overlay.getBoundingClientRect();
+                let cropX = sx + (rectO.left - rectV.left) * scaleX; let cropY = sy + (rectO.top - rectV.top) * scaleY;
+                let cropW = rectO.width * scaleX; let cropH = rectO.height * scaleY;
+                
+                let paddingW = cropW * 0.15; let paddingH = cropH * 0.15;
+                let finalX = Math.max(0, cropX - paddingW); let finalY = Math.max(0, cropY - paddingH);
+                let finalW = Math.min(video.videoWidth - finalX, cropW + paddingW*2);
+                let finalH = Math.min(video.videoHeight - finalY, cropH + paddingH*2);
+
+                let finalCanvas = document.createElement('canvas'); finalCanvas.width = finalW; finalCanvas.height = finalH;
+                finalCanvas.getContext('2d').drawImage(video, finalX, finalY, finalW, finalH, 0, 0, finalW, finalH);
+                closeFullscreenCamera(); processHybridEngine(finalCanvas);
             }
         } else {
             if (stableFrames > 0) stableFrames--;
-            hudText.innerHTML = `Hướng camera quét lấy ${squareCount}/18 ô vuông định vị`; 
+            hudText.innerHTML = "Lọt 4 GÓC ĐEN TO ngoài cùng vào 4 mục tiêu (+)"; 
             hudText.style.color = "#fff";
-            overlay.style.borderColor = "rgba(255, 255, 255, 0.4)";
         }
-    }, 150);
+    }, 100);
 }
 
 function manualCapture() {
@@ -414,7 +445,7 @@ function manualCapture() {
     let canvas = document.createElement('canvas'); 
     canvas.width = video.videoWidth; canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    closeFullscreenCamera(); processImageOMR_V18(canvas);
+    closeFullscreenCamera(); processHybridEngine(canvas);
 }
 
 async function handleImageFiles(inputElement) {
@@ -424,17 +455,20 @@ async function handleImageFiles(inputElement) {
     img.onload = () => {
         let canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height;
         canvas.getContext('2d').drawImage(img, 0, 0);
-        processImageOMR_V18(canvas);
+        processHybridEngine(canvas);
     };
     img.src = URL.createObjectURL(files[0]);
     inputElement.value = ''; 
 }
 
 // =====================================================================
-// LÕI V18.0: ĐỊNH VỊ VỆ TINH CỤC BỘ (Không nắn phẳng toàn trang)
+// LÕI V19.0: HYBRID ENGINE
+// 1. Ép phẳng vĩ mô bằng 4 góc to
+// 2. Khóa nét vi mô bằng 20 ô vuông (Tự động hút tọa độ lưới)
 // =====================================================================
-function processImageOMR_V18(sourceCanvas) {
+function processHybridEngine(sourceCanvas) {
     try {
+        const TARGET_W = 800; const TARGET_H = 1130;
         const W = sourceCanvas.width; const H = sourceCanvas.height;
         const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
         const imgData = sCtx.getImageData(0, 0, W, H);
@@ -445,74 +479,107 @@ function processImageOMR_V18(sourceCanvas) {
         let diemP3 = getNumVal('cfg-p3', 0.5);
         let fallbackCode = getStrVal('fallback-code', "");
 
-        // Lấy tọa độ cấu hình (Offset và Spacing)
         let SP = getNumVal('cfg-spacing', 18); 
-        let offSbdX = getNumVal('off-sbd-x', 20); let offSbdY = getNumVal('off-sbd-y', 25);
-        let offP1X = getNumVal('off-p1-x', 18); let offP1Y = getNumVal('off-p1-y', 25);
-        let offP2X = getNumVal('off-p2-x', 15); let offP2Y = getNumVal('off-p2-y', 28);
-        let offP3X = getNumVal('off-p3-x', 20); let offP3Y = getNumVal('off-p3-y', 30);
+        let sbd_dx = getNumVal('sbd-dx', 18); let sbd_dy = getNumVal('sbd-dy', 25);
+        let p1_dx = getNumVal('p1-dx', 18); let p1_dy = getNumVal('p1-dy', 25);
+        let p2_dx = getNumVal('p2-dx', 18); let p2_dy = getNumVal('p2-dy', 30);
+        let p3_dx = getNumVal('p3-dx', 18); let p3_dy = getNumVal('p3-dy', 32);
 
-        // BƯỚC 1: TÌM TOÀN BỘ CÁC Ô ĐEN ĐỊNH VỊ TRÊN ẢNH GỐC
+        // BƯỚC 1: TÌM 4 GÓC VÀ ÉP PHẲNG (WARP)
         let srcMat = cv.matFromImageData(imgData);
         let grayMat = new cv.Mat(); cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
         let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 15);
         let contours = new cv.MatVector(); let hierarchy = new cv.Mat();
         cv.findContours(threshMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
         
-        let localAnchors = [];
-        let minArea = (W * H) / 80000; 
-        let maxArea = (W * H) / 1000; 
+        let squareCenters = [];
+        let minArea = (W * H) / 10000; let maxArea = (W * H) / 500;
 
         for (let i = 0; i < contours.size(); i++) {
             let cnt = contours.get(i); let area = cv.contourArea(cnt);
             if (area > minArea && area < maxArea) { 
                 let rect = cv.boundingRect(cnt); let aspectRatio = rect.width / rect.height;
-                if (aspectRatio >= 0.6 && aspectRatio <= 1.4) {
+                if (aspectRatio >= 0.5 && aspectRatio <= 1.5) {
                     let M = cv.moments(cnt, false);
-                    if (M.m00 != 0) localAnchors.push({x: M.m10/M.m00, y: M.m01/M.m00, w: rect.width});
+                    if (M.m00 != 0) squareCenters.push({x: M.m10/M.m00, y: M.m01/M.m00});
                 }
             }
             cnt.delete();
         }
-        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete(); srcMat.delete();
+        contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
 
-        // BƯỚC 2: PHÂN LOẠI CÁC Ô ĐEN THÀNH CÁC HÀNG
-        localAnchors.sort((a, b) => a.y - b.y);
-        if (localAnchors.length === 0) { alert("Không tìm thấy ô định vị nào."); return; }
+        if (squareCenters.length < 4) {
+            alert("Lỗi: Không tìm thấy 4 ô định vị góc. Vui lòng đặt lại phiếu vào khung hướng dẫn.");
+            srcMat.delete(); return;
+        }
 
-        let rows = []; let currentRow = [localAnchors[0]];
-        let yTolerance = H * 0.03; 
+        let pTL = squareCenters.reduce((p, c) => (c.x*c.x + c.y*c.y) < (p.x*p.x + p.y*p.y) ? c : p);
+        let pTR = squareCenters.reduce((p, c) => (Math.pow(W-c.x, 2) + c.y*c.y) < (Math.pow(W-p.x, 2) + p.y*p.y) ? c : p);
+        let pBL = squareCenters.reduce((p, c) => (c.x*c.x + Math.pow(H-c.y, 2)) < (p.x*p.x + Math.pow(H-p.y, 2)) ? c : p);
+        let pBR = squareCenters.reduce((p, c) => (Math.pow(W-c.x, 2) + Math.pow(H-c.y, 2)) < (Math.pow(W-p.x, 2) + Math.pow(H-p.y, 2)) ? c : p);
 
-        for (let i = 1; i < localAnchors.length; i++) {
-            if (localAnchors[i].y - currentRow[0].y < yTolerance) {
-                currentRow.push(localAnchors[i]);
-            } else {
-                currentRow.sort((a,b) => a.x - b.x); rows.push(currentRow);
-                currentRow = [localAnchors[i]];
+        let dstMat = new cv.Mat(); let dsize = new cv.Size(TARGET_W, TARGET_H);
+        let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ pTL.x, pTL.y, pTR.x, pTR.y, pBL.x, pBL.y, pBR.x, pBR.y ]);
+        let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ 40, 40, 760, 40, 40, 1090, 760, 1090 ]);
+
+        let M = cv.getPerspectiveTransform(srcTri, dstTri);
+        cv.warpPerspective(srcMat, dstMat, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+
+        const resultCanvas = document.getElementById('result-canvas');
+        resultCanvas.width = TARGET_W; resultCanvas.height = TARGET_H;
+        cv.imshow(resultCanvas, dstMat);
+        const rCtx = resultCanvas.getContext('2d', { willReadFrequently: true });
+        const flatData = rCtx.getImageData(0, 0, TARGET_W, TARGET_H).data;
+
+        srcMat.delete(); dstMat.delete(); srcTri.delete(); dstTri.delete(); M.delete();
+
+        // BƯỚC 2: KHÓA NÉT VI MÔ (MICRO-LOCKING)
+        // Dò độ đen trên ảnh đã Warp để tìm TÂM CHUẨN XÁC của các ô vệ tinh
+        function getDarkness(cx, cy, radius) {
+            if (cx < 0 || cy < 0 || cx >= TARGET_W || cy >= TARGET_H) return 0;
+            let darkCount = 0, total = 0;
+            for (let y = cy - radius; y < cy + radius; y++) {
+                for (let x = cx - radius; x < cx + radius; x++) {
+                    let idx = (Math.round(y) * TARGET_W + Math.round(x)) * 4; 
+                    let gray = 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2];
+                    if (gray < 130) darkCount++; total++; // 130 là ngưỡng mực in
+                }
             }
-        }
-        currentRow.sort((a,b) => a.x - b.x); rows.push(currentRow);
-
-        // Lấy thông tin các khối dựa trên cấu trúc Phiếu Mới (SBD: 2 ô, P1: 4 ô, P2: 8 ô, P3: 6 ô)
-        let rowSBD = rows.find(r => r.length === 2);
-        let rowP1 = rows.find(r => r.length === 4);
-        let rowP2 = rows.find(r => r.length === 8);
-        let rowP3 = rows.find(r => r.length === 6);
-
-        if (!rowSBD || !rowP1 || !rowP2 || !rowP3) {
-            console.log("Cấu trúc tìm thấy:", rows.map(r => r.length));
-            alert(`Lỗi nhận diện cấu trúc. Hãy đảm bảo chụp đủ sáng và rõ nét.`);
-            return;
+            return total > 0 ? darkCount / total : 0;
         }
 
-        // Hàm quét độ đen tại 1 điểm
+        // Hàm này hút tọa độ về nơi đen nhất trong vùng tìm kiếm
+        function snapToAnchor(expectedX, expectedY) {
+            let searchRad = 20; // Bán kính tìm kiếm
+            let bestScore = 0; let bestX = expectedX, bestY = expectedY;
+            for(let y = expectedY - searchRad; y <= expectedY + searchRad; y+=2) {
+                for(let x = expectedX - searchRad; x <= expectedX + searchRad; x+=2) {
+                    let score = getDarkness(x, y, 6); // R=6 tương đương ô vuông 12x12
+                    if(score > bestScore) { bestScore = score; bestX = x; bestY = y; }
+                }
+            }
+            // Vẽ ô vuông xanh dương để chứng minh đã khóa nét vi mô thành công
+            rCtx.lineWidth = 2; rCtx.strokeStyle = "blue";
+            rCtx.strokeRect(bestX - 6, bestY - 6, 12, 12);
+            return {x: bestX, y: bestY};
+        }
+
+        // Các tọa độ ƯỚC LƯỢNG trên bản đồ 800x1130
+        const est_SBD_X = 545; const est_SBD_Y = 160;
+        const est_MAD_X = 698; const est_MAD_Y = 160;
+        
+        const est_P1_X = [84, 264, 444, 624]; const est_P1_Y = 380;
+        const est_P2_X = [82, 174, 264, 354, 444, 534, 624, 714]; const est_P2_Y = 640;
+        const est_P3_X = [76, 191, 306, 421, 536, 651]; const est_P3_Y = 795;
+
+        // Hàm quét bong bóng (Sử dụng Background tương phản)
         function scanBubble(cx, cy, radius) {
             let bgSum = 0, bgCount = 0;
-            for (let py = cy - radius*3; py < cy + radius*3; py+=3) {
-                for (let px = cx - radius*3; px < cx + radius*3; px+=3) {
-                    if (px < 0 || px >= W || py < 0 || py >= H) continue;
-                    let idx = (Math.round(py) * W + Math.round(px)) * 4; 
-                    bgSum += 0.299*imgData.data[idx] + 0.587*imgData.data[idx+1] + 0.114*imgData.data[idx+2]; bgCount++;
+            for (let py = cy - radius*2; py < cy + radius*2; py+=4) {
+                for (let px = cx - radius*2; px < cx + radius*2; px+=4) {
+                    if (px < 0 || px >= TARGET_W || py < 0 || py >= TARGET_H) continue;
+                    let idx = (Math.round(py) * TARGET_W + Math.round(px)) * 4; 
+                    bgSum += 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2]; bgCount++;
                 }
             }
             let bgAvg = bgCount > 0 ? bgSum / bgCount : 255; let localThresh = Math.min(150, bgAvg * 0.85); 
@@ -520,48 +587,50 @@ function processImageOMR_V18(sourceCanvas) {
             let darkCount = 0, total = 0;
             for (let y = cy - radius; y < cy + radius; y++) {
                 for (let x = cx - radius; x < cx + radius; x++) {
-                    if (x < 0 || x >= W || y < 0 || y >= H) continue;
-                    let idx = (Math.round(y) * W + Math.round(x)) * 4; 
-                    let gray = 0.299*imgData.data[idx] + 0.587*imgData.data[idx+1] + 0.114*imgData.data[idx+2];
+                    if (x < 0 || x >= TARGET_W || y < 0 || y >= TARGET_H) continue;
+                    let idx = (Math.round(y) * TARGET_W + Math.round(x)) * 4; 
+                    let gray = 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2];
                     if (gray < localThresh) darkCount++; total++;
                 }
             }
             return total > 0 ? darkCount / total : 0;
         }
 
-        function drawBox(x, y, radius, status) {
-            sCtx.lineWidth = 1; sCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; sCtx.strokeRect(x-radius, y-radius, radius*2, radius*2); 
-            sCtx.lineWidth = 3;
-            if (status === 'correct') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.strokeRect(x-radius, y-radius, radius*2, radius*2); }
-            else if (status === 'wrong') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.strokeRect(x-radius, y-radius, radius*2, radius*2); }
-            else if (status === 'miss') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.strokeRect(x-radius+1, y-radius+1, radius*2-2, radius*2-2); }
-            else if (status === 'info') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(x-radius, y-radius, radius*2, radius*2); }
+        function drawBox(x, y, status) {
+            rCtx.lineWidth = 1; rCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; rCtx.strokeRect(x-7, y-7, 14, 14); 
+            rCtx.lineWidth = 2;
+            if (status === 'correct') { rCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; rCtx.strokeRect(x-7, y-7, 14, 14); }
+            else if (status === 'wrong') { rCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; rCtx.strokeRect(x-7, y-7, 14, 14); }
+            else if (status === 'miss') { rCtx.strokeStyle = "rgba(255, 215, 0, 1)"; rCtx.strokeRect(x-6, y-6, 12, 12); }
+            else if (status === 'info') { rCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; rCtx.strokeRect(x-7, y-7, 14, 14); }
         }
 
-        // BƯỚC 3: ĐỌC TỪNG KHỐI BẰNG ANCHOR TƯƠNG ỨNG
-
-        let scannedSbd = ""; let anchorSBD = rowSBD[0]; let r = anchorSBD.w * 0.4;
+        // BƯỚC 3: ĐỌC ĐIỂM DỰA TRÊN TÂM ĐÃ KHÓA
+        
+        let anchorSBD = snapToAnchor(est_SBD_X, est_SBD_Y);
+        let scannedSbd = "";
         for (let col = 0; col < 8; col++) {
-            let bx = anchorSBD.x + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
+            let bx = anchorSBD.x + (col * sbd_dx); let maxS = 0, maxRow = 0;
             for(let row = 0; row < 10; row++) {
-                let by = anchorSBD.y + offSbdY + (row * SP); 
-                let score = scanBubble(bx, by, r);
+                let by = anchorSBD.y + sbd_dy + (row * SP);
+                let score = scanBubble(bx, by, 6);
                 if (score > maxS) { maxS = score; maxRow = row; }
             }
             scannedSbd += (maxS > minConf) ? String(maxRow) : "0";
-            for(let row = 0; row < 10; row++) { drawBox(bx, anchorSBD.y + offSbdY + (row * SP), r, (maxS>minConf && row===maxRow) ? 'info' : 'empty'); }
+            for(let row = 0; row < 10; row++) { drawBox(bx, anchorSBD.y + sbd_dy + (row * SP), (maxS>minConf && row===maxRow) ? 'info' : 'empty'); }
         }
 
-        let scannedMade = ""; let anchorMade = rowSBD[1];
+        let anchorMade = snapToAnchor(est_MAD_X, est_MAD_Y);
+        let scannedMade = "";
         for (let col = 0; col < 4; col++) {
-            let bx = anchorMade.x + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
+            let bx = anchorMade.x + (col * sbd_dx); let maxS = 0, maxRow = 0;
             for(let row = 0; row < 10; row++) {
-                let by = anchorMade.y + offSbdY + (row * SP);
-                let score = scanBubble(bx, by, r);
+                let by = anchorMade.y + sbd_dy + (row * SP);
+                let score = scanBubble(bx, by, 6);
                 if (score > maxS) { maxS = score; maxRow = row; }
             }
             scannedMade += (maxS > minConf) ? String(maxRow) : "0";
-            for(let row = 0; row < 10; row++) { drawBox(bx, anchorMade.y + offSbdY + (row * SP), r, (maxS>minConf && row===maxRow) ? 'info' : 'empty'); }
+            for(let row = 0; row < 10; row++) { drawBox(bx, anchorMade.y + sbd_dy + (row * SP), (maxS>minConf && row===maxRow) ? 'info' : 'empty'); }
         }
 
         let code = scannedMade.replace(/\?/g, '0'); let warnings = [];
@@ -569,35 +638,33 @@ function processImageOMR_V18(sourceCanvas) {
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
         let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
-        // ĐỌC P1 (Dùng 4 Anchor riêng biệt)
         let scoreP1 = 0; let right1 = 0;
         for (let b = 0; b < 4; b++) {
-            let anchor = rowP1[b];
+            let anchorP1 = snapToAnchor(est_P1_X[b], est_P1_Y);
             for (let row = 0; row < 10; row++) {
-                let by = anchor.y + offP1Y + (row * SP);
-                let scores = [0,1,2,3].map(c => scanBubble(anchor.x + offP1X + c*SP, by, r));
+                let by = anchorP1.y + p1_dy + (row * SP);
+                let scores = [0,1,2,3].map(c => scanBubble(anchorP1.x + c*p1_dx, by, 6));
                 let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
                 let isFilled = maxS > minConf;
                 let corrLabel = (b*10 + row < key.p1.length) ? key.p1[b*10 + row] : null; 
                 let corrIdx = ['A','B','C','D'].indexOf(corrLabel);
 
                 [0,1,2,3].forEach(c => {
-                    let bx = anchor.x + offP1X + c*SP;
+                    let bx = anchorP1.x + c*p1_dx;
                     if (isFilled && c === maxIdx) {
-                        if (c === corrIdx) { right1++; drawBox(bx, by, r, 'correct'); } else { drawBox(bx, by, r, 'wrong'); }
-                    } else if (c === corrIdx) { drawBox(bx, by, r, 'miss'); } else { drawBox(bx, by, r, 'empty'); }
+                        if (c === corrIdx) { right1++; drawBox(bx, by, 'correct'); } else { drawBox(bx, by, 'wrong'); }
+                    } else if (c === corrIdx) { drawBox(bx, by, 'miss'); } else { drawBox(bx, by, 'empty'); }
                 });
             }
         }
         scoreP1 = +(right1 * diemP1).toFixed(2);
 
-        // ĐỌC P2 (Dùng 8 Anchor riêng biệt)
         let scoreP2 = 0; let right2Details = 0; let key2Str = key.p2.join(''); let student2Str = '';
         for (let b = 0; b < 8; b++) {
-            let anchor = rowP2[b];
+            let anchorP2 = snapToAnchor(est_P2_X[b], est_P2_Y);
             for (let row = 0; row < 4; row++) {
-                let by = anchor.y + offP2Y + (row * SP);
-                let scores = [0,1].map(c => scanBubble(anchor.x + offP2X + c*SP, by, r));
+                let by = anchorP2.y + p2_dy + (row * SP);
+                let scores = [0,1].map(c => scanBubble(anchorP2.x + c*p2_dx, by, 6));
                 let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
                 let isFilled = maxS > minConf;
                 let gIdx = b * 4 + row; let expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
@@ -606,10 +673,10 @@ function processImageOMR_V18(sourceCanvas) {
                 if (b < key.p2.length) student2Str += val;
 
                 [0,1].forEach(c => {
-                    let bx = anchor.x + offP2X + c*SP; let thisVal = (c === 0) ? 'Đ' : 'S';
+                    let bx = anchorP2.x + c*p2_dx; let thisVal = (c === 0) ? 'Đ' : 'S';
                     if (isFilled && c === maxIdx) {
-                        if (thisVal === expected) { drawBox(bx, by, r, 'correct'); } else { drawBox(bx, by, r, 'wrong'); }
-                    } else if (thisVal === expected) { drawBox(bx, by, r, 'miss'); } else { drawBox(bx, by, r, 'empty'); }
+                        if (thisVal === expected) { drawBox(bx, by, 'correct'); } else { drawBox(bx, by, 'wrong'); }
+                    } else if (thisVal === expected) { drawBox(bx, by, 'miss'); } else { drawBox(bx, by, 'empty'); }
                 });
             }
         }
@@ -620,44 +687,43 @@ function processImageOMR_V18(sourceCanvas) {
         }
         scoreP2 = +scoreP2.toFixed(2);
 
-        // ĐỌC P3 (Dùng 6 Anchor riêng biệt)
         let scoreP3 = 0; let right3 = 0; let validP3Count = 0; 
         for (let q = 0; q < 6; q++) { 
-            let anchor = rowP3[q];
+            let anchorP3 = snapToAnchor(est_P3_X[q], est_P3_Y);
             let rawKey = (q < key.p3.length) ? String(key.p3[q]) : ""; let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
             if (cleanKey) validP3Count++;
             
             let stuAnsStr = ""; let expectedMinus = cleanKey.startsWith('-'); 
             
-            let minusScore = scanBubble(anchor.x + offP3X, anchor.y + offP3Y, r); let filledMinus = minusScore > minConf;
-            if (filledMinus) { drawBox(anchor.x + offP3X, anchor.y + offP3Y, r, expectedMinus ? 'correct' : 'wrong'); stuAnsStr += "-"; } 
-            else if (expectedMinus) { drawBox(anchor.x + offP3X, anchor.y + offP3Y, r, 'miss'); } else { drawBox(anchor.x + offP3X, anchor.y + offP3Y, r, 'empty'); }
+            let minusScore = scanBubble(anchorP3.x, anchorP3.y + p3_dy, 6); let filledMinus = minusScore > minConf;
+            if (filledMinus) { drawBox(anchorP3.x, anchorP3.y + p3_dy, 'correct'); stuAnsStr += "-"; } 
+            else if (expectedMinus) { drawBox(anchorP3.x, anchorP3.y + p3_dy, 'miss'); } else { drawBox(anchorP3.x, anchorP3.y + p3_dy, 'empty'); }
             
             let expectedCols = cleanKey.replace(/^-/, '').split(''); 
             for (let colIdx = 0; colIdx < 4; colIdx++) {
-                let bx = anchor.x + offP3X + (colIdx * SP); let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
+                let bx = anchorP3.x + (colIdx * p3_dx); let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
                 
-                let commaScore = scanBubble(bx, anchor.y + offP3Y + SP, r);
-                let scoresDigits = [0,1,2,3,4,5,6,7,8,9].map(i => scanBubble(bx, anchor.y + offP3Y + (i+2)*SP, r));
+                let commaScore = scanBubble(bx, anchorP3.y + p3_dy + SP, 6);
+                let scoresDigits = [0,1,2,3,4,5,6,7,8,9].map(i => scanBubble(bx, anchorP3.y + p3_dy + (i+2)*SP, 6));
                 
                 let maxDigitScore = Math.max(...scoresDigits); let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
                 let isFilled = false; let filledChar = ''; let filledY = null;
                 
-                if (commaScore > minConf && commaScore > maxDigitScore) { isFilled = true; filledChar = ','; filledY = anchor.y + offP3Y + SP; } 
-                else if (maxDigitScore > minConf) { isFilled = true; filledChar = String(maxDigitIdx); filledY = anchor.y + offP3Y + (maxDigitIdx+2)*SP; }
+                if (commaScore > minConf && commaScore > maxDigitScore) { isFilled = true; filledChar = ','; filledY = anchorP3.y + p3_dy + SP; } 
+                else if (maxDigitScore > minConf) { isFilled = true; filledChar = String(maxDigitIdx); filledY = anchorP3.y + p3_dy + (maxDigitIdx+2)*SP; }
 
                 if (isFilled) {
                     stuAnsStr += filledChar;
-                    drawBox(bx, filledY, r, (filledChar === expectedChar) ? 'correct' : 'wrong');
+                    drawBox(bx, filledY, (filledChar === expectedChar) ? 'correct' : 'wrong');
                 }
                 
-                if (commaScore <= minConf && expectedChar !== ',') drawBox(bx, anchor.y + offP3Y + SP, r, 'empty');
-                else if (expectedChar === ',' && !isFilled) drawBox(bx, anchor.y + offP3Y + SP, r, 'miss');
+                if (commaScore <= minConf && expectedChar !== ',') drawBox(bx, anchorP3.y + p3_dy + SP, 'empty');
+                else if (expectedChar === ',' && !isFilled) drawBox(bx, anchorP3.y + p3_dy + SP, 'miss');
 
                 [0,1,2,3,4,5,6,7,8,9].forEach(i => {
-                    let cy = anchor.y + offP3Y + (i+2)*SP;
+                    let cy = anchorP3.y + p3_dy + (i+2)*SP;
                     if (!isFilled || filledY !== cy) {
-                         drawBox(bx, cy, r, (String(i) === expectedChar) ? 'miss' : 'empty');
+                         drawBox(bx, cy, (String(i) === expectedChar) ? 'miss' : 'empty');
                     }
                 });
             }
@@ -667,18 +733,12 @@ function processImageOMR_V18(sourceCanvas) {
         
         let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
-        // Hiển thị kết quả lên ảnh gốc
-        sCtx.fillStyle = "rgba(255, 255, 255, 0.9)"; sCtx.fillRect(10, 80, 280, 200);
-        sCtx.lineWidth = 4; sCtx.strokeStyle = "#dc2626"; sCtx.strokeRect(10, 80, 280, 200);
-        sCtx.fillStyle = "#dc2626"; sCtx.font = "bold 32px Arial"; sCtx.fillText(`TỔNG: ${totalScore}đ`, 25, 130);
-        sCtx.font = "bold 24px Arial"; sCtx.fillText(`P.I:   ${scoreP1}đ`, 30, 180); sCtx.fillText(`P.II:  ${scoreP2}đ`, 30, 220); sCtx.fillText(`P.III: ${scoreP3}đ`, 30, 260);
+        rCtx.fillStyle = "#ffffff"; rCtx.fillRect(12, 85, 230, 165);
+        rCtx.lineWidth = 3; rCtx.strokeStyle = "#dc2626"; rCtx.strokeRect(12, 85, 230, 165);
+        rCtx.fillStyle = "#dc2626"; rCtx.font = "bold 26px Arial"; rCtx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
+        rCtx.font = "bold 19px Arial"; rCtx.fillText(`P.I:   ${scoreP1}đ`, 28, 162); rCtx.fillText(`P.II:  ${scoreP2}đ`, 28, 195); rCtx.fillText(`P.III: ${scoreP3}đ`, 28, 228);
 
-        const resultCanvas = document.getElementById('result-canvas');
-        resultCanvas.width = W; resultCanvas.height = H;
-        resultCanvas.getContext('2d').drawImage(sourceCanvas, 0, 0);
-        resultCanvas.style.display = 'block'; 
-        
-        document.getElementById('score-dashboard').style.display = 'block';
+        resultCanvas.style.display = 'block'; document.getElementById('score-dashboard').style.display = 'block';
         document.getElementById('ui-total').textContent = `${totalScore}đ`;
         document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa có trong DSHS)";
         document.getElementById('ui-sbd-made').textContent = `SBD: ${scannedSbd} | Mã đề: ${code}`;
