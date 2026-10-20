@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V29.0 - Tối Ưu Quét Tự Động</title>
+    <title>NTMIX V30.0 - Smart Auto-Scan (Chuẩn CamScanner)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -16,7 +16,7 @@
                 window.cvReady = true;
                 let statusBox = document.getElementById('scan-status');
                 if(statusBox) {
-                    statusBox.innerHTML = "✅ OpenCV Sẵn Sàng! Mời Mở Máy Quét.";
+                    statusBox.innerHTML = "✅ Lõi OpenCV Sẵn Sàng! Mời Mở Máy Quét.";
                     statusBox.style.color = "var(--success)";
                     statusBox.style.backgroundColor = "#ecfdf5";
                     statusBox.style.borderColor = "var(--success)";
@@ -51,24 +51,18 @@
         .btn-danger { background: var(--danger); }
         .btn-warning { background: #f59e0b; color: white; }
         .btn-secondary { background: #64748b; }
-        .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; font-weight:bold; }
+        .btn-upload { background: #f1f5f9; color: #334155; border: 2px dashed #cbd5e1; cursor: pointer; text-align: center; display: block; padding: 14px; border-radius: 10px; font-weight:bold; transition: 0.2s;}
+        .btn-upload:active { background: #e2e8f0; transform: scale(0.98); }
 
         .file-input-hidden { width: 0.1px; height: 0.1px; opacity: 0; overflow: hidden; position: absolute; z-index: -1; }
 
+        /* GIAO DIỆN CAMERA THÔNG MINH MỚI */
         #camera-fullscreen-ui { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 9999; flex-direction: column; overflow: hidden; }
         #video-container { position: relative; flex: 1; width: 100%; height: 100%; background: #000; overflow: hidden; }
-        #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        #video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;}
         
-        #cam-overlay { 
-            position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
-            width: 86vw; max-width: 580px; aspect-ratio: 800 / 1130;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); 
-            border: 2px dashed rgba(255, 255, 255, 0.4); pointer-events: none; z-index: 10;
-        }
-
-        .tn-corner { position: absolute; width: 20%; aspect-ratio: 1 / 1; background: rgba(255, 255, 255, 0.1); border: 2px dashed rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; transition: 0.2s;}
-        .tn-corner::after { content: '+'; color: rgba(255,255,255,0.6); font-size: 24px; font-weight: bold; }
-        .tn-corner.tl { top: -2%; left: -2%; } .tn-corner.tr { top: -2%; right: -2%; } .tn-corner.bl { bottom: -2%; left: -2%; } .tn-corner.br { bottom: -2%; right: -2%; }
+        /* Canvas vẽ khung xanh bám theo giấy */
+        #hud-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
 
         .cam-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px 10px 25px 10px; background: linear-gradient(transparent, rgba(0,0,0,0.95)); text-align: center; z-index: 20; }
         #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
@@ -104,13 +98,15 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V29.0 - Tối Ưu Quét Tự Động</span>
+    <span class="badge-cv">V30.0 - Smart Auto-Scan</span>
 </header>
 
 <div class="container">
+    <!-- CẤU HÌNH -->
     <div id="tab-config" class="tab-pane active">
         <div class="card">
             <div class="card-title">1. Nạp Đáp Án & DSHS</div>
+            
             <div class="form-group">
                 <div class="btn-upload" onclick="document.getElementById('file-key').click()">
                     <span id="label-file-key">📁 Bấm Chọn File Excel Đáp Án</span>
@@ -133,7 +129,7 @@
             
             <div class="form-group" style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px dashed #f59e0b;">
                 <label style="color: #b45309;">📏 Giãn cách ô bọt nước (Spacing):</label>
-                <input type="number" id="cfg-spacing" value="20">
+                <input type="number" id="cfg-spacing" value="19" title="Khoảng cách chuẩn của phiếu NTMIX NEW 2 là 19px">
             </div>
 
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; margin-top: 10px;">
@@ -227,19 +223,14 @@
 <div id="camera-fullscreen-ui">
     <div id="video-container">
         <video id="video" autoplay playsinline muted></video>
-        <div id="cam-overlay">
-            <div class="tn-corner tl" id="cb-tl"></div>
-            <div class="tn-corner tr" id="cb-tr"></div>
-            <div class="tn-corner bl" id="cb-bl"></div>
-            <div class="tn-corner br" id="cb-br"></div>
-        </div>
+        <canvas id="hud-canvas"></canvas>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Lọt 4 GÓC ĐEN ngoài cùng vào 4 mục tiêu (+)</p>
+        <p id="hud-text">Hướng camera lọt 4 góc giấy để tự động bắt nét</p>
         <select id="cam-speed-select" class="speed-select">
-            <option value="3">⚡ Nhanh (Chạm là quét)</option>
-            <option value="6" selected>🎯 Vừa (Ổn định)</option>
-            <option value="12">🐢 Chậm (Chống rung)</option>
+            <option value="2">⚡ Nhanh (Chạm là quét)</option>
+            <option value="5" selected>🎯 Vừa (Khuyên dùng)</option>
+            <option value="10">🐢 Chậm (Chống rung)</option>
         </select>
         <div class="grid-2">
             <button class="btn btn-danger" style="padding: 12px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Bằng Tay</button>
@@ -258,6 +249,7 @@
 window.cvReady = false;
 var answerKey = {}; var dshsDict = {}; var gradedRows = []; var gradedImagesData = []; 
 var videoStream = null; var autoScanTimer = null; var stableFrames = 0; var lastGradedSbd = "Phieu";
+var bestWarpPoints = null; // Lưu 4 điểm tốt nhất để crop
 
 function getNumVal(id, defVal) { let el = document.getElementById(id); return (el && el.value) ? parseFloat(el.value) : defVal; }
 function getStrVal(id, defVal) { let el = document.getElementById(id); return (el && el.value) ? el.value.trim() : defVal; }
@@ -298,8 +290,7 @@ function loadExcelKey(input) {
             playBeep();
         } catch(e) { alert("Lỗi đọc Excel: " + e.message); }
     };
-    reader.readAsArrayBuffer(file);
-    input.value = ''; 
+    reader.readAsArrayBuffer(file); input.value = ''; 
 }
 
 function loadExcelDSHS(input) {
@@ -320,8 +311,7 @@ function loadExcelDSHS(input) {
             playBeep();
         } catch(e) { alert("Lỗi đọc DSHS: " + e.message); }
     };
-    reader.readAsArrayBuffer(file);
-    input.value = '';
+    reader.readAsArrayBuffer(file); input.value = '';
 }
 
 async function openFullscreenCamera() {
@@ -331,7 +321,13 @@ async function openFullscreenCamera() {
     try {
         videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } } });
         video.srcObject = videoStream; ui.style.display = 'flex';
-        video.onloadedmetadata = () => { video.play(); startSmartAutoScan(); };
+        video.onloadedmetadata = () => { 
+            video.play(); 
+            // Cập nhật kích thước canvas HUD theo video
+            const hud = document.getElementById('hud-canvas');
+            hud.width = video.clientWidth; hud.height = video.clientHeight;
+            startSmartCamScanner(); 
+        };
     } catch (err) { alert("Lỗi Camera. Vui lòng cấp quyền hoặc dùng tính năng Chọn Ảnh."); }
 }
 
@@ -341,13 +337,19 @@ function closeFullscreenCamera() {
     document.getElementById('camera-fullscreen-ui').style.display = 'none';
 }
 
-function startSmartAutoScan() {
+// =====================================================================
+// LÕI AUTO-SCAN MỚI: TỰ ĐỘNG BẮT ĐA GIÁC (GIỐNG CAMSCANNER)
+// =====================================================================
+function startSmartCamScanner() {
     if (autoScanTimer) clearInterval(autoScanTimer);
     const video = document.getElementById('video'); 
+    const hudCanvas = document.getElementById('hud-canvas');
+    const hCtx = hudCanvas.getContext('2d');
     const hudText = document.getElementById('hud-text');
-    stableFrames = 0;
+    stableFrames = 0; bestWarpPoints = null;
 
-    let tcv = document.createElement('canvas'); tcv.width = 400; tcv.height = 600;
+    // Dùng một canvas nhỏ để xử lý ảnh siêu tốc (Giảm lag)
+    let tcv = document.createElement('canvas'); tcv.width = 400; tcv.height = 400 * (video.clientHeight / video.clientWidth);
     let tCtx = tcv.getContext('2d', { willReadFrequently: true });
 
     autoScanTimer = setInterval(() => {
@@ -355,53 +357,109 @@ function startSmartAutoScan() {
         
         let targetFrames = parseInt(document.getElementById('cam-speed-select').value) || 5;
         
-        tCtx.drawImage(video, 0, 0, 400, 600);
-        let imgData = tCtx.getImageData(0, 0, 400, 600);
+        // Vẽ video ra canvas nhỏ để xử lý
+        tCtx.drawImage(video, 0, 0, tcv.width, tcv.height);
+        let imgData = tCtx.getImageData(0, 0, tcv.width, tcv.height);
+        
         let srcMat = cv.matFromImageData(imgData);
         let grayMat = new cv.Mat(); cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
-        let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 31, 10);
-        
+        let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 15);
         let contours = new cv.MatVector(); let hierarchy = new cv.Mat();
         cv.findContours(threshMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
         
-        let q_tl = false, q_tr = false, q_bl = false, q_br = false;
-        
+        let squareCenters = [];
+        let minArea = (tcv.width * tcv.height) / 10000; let maxArea = (tcv.width * tcv.height) / 200; 
+
+        // TÌM CÁC Ô ĐEN TRÊN BẢN THU NHỎ
         for (let i = 0; i < contours.size(); i++) {
             let cnt = contours.get(i); let area = cv.contourArea(cnt);
-            if (area > 20 && area < 1000) {
-                let rect = cv.boundingRect(cnt); let aspect = rect.width / rect.height;
-                if (aspect > 0.6 && aspect < 1.4) {
-                    let cx = rect.x + rect.width/2; let cy = rect.y + rect.height/2;
-                    if (cx < 200 && cy < 300) q_tl = true;
-                    if (cx > 200 && cy < 300) q_tr = true;
-                    if (cx < 200 && cy > 300) q_bl = true;
-                    if (cx > 200 && cy > 300) q_br = true;
+            if (area > minArea && area < maxArea) { 
+                let rect = cv.boundingRect(cnt); let aspectRatio = rect.width / rect.height;
+                if (aspectRatio >= 0.5 && aspectRatio <= 1.5) {
+                    let M = cv.moments(cnt, false);
+                    if (M.m00 != 0) squareCenters.push({x: M.m10/M.m00, y: M.m01/M.m00});
                 }
             }
             cnt.delete();
         }
         contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete(); srcMat.delete();
 
-        document.getElementById('cb-tl').style.borderColor = q_tl ? "#0f9d58" : "rgba(255, 255, 255, 0.8)";
-        document.getElementById('cb-tr').style.borderColor = q_tr ? "#0f9d58" : "rgba(255, 255, 255, 0.8)";
-        document.getElementById('cb-bl').style.borderColor = q_bl ? "#0f9d58" : "rgba(255, 255, 255, 0.8)";
-        document.getElementById('cb-br').style.borderColor = q_br ? "#0f9d58" : "rgba(255, 255, 255, 0.8)";
+        // Xóa HUD cũ
+        hCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
 
-        if (q_tl && q_tr && q_bl && q_br) {
-            stableFrames++; 
-            hudText.innerHTML = `🎯 Đã khóa góc... (${stableFrames}/${targetFrames})`; 
-            hudText.style.color = "#0f9d58";
+        // NẾU TÌM THẤY ĐỦ 4 GÓC HOẶC NHIỀU HƠN
+        if (squareCenters.length >= 4) {
+            // Tìm 4 điểm xa nhất (4 góc của tờ giấy)
+            let pTL = squareCenters.reduce((p, c) => (c.x*c.x + c.y*c.y) < (p.x*p.x + p.y*p.y) ? c : p);
+            let pTR = squareCenters.reduce((p, c) => (Math.pow(tcv.width-c.x, 2) + c.y*c.y) < (Math.pow(tcv.width-p.x, 2) + p.y*p.y) ? c : p);
+            let pBL = squareCenters.reduce((p, c) => (c.x*c.x + Math.pow(tcv.height-c.y, 2)) < (p.x*p.x + Math.pow(tcv.height-p.y, 2)) ? c : p);
+            let pBR = squareCenters.reduce((p, c) => (Math.pow(tcv.width-c.x, 2) + Math.pow(tcv.height-c.y, 2)) < (Math.pow(tcv.width-p.x, 2) + Math.pow(tcv.height-p.y, 2)) ? c : p);
+
+            // Kiểm tra xem 4 điểm này có tạo thành hình chữ nhật hợp lý không (diện tích phải đủ lớn > 30% màn hình)
+            let areaRatio = ((pTR.x - pTL.x) * (pBL.y - pTL.y)) / (tcv.width * tcv.height);
             
-            if (stableFrames >= targetFrames) {
-                clearInterval(autoScanTimer); hudText.innerHTML = "⚡ ĐÃ CHỤP!"; playBeep();
-                let canvas = document.createElement('canvas'); 
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0);
-                closeFullscreenCamera(); processHybridEngine(canvas);
+            if (areaRatio > 0.3) {
+                stableFrames++;
+                hudText.innerHTML = `🎯 Đã khóa viền giấy... (${stableFrames}/${targetFrames})`; 
+                hudText.style.color = "#0f9d58";
+                
+                // Quy đổi tỷ lệ từ canvas nhỏ lên canvas HUD lớn để vẽ viền xanh
+                let scaleX = hudCanvas.width / tcv.width;
+                let scaleY = hudCanvas.height / tcv.height;
+
+                hCtx.beginPath();
+                hCtx.moveTo(pTL.x * scaleX, pTL.y * scaleY);
+                hCtx.lineTo(pTR.x * scaleX, pTR.y * scaleY);
+                hCtx.lineTo(pBR.x * scaleX, pBR.y * scaleY);
+                hCtx.lineTo(pBL.x * scaleX, pBL.y * scaleY);
+                hCtx.closePath();
+                hCtx.lineWidth = 4;
+                hCtx.strokeStyle = "rgba(0, 255, 0, 0.8)";
+                hCtx.stroke();
+                hCtx.fillStyle = "rgba(0, 255, 0, 0.1)";
+                hCtx.fill();
+
+                // Lưu lại 4 điểm này (Quy đổi lên độ phân giải thật của Video)
+                let vScaleX = video.videoWidth / tcv.width;
+                let vScaleY = video.videoHeight / tcv.height;
+                bestWarpPoints = [
+                    {x: pTL.x * vScaleX, y: pTL.y * vScaleY},
+                    {x: pTR.x * vScaleX, y: pTR.y * vScaleY},
+                    {x: pBL.x * vScaleX, y: pBL.y * vScaleY},
+                    {x: pBR.x * vScaleX, y: pBR.y * vScaleY}
+                ];
+
+                if (stableFrames >= targetFrames) {
+                    clearInterval(autoScanTimer); hudText.innerHTML = "⚡ ĐÃ CHỤP!"; playBeep();
+                    
+                    // Chụp khung hình có chứa 4 điểm đã khóa (Mở rộng viền an toàn 10%)
+                    let minX = Math.min(bestWarpPoints[0].x, bestWarpPoints[2].x);
+                    let maxX = Math.max(bestWarpPoints[1].x, bestWarpPoints[3].x);
+                    let minY = Math.min(bestWarpPoints[0].y, bestWarpPoints[1].y);
+                    let maxY = Math.max(bestWarpPoints[2].y, bestWarpPoints[3].y);
+                    
+                    let w = maxX - minX; let h = maxY - minY;
+                    let padX = w * 0.1; let padY = h * 0.1;
+
+                    let finalX = Math.max(0, minX - padX);
+                    let finalY = Math.max(0, minY - padY);
+                    let finalW = Math.min(video.videoWidth - finalX, w + padX * 2);
+                    let finalH = Math.min(video.videoHeight - finalY, h + padY * 2);
+
+                    let finalCanvas = document.createElement('canvas'); finalCanvas.width = finalW; finalCanvas.height = finalH;
+                    finalCanvas.getContext('2d').drawImage(video, finalX, finalY, finalW, finalH, 0, 0, finalW, finalH);
+                    
+                    closeFullscreenCamera(); 
+                    processHybridEngine(finalCanvas);
+                }
+            } else {
+                stableFrames = 0;
+                hudText.innerHTML = "Hướng camera lấy trọn 4 góc tờ giấy"; 
+                hudText.style.color = "#fff";
             }
         } else {
-            if (stableFrames > 0) stableFrames--;
-            hudText.innerHTML = "Lọt 4 GÓC ĐEN ngoài cùng vào 4 mục tiêu (+)"; 
+            stableFrames = 0;
+            hudText.innerHTML = "Đưa camera lại gần giấy hơn một chút"; 
             hudText.style.color = "#fff";
         }
     }, 150);
@@ -470,12 +528,13 @@ function processHybridEngine(sourceCanvas) {
         let diemP3 = getNumVal('cfg-p3', 0.5);
         let fallbackCode = getStrVal('fallback-code', "");
 
-        let SP = getNumVal('cfg-spacing', 20); 
+        let SP = getNumVal('cfg-spacing', 19); 
         let offSbdX = getNumVal('off-sbd-x', 0); let offSbdY = getNumVal('off-sbd-y', 0);
         let offP1X = getNumVal('off-p1-x', 0); let offP1Y = getNumVal('off-p1-y', 0);
         let offP2X = getNumVal('off-p2-x', 0); let offP2Y = getNumVal('off-p2-y', 0);
         let offP3X = getNumVal('off-p3-x', 0); let offP3Y = getNumVal('off-p3-y', 0);
 
+        // 1. TÌM 4 GÓC WARP VĨ MÔ
         let srcMat = cv.matFromImageData(imgData);
         let grayMat = new cv.Mat(); cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
         let threshMat = new cv.Mat(); cv.adaptiveThreshold(grayMat, threshMat, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 15);
@@ -499,7 +558,7 @@ function processHybridEngine(sourceCanvas) {
         contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete(); srcMat.delete();
 
         if (squareCenters.length < 4) {
-            alert("Lỗi OpenCV: Không tìm thấy rõ 4 ô vuông đen to ở 4 góc giấy.");
+            alert("Lỗi OpenCV: Không tìm thấy rõ 4 ô vuông đen to ở 4 góc giấy. Đảm bảo ánh sáng tốt và giấy nằm gọn trong khung!");
             return;
         }
 
@@ -512,6 +571,7 @@ function processHybridEngine(sourceCanvas) {
         let rawPoints = [ pTL, pTR, pBL, pBR ];
         const H_Matrix = createPerspectiveTransform(idealPoints, rawPoints);
 
+        // TỌA ĐỘ ƯỚC LƯỢNG CHO PHIẾU MỚI NTMIX_NEW_2
         const est_SBD_X = 545; const est_SBD_Y = 160;
         const est_MAD_X = 693; const est_MAD_Y = 160;
         const est_P1_X = [63, 240, 417, 594]; const est_P1_Y = 385;
@@ -576,6 +636,9 @@ function processHybridEngine(sourceCanvas) {
             else if (status === 'info') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(res.x - res.r, res.y - res.r, res.r*2, res.r*2); }
         }
 
+        // 3. ĐỌC ĐIỂM
+        
+        // ĐỌC SBD
         let anchorSBD = snapToTrueAnchor(est_SBD_X, est_SBD_Y);
         let scannedSbd = "";
         for (let col = 0; col < 8; col++) {
@@ -591,6 +654,7 @@ function processHybridEngine(sourceCanvas) {
             results.forEach((res, row) => drawBubbleResult(res, (maxS>minConf && row===maxRow) ? 'info' : 'empty'));
         }
 
+        // ĐỌC MÃ ĐỀ
         let anchorMade = snapToTrueAnchor(est_MAD_X, est_MAD_Y);
         let scannedMade = "";
         for (let col = 0; col < 4; col++) {
