@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V10.1 - Lõi OMR Tiêu Chuẩn</title>
+    <title>NTMIX V11.0 - Core Anchoring (Chuẩn TNMaker)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -124,7 +124,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V10.1 - HUD Khử Nhiễu Thông Minh</span>
+    <span class="badge-cv">V11.0 - Kiến Trúc Định Vị Lõi (TNMaker)</span>
 </header>
 
 <div class="container">
@@ -162,7 +162,7 @@
         <div class="card">
             <div class="card-title">2. Cấu hình Máy Quét & Lưới</div>
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px dashed #6366f1;">
-                <label style="color: #4338ca;">⚙️ Căn chỉnh Lưới (Nếu lệch do máy in):</label>
+                <label style="color: #4338ca;">⚙️ Căn chỉnh Lưới bọc (Nếu lệch do máy in):</label>
                 <div class="grid-2">
                     <div>
                         <span style="font-size: 11px; color: #64748b;">Trái(-)/Phải(+)</span>
@@ -299,7 +299,9 @@ var answerKey = {}; var dshsDict = {}; var gradedRows = []; var gradedImagesData
 var videoStream = null; var qrStream = null; var qrScanTimer = null;
 var autoScanTimer = null; var stableFrames = 0; var lastGradedSbd = "Phieu";
 
-// LƯỚI TỌA ĐỘ CHUẨN 800x1130 (Bản V1.0)
+// =========================================================================
+// BẢN ĐỒ LƯỚI TỌA ĐỘ V1.0 HUYỀN THOẠI (800x1130)
+// =========================================================================
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -460,25 +462,10 @@ function startHudAutoScan() {
             let cropW = rectB.width * scaleX; let cropH = rectB.height * scaleY;
             let tcv = document.createElement('canvas'); tcv.width = 40; tcv.height = 40;
             let ctx = tcv.getContext('2d', { willReadFrequently: true }); ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 40, 40);
-            let imgData = ctx.getImageData(0, 0, 40, 40).data;
+            let imgData = ctx.getImageData(0, 0, 40, 40).data; let darkCount = 0;
             
-            // THUẬT TOÁN VẦNG SÁNG: CHỐNG NHIỄU MẶT BÀN GỖ (V10.1)
-            let innerSum = 0, innerCount = 0; let haloSum = 0, haloCount = 0;
-            for (let py = 0; py < 40; py++) {
-                for (let px = 0; px < 40; px++) {
-                    let idx = (py * 40 + px) * 4;
-                    let gray = imgData[idx+1]; 
-                    if (px >= 13 && px <= 27 && py >= 13 && py <= 27) {
-                        innerSum += gray; innerCount++;
-                    } else {
-                        haloSum += gray; haloCount++;
-                    }
-                }
-            }
-            let innerAvg = innerSum / innerCount; let haloAvg = haloSum / haloCount;
-            // Hợp lệ nếu lõi đủ đen và viền đủ sáng (độ tương phản > 35)
-            let isValid = (innerAvg < 150) && ((haloAvg - innerAvg) > 35);
-            
+            for(let i = 0; i < 1600 * 4; i += 4) { if (imgData[i+1] < 140) darkCount++; }
+            let darkRatio = darkCount / 1600; let isValid = darkRatio > 0.02 && darkRatio < 0.70;
             if(isValid) { box.style.borderColor = "rgba(0, 255, 0, 0.9)"; box.style.backgroundColor = "rgba(0, 255, 0, 0.3)"; } 
             else { box.style.borderColor = "rgba(255, 255, 255, 0.8)"; box.style.backgroundColor = "rgba(255, 255, 255, 0.2)"; }
             return isValid;
@@ -502,7 +489,7 @@ function startHudAutoScan() {
             }
         } else {
             if (stableFrames > 0) stableFrames--;
-            hudText.innerHTML = "Nhấc điện thoại cao lên để giấy lọt vào khung"; hudText.style.color = "#fff";
+            hudText.innerHTML = "Đưa 4 ô đen vào đúng 4 ô vuông mục tiêu"; hudText.style.color = "#fff";
         }
     }, 100);
 }
@@ -554,8 +541,9 @@ async function handleImageFiles(inputElement) {
 }
 
 // =================================================================================
-// LÕI V10.1 - BẺ PHẲNG ẢNH TUYỆT ĐỐI VÀ ÁP DỤNG LƯỚI TĨNH V1.0
+// LÕI V11.0 - ĐỊNH VỊ LÕI TRUNG TÂM (CORE ANCHORING) CHUẨN TNMAKER
 // =================================================================================
+
 function processImageOMR(sourceCanvas, fileName) {
     try {
         const TARGET_W = 800, TARGET_H = 1130;
@@ -571,6 +559,7 @@ function processImageOMR(sourceCanvas, fileName) {
         let diemP3 = getNumVal('cfg-p3', 0.5);
         let fallbackCode = getStrVal('fallback-code', "");
 
+        // BƯỚC 1: DÙNG OPENCV TÌM CÁC Ô ĐEN TRÊN ẢNH GỐC
         let srcMat = cv.matFromImageData(imgData);
         let grayMat = new cv.Mat();
         cv.cvtColor(srcMat, grayMat, cv.COLOR_RGBA2GRAY, 0);
@@ -582,8 +571,8 @@ function processImageOMR(sourceCanvas, fileName) {
         cv.findContours(threshMat, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
         
         let squareCenters = [];
-        let minArea = (sourceCanvas.width * sourceCanvas.height) / 80000;
-        let maxArea = (sourceCanvas.width * sourceCanvas.height) / 800;
+        let minArea = (sourceCanvas.width * sourceCanvas.height) / 90000;
+        let maxArea = (sourceCanvas.width * sourceCanvas.height) / 1000;
 
         for (let i = 0; i < contours.size(); i++) {
             let cnt = contours.get(i); let area = cv.contourArea(cnt);
@@ -599,30 +588,43 @@ function processImageOMR(sourceCanvas, fileName) {
         contours.delete(); hierarchy.delete(); threshMat.delete(); grayMat.delete();
 
         if (squareCenters.length < 4) {
-            alert("Lỗi: Không tìm đủ 4 ô đen định vị. Vui lòng chụp rõ và trọn vẹn 4 góc giấy.");
+            alert("Lỗi: Không tìm đủ ô đen định vị. Vui lòng chụp rõ và sáng hơn.");
             srcMat.delete(); return;
         }
 
+        // BƯỚC 2: TÌM 4 ĐIỂM NEO LÕI (CORE ANCHORS)
+        // Dựa vào phân bổ tọa độ Y, tìm 4 điểm neo nằm sâu bên trong
         squareCenters.sort((a, b) => a.y - b.y);
-        let topCenters = squareCenters.slice(0, 2).sort((a, b) => a.x - b.x);
-        let bottomCenters = squareCenters.slice(-2).sort((a, b) => a.x - b.x);
         
-        let dstMat = new cv.Mat(); let dsize = new cv.Size(TARGET_W, TARGET_H);
+        // Loại bỏ 4 góc ngoài cùng nếu có, chỉ lấy các điểm neo giữa
+        let corePoints = squareCenters.filter(pt => pt.x > sourceCanvas.width * 0.1 && pt.x < sourceCanvas.width * 0.9);
         
-        let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            topCenters[0].x, topCenters[0].y, 
-            topCenters[1].x, topCenters[1].y, 
-            bottomCenters[0].x, bottomCenters[0].y, 
-            bottomCenters[1].x, bottomCenters[1].y
-        ]);
+        // Chia làm 2 nhóm: Nhóm trên (giữa SBD/Made và P1), Nhóm dưới (Đáy P3)
+        let topCore = corePoints.slice(0, Math.floor(corePoints.length/2)).sort((a,b) => a.x - b.x);
+        let bottomCore = corePoints.slice(-Math.floor(corePoints.length/2)).sort((a,b) => a.x - b.x);
         
+        if (topCore.length < 2 || bottomCore.length < 2) {
+             alert("Lỗi: Tờ giấy bị khuất các điểm neo trung tâm. Vui lòng chụp bao quát hơn.");
+             srcMat.delete(); return;
+        }
+
+        let pTL = topCore[0]; 
+        let pTR = topCore[topCore.length-1]; 
+        let pBL = bottomCore[0]; 
+        let pBR = bottomCore[bottomCore.length-1];
+
+        // BƯỚC 3: BẺ PHẲNG ẢNH VỀ 800x1130 BẰNG TỌA ĐỘ LÕI
+        // Tọa độ chuẩn của 4 điểm neo này trên bản 800x1130
         let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-            40, 40, 
-            760, 40, 
-            40, 1090, 
-            760, 1090
+            250, 395,  // Cọc trái trên (Giữa Câu 10 và P2)
+            695, 290,  // Cọc phải trên (Giữa SBD và Mã Đề)
+            250, 1070, // Cọc trái dưới (Đáy P3 trái)
+            695, 1070  // Cọc phải dưới (Đáy P3 phải)
         ]);
 
+        let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [ pTL.x, pTL.y, pTR.x, pTR.y, pBL.x, pBL.y, pBR.x, pBR.y ]);
+
+        let dstMat = new cv.Mat(); let dsize = new cv.Size(TARGET_W, TARGET_H);
         let M = cv.getPerspectiveTransform(srcTri, dstTri);
         cv.warpPerspective(srcMat, dstMat, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
 
@@ -634,34 +636,26 @@ function processImageOMR(sourceCanvas, fileName) {
 
         srcMat.delete(); dstMat.delete(); srcTri.delete(); dstTri.delete(); M.delete();
 
+        // BƯỚC 4: THẢ LƯỚI TĨNH VÀ TÍNH ĐIỂM
         function getBestDarkness(cx, cy, w, h) {
-            let bestScore = 0;
-            let searchRadius = 8; 
+            let bestScore = 0; let searchRadius = 8; 
             for (let dy = -searchRadius; dy <= searchRadius; dy += 4) {
                 for (let dx = -searchRadius; dx <= searchRadius; dx += 4) {
-                    let startX = Math.round(cx + dx + ox) - Math.floor(w/2); 
-                    let startY = Math.round(cy + dy + oy) - Math.floor(h/2);
+                    let startX = Math.round(cx + dx + ox) - Math.floor(w/2); let startY = Math.round(cy + dy + oy) - Math.floor(h/2);
                     let bgSum = 0, bgCount = 0;
-                    
                     for (let py = Math.round(cy + dy + oy) - 18; py < Math.round(cy + dy + oy) + 18; py+=3) {
                         for (let px = Math.round(cx + dx + ox) - 18; px < Math.round(cx + dx + ox) + 18; px+=3) {
                             if (px < 0 || px >= TARGET_W || py < 0 || py >= TARGET_H) continue;
-                            let idx = (py * TARGET_W + px) * 4; 
-                            bgSum += 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2]; 
-                            bgCount++;
+                            let idx = (py * TARGET_W + px) * 4; bgSum += 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2]; bgCount++;
                         }
                     }
-                    let bgAvg = bgCount > 0 ? bgSum / bgCount : 255; 
-                    let localThresh = Math.min(150, bgAvg * 0.85); 
-                    
+                    let bgAvg = bgCount > 0 ? bgSum / bgCount : 255; let localThresh = Math.min(150, bgAvg * 0.85); 
                     let darkCount = 0, total = 0;
                     for (let y = startY; y < startY + h; y++) {
                         for (let x = startX; x < startX + w; x++) {
                             if (x < 0 || x >= TARGET_W || y < 0 || y >= TARGET_H) continue;
-                            let idx = (y * TARGET_W + x) * 4; 
-                            let gray = 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2];
-                            if (gray < localThresh) darkCount++; 
-                            total++;
+                            let idx = (y * TARGET_W + x) * 4; let gray = 0.299*flatData[idx] + 0.587*flatData[idx+1] + 0.114*flatData[idx+2];
+                            if (gray < localThresh) darkCount++; total++;
                         }
                     }
                     let score = total > 0 ? darkCount / total : 0;
@@ -713,13 +707,10 @@ function processImageOMR(sourceCanvas, fileName) {
         let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
         for (let i = 0; i < 40; i++) { 
             let blockIdx = Math.floor(i / 10), rowIdx = i % 10; if (blockIdx >= 4) break;
-            let y = GRID_SPEC.p1.y[rowIdx]; 
-            let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
-            
+            let y = GRID_SPEC.p1.y[rowIdx]; let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
             let scores = xList.map(x => getBestDarkness(x, y, 14, 14));
             let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
             let isFilled = maxScore > minConf; 
-            
             let corrLabel = (i < key.p1.length) ? key.p1[i] : null; let corrIdx = labelsP1.indexOf(corrLabel);
 
             xList.forEach((x, idx) => {
@@ -736,8 +727,7 @@ function processImageOMR(sourceCanvas, fileName) {
             let xList = (i % 2 === 1) ? [baseX + 76, baseX + 114] : [baseX, baseX + 38];
 
             for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
-                let y = GRID_SPEC.p2.y[rowIdx]; 
-                let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
+                let y = GRID_SPEC.p2.y[rowIdx]; let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
                 let scores = xList.map(x => getBestDarkness(x, y, 14, 14));
                 let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
                 let isFilled = maxScore > minConf; let val = isFilled ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
@@ -764,9 +754,7 @@ function processImageOMR(sourceCanvas, fileName) {
             let rawKey = (q < key.p3.length) ? String(key.p3[q]) : ""; let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
             if (cleanKey) validP3Count++;
             
-            let baseX = GRID_SPEC.p3.blockX[q]; let stuAnsStr = "";
-            let expectedMinus = cleanKey.startsWith('-'); 
-            
+            let baseX = GRID_SPEC.p3.blockX[q]; let stuAnsStr = ""; let expectedMinus = cleanKey.startsWith('-'); 
             let minusScore = getBestDarkness(baseX, GRID_SPEC.p3.yMinus, 10, 10);
             let filledMinus = minusScore > minConfMinus;
             if (filledMinus) { drawBubble(baseX, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill'); stuAnsStr += "-"; } 
@@ -775,10 +763,8 @@ function processImageOMR(sourceCanvas, fileName) {
             let expectedCols = cleanKey.replace(/^-/, '').split(''); 
             for (let colIdx = 0; colIdx < 4; colIdx++) {
                 let x = baseX + GRID_SPEC.p3.offsetsX[colIdx]; let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
-                
                 let scoreComma = getBestDarkness(x, GRID_SPEC.p3.yComma, 13, 13);
                 let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestDarkness(x, y, 13, 13));
-                
                 let maxDigitScore = Math.max(...scoresDigits); let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
                 let isFilled = false; let filledChar = ''; let filledY = null;
                 
@@ -803,8 +789,7 @@ function processImageOMR(sourceCanvas, fileName) {
             if (cleanKey && stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
         }
         
-        scoreP3 = +scoreP3.toFixed(2);
-        let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
+        scoreP3 = +scoreP3.toFixed(2); let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
         rCtx.fillStyle = "#ffffff"; rCtx.fillRect(12, 85, 230, 165);
         rCtx.lineWidth = 3; rCtx.strokeStyle = "#dc2626"; rCtx.strokeRect(12, 85, 230, 165);
