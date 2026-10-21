@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V38.0 - Hỗ Trợ Đa Mẫu Phiếu</title>
+    <title>NTMIX V40.0 - TNMaker Cũ (AutoScan + Pure JS V1.0)</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -43,8 +43,12 @@
         
         #cam-overlay { 
             position: absolute; width: 88vw; max-width: 580px; aspect-ratio: 800 / 1130;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); border: 2px dashed rgba(255, 255, 255, 0.9); pointer-events: none; z-index: 10;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); border: 2px dashed rgba(255, 255, 255, 0.4); pointer-events: none; z-index: 10;
         }
+
+        .tn-corner { position: absolute; width: 18%; aspect-ratio: 1 / 1; background: rgba(255, 255, 255, 0.1); border: 2px dashed rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; transition: 0.2s;}
+        .tn-corner::after { content: '+'; color: rgba(255,255,255,0.6); font-size: 24px; font-weight: bold; }
+        .tn-corner.tl { top: -2%; left: -2%; } .tn-corner.tr { top: -2%; right: -2%; } .tn-corner.bl { bottom: -2%; left: -2%; } .tn-corner.br { bottom: -2%; right: -2%; }
 
         .cam-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 15px 10px 25px 10px; background: linear-gradient(transparent, rgba(0,0,0,0.95)); text-align: center; z-index: 20; }
         #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 12px; }
@@ -78,7 +82,7 @@
 <header>
     <h1>NTMIX App Chấm Điểm</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">V38.0 - Lõi Tĩnh Đa Mẫu Phiếu (Bỏ OpenCV)</span>
+    <span class="badge-cv">V40.0 - TNMaker Cũ (Lõi V1.0 Siêu Tốc)</span>
 </header>
 
 <div class="container">
@@ -103,20 +107,21 @@
         </div>
 
         <div class="card">
-            <div class="card-title">2. Lưới Tọa Độ & Chọn Phiếu</div>
-            
-            <!-- TÍNH NĂNG CHỌN MẪU PHIẾU -->
-            <div class="form-group" style="background: #eef2ff; padding: 12px; border-radius: 8px; border: 2px dashed #3b82f6;">
-                <label style="color: #1d4ed8; font-size: 14px;">📄 CHỌN MẪU PHIẾU ĐỂ CHẤM:</label>
-                <select id="cfg-sheet-type" onchange="changeSheetType()" style="border-color: #93c5fd; color: #1e3a8a;">
-                    <option value="old_tnmaker">Phiếu TNMaker (Mẫu Cũ - Mã 4 Số)</option>
-                    <option value="new_ntmix3">Phiếu NTMIX NEW 3 (Mẫu Mới Nhất)</option>
+            <div class="card-title">2. Lưới Tọa Độ (Phiếu TNMaker Cũ)</div>
+            <p style="font-size: 11px; color: #1a73e8; margin-bottom: 8px; font-weight:bold;">Đã khôi phục Auto-Scan và vẽ nút tròn ĐÚNG/SAI. Chấm SBD 6 số và Mã đề 4 số.</p>
+
+            <div class="form-group" style="background: #ecfdf5; padding: 10px; border-radius: 8px; border: 1px dashed #10b981; margin-top: 10px;">
+                <label style="color: #047857;">📷 Tốc độ Quét Tự Động (Auto-Scan):</label>
+                <select id="cfg-scan-speed" style="border-color: #34d399; font-weight: bold;">
+                    <option value="2">⚡ Nhanh (Lướt qua là chụp)</option>
+                    <option value="5" selected>🎯 Vừa (Ổn định - Khuyên dùng)</option>
+                    <option value="10">🐢 Chậm (Chống rung tay)</option>
                 </select>
             </div>
             
             <div class="form-group" style="background: #fffbeb; padding: 10px; border-radius: 8px; border: 1px dashed #f59e0b; margin-top: 10px;">
                 <label style="color: #b45309;">📏 Giãn cách ô bọt nước (Spacing):</label>
-                <input type="number" id="cfg-spacing" value="19">
+                <input type="number" id="cfg-spacing" value="19" title="Chuẩn phiếu TNMaker cũ là 19px">
             </div>
 
             <div class="form-group" style="background: #f8fafc; padding: 10px; border-radius: 8px; margin-top: 10px; border: 1px solid #e2e8f0;">
@@ -155,7 +160,7 @@
     <div id="tab-scan" class="tab-pane">
         <div class="card">
             <div class="card-title">Chấm Phiếu Trực Tiếp</div>
-            <div id="scan-status">✅ Hệ thống Đa Mẫu Phiếu sẵn sàng!</div>
+            <div id="scan-status">✅ Hệ thống Siêu Tốc (Pure JS) sẵn sàng!</div>
             
             <div class="grid-2" style="margin-bottom: 10px;">
                 <button class="btn btn-primary" onclick="openFullscreenCamera()">📷 Mở Máy Quét</button>
@@ -209,13 +214,19 @@
 <div id="camera-fullscreen-ui">
     <div id="video-container">
         <video id="video" autoplay playsinline muted></video>
-        <div id="cam-overlay"></div>
+        <div id="cam-overlay">
+            <!-- 4 Ô NGẮM AUTO-SCAN NHƯ APP CHUYÊN NGHIỆP -->
+            <div class="tn-corner tl" id="cb-tl"></div>
+            <div class="tn-corner tr" id="cb-tr"></div>
+            <div class="tn-corner bl" id="cb-bl"></div>
+            <div class="tn-corner br" id="cb-br"></div>
+        </div>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Ốp đúng viền tờ giấy vào khung đứt nét</p>
-        <button class="btn btn-danger" style="padding: 14px; font-size: 16px; margin-bottom: 10px; width: 90%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" onclick="manualCapture()">📸 CHỤP (Lõi Tĩnh)</button>
+        <p id="hud-text">Đưa 4 GÓC ĐEN lọt vào 4 mục tiêu (+)</p>
+        <button class="btn btn-danger" style="padding: 14px; font-size: 16px; margin-bottom: 10px; width: 90%; max-width: 400px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" onclick="manualCapture()">📸 CHỤP BẰNG TAY</button>
         <br>
-        <button class="btn btn-secondary" style="padding: 10px; font-size: 14px; width: 90%; max-width: 400px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
+        <button class="btn btn-secondary" style="padding: 10px; font-size: 14px; width: 90%; max-width: 400px;" onclick="closeFullscreenCamera()">❌ Đóng Camera</button>
     </div>
 </div>
 
@@ -227,31 +238,7 @@
 
 <script>
 var answerKey = {}; var dshsDict = {}; var gradedRows = []; var videoStream = null; 
-
-// QUẢN LÝ BỘ TỌA ĐỘ THEO TỪNG MẪU PHIẾU
-const SHEET_CONFIGS = {
-    'old_tnmaker': {
-        SP: 19, // Spacing chuẩn
-        SBD_X: 520, SBD_Y: 145, MAD_X: 680, MAD_Y: 145,
-        P1_X: [70, 250, 430, 610], P1_Y: 370,
-        P2_X: [70, 160, 250, 340, 430, 520, 610, 700], P2_Y: 600,
-        P3_X: [80, 200, 320, 440, 560, 680], P3_Y: 750,
-        MINUS_OFFSET_X: 10, MINUS_OFFSET_Y: 28 // Tọa độ riêng cho dấu trừ phần 3
-    },
-    'new_ntmix3': {
-        SP: 20, // Spacing rộng hơn
-        SBD_X: 545, SBD_Y: 155, MAD_X: 700, MAD_Y: 155,
-        P1_X: [75, 255, 435, 615], P1_Y: 395,
-        P2_X: [75, 170, 260, 355, 450, 545, 635, 730], P2_Y: 630,
-        P3_X: [85, 205, 325, 445, 565, 685], P3_Y: 775,
-        MINUS_OFFSET_X: 10, MINUS_OFFSET_Y: 30
-    }
-};
-
-function changeSheetType() {
-    let type = document.getElementById('cfg-sheet-type').value;
-    document.getElementById('cfg-spacing').value = SHEET_CONFIGS[type].SP;
-}
+var autoScanTimer = null; var stableFrames = 0;
 
 function getNumVal(id, defVal) { let el = document.getElementById(id); return (el && el.value) ? parseFloat(el.value) : defVal; }
 function getStrVal(id, defVal) { let el = document.getElementById(id); return (el && el.value) ? el.value.trim() : defVal; }
@@ -323,21 +310,102 @@ async function openFullscreenCamera() {
     try {
         videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } } });
         video.srcObject = videoStream; ui.style.display = 'flex';
-        video.onloadedmetadata = () => { video.play(); };
+        video.onloadedmetadata = () => { 
+            video.play(); 
+            startAutoScanPureJS(); // KHỞI ĐỘNG AUTO-SCAN
+        };
     } catch (err) { alert("Lỗi Camera. Vui lòng cấp quyền hoặc dùng tính năng Chọn Ảnh."); }
 }
 
 function closeFullscreenCamera() {
+    if (autoScanTimer) clearInterval(autoScanTimer);
     if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
     document.getElementById('camera-fullscreen-ui').style.display = 'none';
 }
 
-function manualCapture() {
-    let video = document.getElementById('video');
+function startAutoScanPureJS() {
+    if (autoScanTimer) clearInterval(autoScanTimer);
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('cam-overlay');
+    const hudText = document.getElementById('hud-text');
+    stableFrames = 0;
+
+    let tcv = document.createElement('canvas'); 
+    tcv.width = 40; tcv.height = 40;
+    let ctx = tcv.getContext('2d', { willReadFrequently: true });
+
+    autoScanTimer = setInterval(() => {
+        if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+        
+        let targetFrames = parseInt(document.getElementById('cfg-scan-speed').value) || 5;
+        let rectV = video.getBoundingClientRect(); 
+        let rectO = overlay.getBoundingClientRect();
+        
+        let videoRatio = video.videoWidth / video.videoHeight; 
+        let elementRatio = rectV.width / rectV.height;
+        
+        let sWidth, sHeight, sx, sy;
+        if (videoRatio > elementRatio) { 
+            sHeight = video.videoHeight; sWidth = sHeight * elementRatio; 
+            sx = (video.videoWidth - sWidth) / 2; sy = 0; 
+        } else { 
+            sWidth = video.videoWidth; sHeight = sWidth / elementRatio; 
+            sx = 0; sy = (video.videoHeight - sHeight) / 2; 
+        }
+        let scaleX = sWidth / rectV.width; 
+        let scaleY = sHeight / rectV.height;
+
+        function checkCornerColor(relX, relY, boxId) {
+            let box = document.getElementById(boxId);
+            let cropX = sx + (rectO.left - rectV.left + rectO.width * relX) * scaleX;
+            let cropY = sy + (rectO.top - rectV.top + rectO.height * relY) * scaleY;
+            let cropW = 40 * scaleX; let cropH = 40 * scaleY;
+            
+            if(cropX < 0 || cropY < 0 || cropW <= 0 || cropH <= 0 || (cropX + cropW) > video.videoWidth || (cropY + cropH) > video.videoHeight) return false;
+
+            ctx.drawImage(video, cropX - cropW/2, cropY - cropH/2, cropW, cropH, 0, 0, 40, 40);
+            let imgData = ctx.getImageData(0, 0, 40, 40).data;
+            let darkCount = 0;
+            for (let i = 0; i < 40*40*4; i+=4) { 
+                let gray = 0.299*imgData[i] + 0.587*imgData[i+1] + 0.114*imgData[i+2];
+                if(gray < 110) darkCount++; 
+            }
+            let isValid = (darkCount > 80 && darkCount < 1200); 
+            
+            if(isValid) { 
+                box.style.borderColor = "rgba(0, 255, 0, 0.9)"; box.style.backgroundColor = "rgba(0, 255, 0, 0.3)"; 
+            } else { 
+                box.style.borderColor = "rgba(255, 255, 255, 0.8)"; box.style.backgroundColor = "rgba(255, 255, 255, 0.1)"; 
+            }
+            return isValid;
+        }
+
+        let tl = checkCornerColor(0.05, 0.05, 'cb-tl');
+        let tr = checkCornerColor(0.95, 0.05, 'cb-tr');
+        let bl = checkCornerColor(0.05, 0.95, 'cb-bl');
+        let br = checkCornerColor(0.95, 0.95, 'cb-br');
+
+        if (tl && tr && bl && br) {
+            stableFrames++; 
+            hudText.innerHTML = `🎯 Đã khóa 4 góc... (${stableFrames}/${targetFrames})`; 
+            hudText.style.color = "#0f9d58";
+            
+            if (stableFrames >= targetFrames) {
+                clearInterval(autoScanTimer); 
+                playBeep();
+                hudText.innerHTML = "⚡ ĐÃ CHỤP!"; 
+                setTimeout(manualCapture, 50); 
+            }
+        } else {
+            if (stableFrames > 0) stableFrames--;
+            hudText.innerHTML = "Đưa 4 GÓC ĐEN lọt vào 4 mục tiêu (+)"; 
+            hudText.style.color = "#fff";
+        }
+    }, 150);
+}
+
+function captureAndProcess(video) {
     let overlay = document.getElementById('cam-overlay');
-    if (!videoStream || !video.videoWidth) return;
-    playBeep();
-    
     let rectV = video.getBoundingClientRect(); 
     let rectO = overlay.getBoundingClientRect();
     
@@ -363,11 +431,18 @@ function manualCapture() {
     
     let canvas = document.createElement('canvas'); 
     canvas.width = 800; canvas.height = 1130;
-    
     canvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, 800, 1130);
     
     closeFullscreenCamera(); 
     processEngine(canvas);
+}
+
+function manualCapture() {
+    let video = document.getElementById('video');
+    if (!videoStream || !video.videoWidth) return;
+    if (autoScanTimer) clearInterval(autoScanTimer);
+    playBeep();
+    captureAndProcess(video);
 }
 
 function handleImageFiles(inputElement) {
@@ -385,7 +460,7 @@ function handleImageFiles(inputElement) {
 }
 
 // =====================================================================
-// LÕI XỬ LÝ ĐA MẪU PHIẾU (MULTI-TEMPLATE PURE JS)
+// LÕI XỬ LÝ: PURE JS + TỌA ĐỘ TNMAKER CŨ + VẼ HÌNH TRÒN
 // =====================================================================
 
 function processEngine(sourceCanvas) {
@@ -399,15 +474,20 @@ function processEngine(sourceCanvas) {
         let diemP3 = getNumVal('cfg-p3', 0.5);
         let fallbackCode = getStrVal('fallback-code', "");
 
-        // Lấy thông tin mẫu phiếu hiện tại
-        let sheetType = document.getElementById('cfg-sheet-type').value;
-        let C = SHEET_CONFIGS[sheetType];
-
-        let SP = getNumVal('cfg-spacing', C.SP); 
+        let SP = getNumVal('cfg-spacing', 19); 
         let offSbdX = getNumVal('off-sbd-x', 0); let offSbdY = getNumVal('off-sbd-y', 0);
         let offP1X = getNumVal('off-p1-x', 0); let offP1Y = getNumVal('off-p1-y', 0);
         let offP2X = getNumVal('off-p2-x', 0); let offP2Y = getNumVal('off-p2-y', 0);
         let offP3X = getNumVal('off-p3-x', 0); let offP3Y = getNumVal('off-p3-y', 0);
+
+        // TỌA ĐỘ PHIẾU TNMAKER CŨ (SBD 6 cột, Mã đề 4 cột)
+        const est_SBD_X = 520; const est_SBD_Y = 145; // TNMaker cũ cột SBD bắt đầu ở đây
+        const est_MAD_X = 680; const est_MAD_Y = 145;
+        
+        const est_P1_X = [70, 250, 430, 610]; const est_P1_Y = 370;
+        const est_P2_X = [70, 160, 250, 340, 430, 520, 610, 700]; const est_P2_Y = 600;
+        const est_P3_X = [80, 200, 320, 440, 560, 680]; const est_P3_Y = 750;
+        const minus_offsetX = 10; const minus_offsetY = 28;
 
         function scanBubble(cx, cy, radius) {
             let bgSum = 0, bgCount = 0;
@@ -433,45 +513,47 @@ function processEngine(sourceCanvas) {
             return total > 0 ? darkCount / total : 0;
         }
 
-        function drawBox(x, y, status) {
-            sCtx.lineWidth = 1; sCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; sCtx.strokeRect(x-7, y-7, 14, 14); 
+        // VẼ HÌNH TRÒN ĐÚNG CHUẨN V1.0
+        function drawBubble(x, y, status) {
             sCtx.lineWidth = 3;
-            if (status === 'correct') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.strokeRect(x-7, y-7, 14, 14); }
-            else if (status === 'wrong') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.strokeRect(x-7, y-7, 14, 14); }
-            else if (status === 'miss') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.strokeRect(x-6, y-6, 12, 12); }
-            else if (status === 'info') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(x-7, y-7, 14, 14); }
+            sCtx.beginPath();
+            sCtx.arc(x, y, 9, 0, 2 * Math.PI); 
+            if (status === 'correct') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.stroke(); }
+            else if (status === 'wrong') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.stroke(); }
+            else if (status === 'miss') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.stroke(); }
+            else if (status === 'info') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.stroke(); }
         }
 
         let minConf = 0.15;
 
-        // 1. ĐỌC SBD
+        // 1. ĐỌC SBD (TNMaker cũ thường dùng 6 số)
         let scannedSbd = "";
-        for (let col = 0; col < 8; col++) {
-            let bx = C.SBD_X + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
+        for (let col = 0; col < 6; col++) {
+            let bx = est_SBD_X + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
             let results = [];
             for(let row = 0; row < 10; row++) {
-                let by = C.SBD_Y + offSbdY + 28 + (row * SP);
+                let by = est_SBD_Y + offSbdY + 28 + (row * SP);
                 let score = scanBubble(bx, by, 6);
                 results.push({score, x: bx, y: by});
                 if (score > maxS) { maxS = score; maxRow = row; }
             }
             scannedSbd += (maxS > minConf) ? String(maxRow) : "0";
-            results.forEach((res, row) => drawBox(res.x, res.y, (maxS>minConf && row===maxRow) ? 'info' : 'empty'));
+            results.forEach((res, row) => drawBubble(res.x, res.y, (maxS>minConf && row===maxRow) ? 'info' : 'empty'));
         }
 
-        // 2. ĐỌC MÃ ĐỀ
+        // 2. ĐỌC MÃ ĐỀ (4 số)
         let scannedMade = "";
         for (let col = 0; col < 4; col++) {
-            let bx = C.MAD_X + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
+            let bx = est_MAD_X + offSbdX + (col * SP); let maxS = 0, maxRow = 0;
             let results = [];
             for(let row = 0; row < 10; row++) {
-                let by = C.MAD_Y + offSbdY + 28 + (row * SP);
+                let by = est_MAD_Y + offSbdY + 28 + (row * SP);
                 let score = scanBubble(bx, by, 6);
                 results.push({score, x: bx, y: by});
                 if (score > maxS) { maxS = score; maxRow = row; }
             }
             scannedMade += (maxS > minConf) ? String(maxRow) : "0";
-            results.forEach((res, row) => drawBox(res.x, res.y, (maxS>minConf && row===maxRow) ? 'info' : 'empty'));
+            results.forEach((res, row) => drawBubble(res.x, res.y, (maxS>minConf && row===maxRow) ? 'info' : 'empty'));
         }
 
         let code = scannedMade.replace(/\?/g, '0'); let warnings = [];
@@ -483,8 +565,8 @@ function processEngine(sourceCanvas) {
         let scoreP1 = 0; let right1 = 0;
         for (let b = 0; b < 4; b++) {
             for (let row = 0; row < 10; row++) {
-                let by = C.P1_Y + offP1Y + 28 + (row * SP);
-                let scores = [0,1,2,3].map(c => scanBubble(C.P1_X[b] + offP1X + (c+1)*SP, by, 6)); 
+                let by = est_P1_Y + offP1Y + 28 + (row * SP);
+                let scores = [0,1,2,3].map(c => scanBubble(est_P1_X[b] + offP1X + (c+1)*SP, by, 6)); 
                 let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
                 let isFilled = maxS > minConf;
                 
@@ -492,10 +574,10 @@ function processEngine(sourceCanvas) {
                 let corrIdx = ['A','B','C','D'].indexOf(corrLabel);
 
                 [0,1,2,3].forEach(c => {
-                    let bx = C.P1_X[b] + offP1X + (c+1)*SP;
+                    let bx = est_P1_X[b] + offP1X + (c+1)*SP;
                     if (isFilled && c === maxIdx) {
-                        if (c === corrIdx) { right1++; drawBox(bx, by, 'correct'); } else { drawBox(bx, by, 'wrong'); }
-                    } else if (c === corrIdx) { drawBox(bx, by, 'miss'); } else { drawBox(bx, by, 'empty'); }
+                        if (c === corrIdx) { right1++; drawBubble(bx, by, 'correct'); } else { drawBubble(bx, by, 'wrong'); }
+                    } else if (c === corrIdx) { drawBubble(bx, by, 'miss'); } else { drawBubble(bx, by, 'empty'); }
                 });
             }
         }
@@ -505,8 +587,8 @@ function processEngine(sourceCanvas) {
         let scoreP2 = 0; let right2Details = 0; let key2Str = key.p2.join(''); let student2Str = '';
         for (let b = 0; b < 8; b++) {
             for (let row = 0; row < 4; row++) {
-                let by = C.P2_Y + offP2Y + 26 + (row * SP);
-                let scores = [0,1].map(c => scanBubble(C.P2_X[b] + offP2X + (c+1)*SP, by, 6)); 
+                let by = est_P2_Y + offP2Y + 26 + (row * SP);
+                let scores = [0,1].map(c => scanBubble(est_P2_X[b] + offP2X + (c+1)*SP, by, 6)); 
                 let maxS = Math.max(...scores); let maxIdx = scores.indexOf(maxS);
                 let isFilled = maxS > minConf;
                 
@@ -515,10 +597,10 @@ function processEngine(sourceCanvas) {
                 if (b < key.p2.length) student2Str += val;
 
                 [0,1].forEach(c => {
-                    let bx = C.P2_X[b] + offP2X + (c+1)*SP; let thisVal = (c === 0) ? 'Đ' : 'S';
+                    let bx = est_P2_X[b] + offP2X + (c+1)*SP; let thisVal = (c === 0) ? 'Đ' : 'S';
                     if (isFilled && c === maxIdx) {
-                        if (thisVal === expected) { drawBox(bx, by, 'correct'); } else { drawBox(bx, by, 'wrong'); }
-                    } else if (thisVal === expected) { drawBox(bx, by, 'miss'); } else { drawBox(bx, by, 'empty'); }
+                        if (thisVal === expected) { drawBubble(bx, by, 'correct'); } else { drawBubble(bx, by, 'wrong'); }
+                    } else if (thisVal === expected) { drawBubble(bx, by, 'miss'); } else { drawBubble(bx, by, 'empty'); }
                 });
             }
         }
@@ -537,16 +619,16 @@ function processEngine(sourceCanvas) {
             
             let stuAnsStr = ""; let expectedMinus = cleanKey.startsWith('-'); 
             
-            let bx_minus = C.P3_X[q] + offP3X + C.MINUS_OFFSET_X; let by_minus = C.P3_Y + offP3Y + C.MINUS_OFFSET_Y; 
+            let bx_minus = est_P3_X[q] + offP3X + minus_offsetX; let by_minus = est_P3_Y + offP3Y + minus_offsetY; 
             let minusScore = scanBubble(bx_minus, by_minus, 6); 
             let filledMinus = minusScore > minConf;
             
-            if (filledMinus) { drawBox(bx_minus, by_minus, expectedMinus ? 'correct' : 'wrong'); stuAnsStr += "-"; } 
-            else if (expectedMinus) { drawBox(bx_minus, by_minus, 'miss'); } else { drawBox(bx_minus, by_minus, 'empty'); }
+            if (filledMinus) { drawBubble(bx_minus, by_minus, expectedMinus ? 'correct' : 'wrong'); stuAnsStr += "-"; } 
+            else if (expectedMinus) { drawBubble(bx_minus, by_minus, 'miss'); } else { drawBubble(bx_minus, by_minus, 'empty'); }
             
             let expectedCols = cleanKey.replace(/^-/, '').split(''); 
             for (let colIdx = 0; colIdx < 4; colIdx++) {
-                let bx = C.P3_X[q] + offP3X + (colIdx + 1) * SP; 
+                let bx = est_P3_X[q] + offP3X + (colIdx + 1) * SP; 
                 let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
                 
                 let commaScore = scanBubble(bx, by_minus + SP, 6);
@@ -560,16 +642,16 @@ function processEngine(sourceCanvas) {
 
                 if (isFilled) {
                     stuAnsStr += filledChar;
-                    drawBox(bx, filledY, (filledChar === expectedChar) ? 'correct' : 'wrong');
+                    drawBubble(bx, filledY, (filledChar === expectedChar) ? 'correct' : 'wrong');
                 }
                 
-                if (commaScore <= minConf && expectedChar !== ',') drawBox(bx, by_minus + SP, 'empty');
-                else if (expectedChar === ',' && !isFilled) drawBox(bx, by_minus + SP, 'miss');
+                if (commaScore <= minConf && expectedChar !== ',') drawBubble(bx, by_minus + SP, 'empty');
+                else if (expectedChar === ',' && !isFilled) drawBubble(bx, by_minus + SP, 'miss');
 
                 [0,1,2,3,4,5,6,7,8,9].forEach(i => {
                     let cy = by_minus + (i+2)*SP;
                     if (!isFilled || filledY !== cy) {
-                         drawBox(bx, cy, (String(i) === expectedChar) ? 'miss' : 'empty');
+                         drawBubble(bx, cy, (String(i) === expectedChar) ? 'miss' : 'empty');
                     }
                 });
             }
@@ -585,6 +667,8 @@ function processEngine(sourceCanvas) {
         sCtx.font = "bold 24px Arial"; sCtx.fillText(`P.I:   ${scoreP1}đ`, 30, 180); sCtx.fillText(`P.II:  ${scoreP2}đ`, 30, 220); sCtx.fillText(`P.III: ${scoreP3}đ`, 30, 260);
 
         const resultCanvas = document.getElementById('result-canvas');
+        resultCanvas.width = TARGET_W; resultCanvas.height = TARGET_H;
+        resultCanvas.getContext('2d').drawImage(sourceCanvas, 0, 0);
         resultCanvas.style.display = 'block'; 
         
         document.getElementById('score-dashboard').style.display = 'block';
