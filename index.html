@@ -3,10 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NTMIX V44.0 - Phục Hồi V1.0 (Nội Suy 4 Góc)</title>
-    <!-- Thư viện cơ bản -->
+    <title>NTMIX V45.0 - Bản Homography Chuẩn 18/10</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Thư viện hỗ trợ đóng gói thư mục ZIP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
@@ -81,7 +79,7 @@
             width: 96vw; max-width: 650px; 
             aspect-ratio: 800 / 1130; 
             border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); /* Nền xám mờ giống TNMaker */
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); 
             pointer-events: none;
             z-index: 10;
         }
@@ -115,12 +113,12 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR MOBILE</h1>
-    <span class="badge-cv">✅ Hệ thống OMR V1.0 (Nội suy 4 góc)</span>
+    <h1>NTMIX App Chấm Điểm</h1>
+    <p>Tác giả: Nguyễn Thanh Tùng</p>
+    <span class="badge-cv">V45.0 - Lõi Căn Tâm Chuẩn (Bản 18/10)</span>
 </header>
 
 <div class="container">
-    <!-- TAB 1: CẤU HÌNH -->
     <div id="tab-config" class="tab-pane active">
         <div class="card">
             <div class="card-title">1. Nạp File Đáp Án & DSHS</div>
@@ -142,7 +140,7 @@
         </div>
 
         <div class="card">
-            <div class="card-title">2. Cấu hình Máy Quét & Chấm</div>
+            <div class="card-title">2. Cấu hình Lưới & Mẫu Phiếu</div>
             
             <div class="form-group" style="background: #eef2ff; padding: 12px; border-radius: 8px; border: 2px dashed #3b82f6;">
                 <label style="color: #1d4ed8; font-size: 14px;">📄 CHỌN MẪU PHIẾU ĐỂ CHẤM:</label>
@@ -181,18 +179,18 @@
             <div class="grid-2">
                 <div class="form-group">
                     <label>Độ nhạy Mực Chì:</label>
-                    <input type="number" id="cfg-conf" step="0.02" value="0.24">
+                    <input type="number" id="cfg-conf" step="0.02" value="0.20">
                 </div>
                 <div class="form-group">
                     <label>Nhạy Dấu Trừ (-):</label>
-                    <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
+                    <input type="number" id="cfg-conf-minus" step="0.02" value="0.30">
                 </div>
             </div>
-            <!-- CHO PHÉP CHỌN VẼ Ô VUÔNG BỌC ĐÁP ÁN -->
+            
             <div class="form-group" style="margin-top: 10px;">
                 <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #1e3a8a; cursor: pointer;">
                     <input type="checkbox" id="cfg-show-grid" style="width: 18px; height: 18px;" checked onchange="drawVirtualGrid()">
-                    📐 Vẽ hình vuông/tròn phủ lên kết quả
+                    📐 Vẽ Khung Vuông Mờ Phủ Đáp Án (TNMaker Style)
                 </label>
             </div>
             <div class="form-group" style="margin-top: 12px;"><label>🔧 Mã đề dự phòng (Khi HS quên tô):</label><input type="text" id="fallback-code" placeholder="VD: 0234"></div>
@@ -204,7 +202,7 @@
     <div id="tab-scan" class="tab-pane">
         <div class="card">
             <div class="card-title">
-                <span>Chấm Bài Nhanh Từ Thư Viện Ảnh / Camera</span>
+                <span>Chấm Bài Nhanh Từ Thư Viện / Camera</span>
             </div>
 
             <div class="grid-2" style="margin-bottom: 12px;">
@@ -215,7 +213,7 @@
                 </label>
             </div>
 
-            <div id="scan-status" style="font-size: 14px; font-weight: 700; color: var(--primary); text-align: center; margin-bottom: 10px;">✅ Hệ thống Đa Mẫu Phiếu sẵn sàng!</div>
+            <div id="scan-status" style="font-size: 14px; font-weight: 700; color: var(--primary); text-align: center; margin-bottom: 10px;">✅ Hệ thống Lõi Homography PRO Sẵn Sàng!</div>
 
             <!-- BẢNG ĐIỂM HIỂN THỊ KHI CHẤM -->
             <div id="score-dashboard" class="score-dashboard">
@@ -246,6 +244,7 @@
                         <div style="font-size:10px; color:#64748b; margin-top:2px;" id="ui-p3-detail">Đúng 0/6</div>
                     </div>
                 </div>
+                <div id="ui-warnings" style="margin-top: 8px; font-size: 12px; color: #d93025; font-weight: 600; text-align: center;"></div>
                 <div class="grid-2" style="margin-top: 12px;">
                     <button class="btn btn-primary" onclick="openFullscreenCamera()">🔄 Quét Tờ Khác</button>
                     <button class="btn btn-secondary" onclick="downloadResultImage()">⬇️ Lưu Ảnh Hiện Tại</button>
@@ -284,7 +283,6 @@
         <video id="video" autoplay playsinline muted></video>
         <div id="cam-overlay">
             <canvas id="grid-preview"></canvas>
-            <!-- 4 GÓC MÀU TRẮNG LỚN (GIỐNG TNMAKER) CHỈ DÙNG ĐỂ NGẮM BẰNG MẮT -->
             <div class="tn-corner tl" id="cb-tl"></div>
             <div class="tn-corner tr" id="cb-tr"></div>
             <div class="tn-corner bl" id="cb-bl"></div>
@@ -295,17 +293,16 @@
         <p id="hud-text">Hãy đưa 4 góc đen trên giấy lọt vào 4 ô vuông trắng</p>
         <div class="cam-btn-group">
             <select id="cam-speed-select" class="speed-select">
-                <option value="1">⚡ Quét Nhanh</option>
-                <option value="3" selected>🎯 Quét Vừa (Khuyên dùng)</option>
-                <option value="6">🐢 Quét Chậm</option>
+                <option value="1">Bắt nét: Nhanh (0.3s)</option>
+                <option value="3" selected>Bắt nét: Vừa (0.5s)</option>
+                <option value="6">Bắt nét: Chậm (1.0s)</option>
             </select>
-            <button class="btn btn-danger" style="width: auto; padding: 10px 20px;" onclick="manualCapture()">📸 Chụp Ngay</button>
+            <button class="btn btn-danger" style="width: auto; padding: 10px 20px;" onclick="manualCapture()">📸 Chụp Mẫu</button>
             <button class="btn btn-secondary" style="width: auto; padding: 10px 15px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
         </div>
     </div>
 </div>
 
-<!-- NAVIGATION BOTTOM -->
 <div class="bottom-nav">
     <div class="nav-item active" onclick="switchTab('tab-config')">
         <span style="font-size: 18px;">⚙️</span>
@@ -324,11 +321,6 @@
 <script>
 let answerKey = {}; let dshsDict = {}; let gradedRows = [];
 let videoStream = null; let autoScanTimer = null; let stableFrames = 0;
-let lastGradedSbd = "Phieu";
-
-// =====================================================================
-// LƯỚI TỌA ĐỘ CHUẨN XÁC VÀ CHI TIẾT TỪ V1.0 (THAY VÌ DÙNG SPACING)
-// =====================================================================
 
 const SHEET_CONFIGS = {
     'old_tnmaker': {
@@ -475,7 +467,6 @@ function closeFullscreenCamera() {
     document.getElementById('camera-fullscreen-ui').style.display = 'none';
 }
 
-// KHÔI PHỤC AUTO-SCAN THEO V1.0 (QUÉT Ở RÌA TRONG CỦA CAMERA)
 function startAutoScanPureJS() {
     if (autoScanTimer) clearInterval(autoScanTimer);
     const video = document.getElementById('video');
@@ -586,7 +577,7 @@ function manualCapture() {
     let cropH = rectO.height * scaleY;
     
     let canvas = document.createElement('canvas'); 
-    canvas.width = cropW; canvas.height = cropH; // Chụp nguyên phần trong khung
+    canvas.width = cropW; canvas.height = cropH; 
     canvas.getContext('2d').drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
     
     closeFullscreenCamera(); 
@@ -616,7 +607,7 @@ async function handleImageFiles(files) {
 }
 
 // =====================================================================
-// KHÔI PHỤC LÕI HÚT TÂM CỤC BỘ TỪ V1.0 (NỘI SUY TOÁN HỌC)
+// LÕI TÌM TÂM & NỘI SUY HOMOGRAPHY THEO TOÁN HỌC (THUẬT TOÁN 18/10)
 // =====================================================================
 
 function processImagePureJS(sourceCanvas) {
@@ -625,7 +616,6 @@ function processImagePureJS(sourceCanvas) {
         const scaledCanvas = document.createElement('canvas');
         scaledCanvas.width = WIDTH; scaledCanvas.height = HEIGHT;
         const sCtx = scaledCanvas.getContext('2d', { willReadFrequently: true });
-        // Ép toàn bộ ảnh cắt được hoặc upload về đúng tỷ lệ 800x1130
         sCtx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height, 0, 0, WIDTH, HEIGHT);
 
         const imgData = sCtx.getImageData(0, 0, WIDTH, HEIGHT);
@@ -637,72 +627,87 @@ function processImagePureJS(sourceCanvas) {
         let type = document.getElementById('cfg-sheet-type').value;
         let GRID_SPEC = SHEET_CONFIGS[type];
 
-        const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.24;
+        const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.20;
+        const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus')?.value) || 0.30;
         const diemP1 = parseFloat(document.getElementById('cfg-p1')?.value) || 0.25;
         const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
         const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
         const fallbackCode = document.getElementById('fallback-code')?.value.trim() || "";
         const showSquareGrid = document.getElementById('cfg-show-grid').checked;
 
-        // THUẬT TOÁN TÌM GÓC TỪ V1.0 - TỰ ĐỘNG BẮT DÍNH Ô ĐEN
-        function findDarkestSolidPatch(startX, startY, w, h) {
-            let bestScore = Infinity;
-            let bestX = startX + w/2; let bestY = startY + h/2;
-            let iw = 22, ih = 22, hw = 44, hh = 44; 
+        // THUẬT TOÁN TÌM TÂM GÓC TỪ NGÀY 18/10 (CHÍNH XÁC NHẤT)
+        function findBlackSquareCenter(startX, startY, w, h) {
+            let minVal = 255;
+            let inset = 15; // Lùi 15px để tránh đường kẻ mép ngoài
+            let sx = Math.max(0, startX + inset);
+            let sy = Math.max(0, startY + inset);
+            let ew = Math.min(WIDTH, startX + w - inset);
+            let eh = Math.min(HEIGHT, startY + h - inset);
 
-            for (let y = startY + hw/2; y < startY + h - hw/2; y += 2) {
-                for (let x = startX + hw/2; x < startX + w - hw/2; x += 2) {
-                    let innerSum = 0, innerCount = 0; let haloSum = 0, haloCount = 0;
-
-                    let top = y - hh/2, bottom = y + hh/2;
-                    let left = x - hw/2, right = x + hw/2;
-                    let itop = y - ih/2, ibottom = y + ih/2;
-                    let ileft = x - iw/2, iright = x + iw/2;
-
-                    for (let py = top; py < bottom; py += 2) {
-                        for (let px = left; px < right; px += 2) {
-                            if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
-                            let idx = (py * WIDTH + px) * 4;
-                            let gray = data[idx+1]; // Lấy kênh Green (đại diện khá tốt cho độ sáng)
-                            
-                            if (px >= ileft && px <= iright && py >= itop && py <= ibottom) {
-                                innerSum += gray; innerCount++;
-                            } else {
-                                haloSum += gray; haloCount++;
-                            }
-                        }
-                    }
-                    if (innerCount === 0 || haloCount === 0) continue;
-                    let innerAvg = innerSum / innerCount;
-                    let haloAvg = haloSum / haloCount;
-                    
-                    if (innerAvg > 160) continue; 
-                    let score = innerAvg - haloAvg; 
-
-                    if (score < bestScore) { bestScore = score; bestX = x; bestY = y; }
+            for (let y = sy; y < eh; y += 2) {
+                for (let x = sx; x < ew; x += 2) {
+                    let idx = (y * WIDTH + x) * 4;
+                    let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                    if (gray < minVal) minVal = gray;
                 }
             }
-            return {x: bestX, y: bestY};
+            
+            let thresh = Math.min(130, minVal + 40); 
+            
+            let sumX = 0, sumY = 0, count = 0;
+            for (let y = sy; y < eh; y++) {
+                for (let x = sx; x < ew; x++) {
+                    let idx = (y * WIDTH + x) * 4;
+                    let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                    if (gray <= thresh) {
+                        sumX += x; sumY += y; count++;
+                    }
+                }
+            }
+            if (count > 20) return { x: sumX / count, y: sumY / count };
+            return { x: startX + w/2, y: startY + h/2 }; 
         }
 
-        // Tìm 4 góc trong phạm vi 160x160 ở 4 cạnh ảnh
-        let searchW = 160, searchH = 160;
-        let pTL = findDarkestSolidPatch(0, 0, searchW, searchH);
-        let pTR = findDarkestSolidPatch(WIDTH - searchW, 0, searchW, searchH);
-        let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
-        let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
+        // Tìm 4 góc trong phạm vi 120x120 ở 4 cạnh ảnh (Kích thước an toàn để không chạm bảng điểm)
+        let searchW = 120, searchH = 120;
+        let pTL = findBlackSquareCenter(0, 0, searchW, searchH);
+        let pTR = findBlackSquareCenter(WIDTH - searchW, 0, searchW, searchH);
+        let pBL = findBlackSquareCenter(0, HEIGHT - searchH, searchW, searchH);
+        let pBR = findBlackSquareCenter(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
-        // MAPPING DỰA TRÊN TÂM CHUẨN CỦA 4 Ô ĐEN
-        function mapCoord(sx, sy) {
-            let u = (sx + ox) / 800;
-            let v = (sy + oy) / 1130;
-            let ax = (1-u)*(1-v)*pTL.x + u*(1-v)*pTR.x + (1-u)*v*pBL.x + u*v*pBR.x;
-            let ay = (1-u)*(1-v)*pTL.y + u*(1-v)*pTR.y + (1-u)*v*pBL.y + u*v*pBR.y;
-            return { x: ax, y: ay };
+        // THUẬT TOÁN HOMOGRAPHY CĂN TÂM (MAPPER)
+        // Tạo hàm nội suy nắn phẳng toàn bộ mạng lưới ô vuông
+        function createPerspectiveTransform(src, dst) {
+            let a = [];
+            for (let i = 0; i < 4; i++) {
+                let x = src[i].x, y = src[i].y; let u = dst[i].x, v = dst[i].y;
+                a.push([x, y, 1, 0, 0, 0, -u*x, -u*y, u]); a.push([0, 0, 0, x, y, 1, -v*x, -v*y, v]);
+            }
+            for (let i = 0; i < 8; i++) {
+                let maxRow = i;
+                for (let j = i + 1; j < 8; j++) { if (Math.abs(a[j][i]) > Math.abs(a[maxRow][i])) maxRow = j; }
+                let temp = a[i]; a[i] = a[maxRow]; a[maxRow] = temp;
+                for (let j = i + 1; j < 8; j++) { let f = a[j][i] / a[i][i]; for (let k = i; k <= 8; k++) a[j][k] -= a[i][k] * f; }
+            }
+            let h = new Array(8);
+            for (let i = 7; i >= 0; i--) { let sum = 0; for (let j = i + 1; j < 8; j++) sum += a[i][j] * h[j]; h[i] = (a[i][8] - sum) / a[i][i]; }
+            return h;
         }
 
-        function probeSquareCell(sx, sy, w, h) {
-            let center = mapCoord(sx, sy);
+        let idealPoints = [ {x:40, y:40}, {x:760, y:40}, {x:40, y:1090}, {x:760, y:1090} ];
+        let rawPoints = [ pTL, pTR, pBL, pBR ];
+        const H_Matrix = createPerspectiveTransform(idealPoints, rawPoints);
+
+        function mapCoord(idealX, idealY) {
+            let x = idealX + ox; let y = idealY + oy;
+            let denominator = H_Matrix[6]*x + H_Matrix[7]*y + 1;
+            let nx = (H_Matrix[0]*x + H_Matrix[1]*y + H_Matrix[2]) / denominator;
+            let ny = (H_Matrix[3]*x + H_Matrix[4]*y + H_Matrix[5]) / denominator;
+            return { x: nx, y: ny };
+        }
+
+        function probeSquareCell(idealX, idealY, w, h) {
+            let center = mapCoord(idealX, idealY);
             let cx = Math.round(center.x); let cy = Math.round(center.y);
 
             let bestScore = 0;
@@ -729,9 +734,8 @@ function processImagePureJS(sourceCanvas) {
             return bestScore;
         }
 
-        // Vẽ Kết Quả Lên Canvas
-        function drawMappedBubble(sx, sy, status, w) {
-            let pt = mapCoord(sx, sy);
+        function drawMappedBubble(idealX, idealY, status, w) {
+            let pt = mapCoord(idealX, idealY);
             sCtx.beginPath();
             
             if(showSquareGrid) {
@@ -762,8 +766,8 @@ function processImagePureJS(sourceCanvas) {
             let topScore = scores[order[0]];
             
             // Logic chống tô đúp
-            let isFilledTop = (topScore > 0.24) && ((topScore - minBg) > 0.10 || topScore > 0.35);
-            let isDup = isFilledTop && order.length > 1 && scores[order[1]] >= topScore * 0.76 && scores[order[1]] > 0.24;
+            let isFilledTop = (topScore > minConf) && ((topScore - minBg) > 0.08 || topScore > 0.35);
+            let isDup = isFilledTop && order.length > 1 && scores[order[1]] >= topScore * 0.76 && scores[order[1]] > minConf;
             let filledIdx = isFilledTop ? [order[0], ...(isDup ? [order[1]] : [])] : [];
 
             for (let i = 0; i < labels.length; i++) {
@@ -792,7 +796,7 @@ function processImagePureJS(sourceCanvas) {
             let order = scores.map((s, idx) => idx).sort((a, b) => scores[b] - scores[a]);
             let topScore = scores[order[0]];
             
-            if ((topScore > 0.24) && ((topScore - minBg) > 0.10 || topScore > 0.35)) {
+            if ((topScore > minConf) && ((topScore - minBg) > 0.08 || topScore > 0.35)) {
                 scannedSbd += String(order[0]);
                 drawMappedBubble(x, GRID_SPEC.sbd.y[order[0]], 'info_read', GRID_SPEC.sbd.cw);
             } else {
@@ -808,7 +812,7 @@ function processImagePureJS(sourceCanvas) {
             let order = scores.map((s, idx) => idx).sort((a, b) => scores[b] - scores[a]);
             let topScore = scores[order[0]];
             
-            if ((topScore > 0.24) && ((topScore - minBg) > 0.10 || topScore > 0.35)) {
+            if ((topScore > minConf) && ((topScore - minBg) > 0.08 || topScore > 0.35)) {
                 scannedCode += String(order[0]);
                 drawMappedBubble(x, GRID_SPEC.made.y[order[0]], 'info_read', GRID_SPEC.made.cw);
             } else {
@@ -873,7 +877,7 @@ function processImagePureJS(sourceCanvas) {
             let baseX = GRID_SPEC.p3.blockX[q];
             
             let minusScore = probeSquareCell(baseX + 10, GRID_SPEC.p3.yMinus, GRID_SPEC.p3.cw, GRID_SPEC.p3.ch);
-            if (minusScore > minConf) {
+            if (minusScore > minConfMinus) {
                 stuAnsStr += "-";
                 drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill', GRID_SPEC.p3.cw);
             } else if (expectedMinus) {
@@ -889,7 +893,7 @@ function processImagePureJS(sourceCanvas) {
                 let order = scores.map((s, idx) => idx).sort((a, b) => scores[b] - scores[a]);
                 let topScore = scores[order[0]];
                 
-                let isFilled = (topScore > 0.24) && ((topScore - minBg) > 0.10 || topScore > 0.35);
+                let isFilled = (topScore > minConf) && ((topScore - minBg) > 0.08 || topScore > 0.35);
                 let filledChar = isFilled ? rowChars[order[0]] : '';
 
                 if (filledChar) {
