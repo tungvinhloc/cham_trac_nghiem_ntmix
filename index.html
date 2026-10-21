@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>V1.0 App chấm trắc nghiệm NTMIX</title>
+    <title>V1.1 App chấm trắc nghiệm NTMIX</title>
     <!-- Thư viện cơ bản -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -119,7 +119,7 @@
 <header>
     <h1>App chấm trắc nghiệm NTMIX</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">NTMIX - v0.1</span>
+    <span class="badge-cv">NTMIX - v1.1</span>
 </header>
 
 <div class="container">
@@ -156,6 +156,17 @@
 
         <div class="card">
             <div class="card-title">2. Cấu hình Máy Quét & Chấm</div>
+            
+            <!-- ĐƯA MENU CHỌN TỐC ĐỘ QUÉT RA CẤU HÌNH -->
+            <div class="form-group" style="background: #ecfdf5; padding: 10px; border-radius: 8px; border: 1px dashed #10b981; margin-bottom: 12px;">
+                <label style="color: #047857;">📷 Tốc độ Bắt nét tự động (Auto-Scan):</label>
+                <select id="cfg-scan-speed" style="border-color: #34d399; font-weight: bold; color: #047857;" onchange="syncSpeed('cfg')">
+                    <option value="4">⚡ Bắt nét: Nhanh (0.3s)</option>
+                    <option value="6" selected>🎯 Bắt nét: Tiêu chuẩn (0.5s)</option>
+                    <option value="12">🐢 Bắt nét: Chậm (1.0s)</option>
+                </select>
+            </div>
+
             <div class="form-group" style="background: #eef2ff; padding: 10px; border-radius: 8px; border: 1px dashed #6366f1;">
                 <label style="color: #4338ca;">⚙️ Căn chỉnh lề máy in (Để 0 nếu khớp):</label>
                 <div class="grid-2">
@@ -185,14 +196,13 @@
             <div class="grid-2">
                 <div class="form-group">
                     <label>Ngưỡng nhận diện chì chung:</label>
-                    <input type="number" id="cfg-conf" step="0.02" value="0.24">
+                    <input type="number" id="cfg-conf" step="0.02" value="0.35"> <!-- Nâng ngưỡng mặc định lên 0.35 -->
                 </div>
                 <div class="form-group">
                     <label>Ngưỡng lọc ô dấu trừ (-):</label>
                     <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
                 </div>
             </div>
-            <!-- KHÔI PHỤC PHẦN TỬ LỰA CHỌN HIỂN THỊ LƯỚI ĐỂ FIX LỖI -->
             <div class="form-group">
                 <label class="check-inline" style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #1e3a8a; cursor: pointer;">
                     <input type="checkbox" id="cfg-show-grid" style="width: 18px; height: 18px;" checked>
@@ -210,11 +220,9 @@
             <div class="grid-2" style="margin-bottom: 10px;">
                 <button class="btn btn-primary" onclick="openFullscreenCamera()">📷 Mở Máy Quét</button>
                 <div class="btn btn-success" style="margin: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('file-images').click()">🖼️ Chọn Từ Máy</div>
-                <!-- Truyền từ khóa 'this' để tự động reset thẻ input, tránh lỗi chọn lại 1 file không chạy -->
                 <input type="file" id="file-images" accept="image/*" capture="environment" multiple style="display: none;" onchange="handleImageFiles(this)">
             </div>
             
-            <!-- Khung trạng thái mặc định hiển thị để chống lỗi khoảng trắng -->
             <div id="scan-status">👋 Sẵn sàng! Hãy Mở máy quét hoặc Chọn ảnh từ máy.</div>
 
             <div id="score-dashboard" class="score-dashboard">
@@ -248,7 +256,6 @@
             <div class="card-title">
                 <span>Danh sách đã chấm (<span id="count-graded">0</span>)</span>
             </div>
-            <!-- Cụm Nút chức năng Bảng điểm và Lưu ZIP -->
             <div class="grid-2" style="margin-bottom: 12px;">
                 <button class="btn btn-success" onclick="exportResultsExcel()">📥 Xuất Excel Điểm</button>
                 <button class="btn btn-warning" onclick="downloadAllImagesZip()">📦 Tải Tất Cả Ảnh (ZIP)</button>
@@ -278,7 +285,7 @@
     <div class="cam-controls">
         <p id="hud-text">Đưa 4 ô đen ngoài cùng vào 4 góc xanh lục</p>
         <div class="cam-btn-group">
-            <select id="cam-speed-select" class="speed-select">
+            <select id="cam-speed-select" class="speed-select" onchange="syncSpeed('cam')">
                 <option value="4">Lấy nét: Nhanh</option>
                 <option value="6" selected>Lấy nét: Vừa</option>
                 <option value="12">Lấy nét: Chậm</option>
@@ -301,7 +308,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 let answerKey = {}; let dshsDict = {}; let gradedRows = [];
-let gradedImagesData = []; // Mảng lưu trữ toàn bộ file ảnh base64 để tải ZIP
+let gradedImagesData = [];
 let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
@@ -319,6 +326,13 @@ const GRID_SPEC = {
         digitChars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] 
     }
 };
+
+// Đồng bộ tốc độ quét giữa 2 menu
+function syncSpeed(source) {
+    let val = source === 'cfg' ? document.getElementById('cfg-scan-speed').value : document.getElementById('cam-speed-select').value;
+    document.getElementById('cfg-scan-speed').value = val;
+    document.getElementById('cam-speed-select').value = val;
+}
 
 function drawVirtualGrid() {
     const canvas = document.getElementById('grid-preview');
@@ -681,7 +695,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
     const fallbackCode = document.getElementById('fallback-code')?.value.trim() || "";
-    // XỬ LÝ AN TOÀN TRÁNH LỖI NULL KHI ĐỌC CHECKBOX
+    
     const showSquareGridCheckbox = document.getElementById('cfg-show-grid');
     const showSquareGrid = showSquareGridCheckbox ? showSquareGridCheckbox.checked : true;
 
