@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>V1.0 App chấm trắc nghiệm NTMIX</title>
-    <!-- Thư viện cơ bản -->
+    <title>V4.1 App chấm trắc nghiệm NTMIX</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <!-- Thư viện hỗ trợ đóng gói thư mục ZIP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
@@ -54,22 +52,22 @@
             top: 45%; left: 50%; transform: translate(-50%, -50%);
             width: 96vw; max-width: 650px; 
             aspect-ratio: 800 / 1130; 
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.85); 
-            border: 2px solid rgba(0, 255, 0, 0.5); 
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.65); 
+            border: 1px solid rgba(255, 255, 255, 0.2);
             pointer-events: none;
             z-index: 10;
         }
 
-        #grid-preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-
-        .corner-box {
-            position: absolute; width: 10%; aspect-ratio: 1 / 1;
-            border: 3px solid #00ff00; background: rgba(0, 255, 0, 0.15); transition: background 0.2s;
+        .tn-corner {
+            position: absolute; width: 15%; aspect-ratio: 1 / 1;
+            background: rgba(255, 255, 255, 0.85);
+            box-shadow: 0px 0px 5px rgba(0,0,0,0.5);
+            transition: background 0.15s ease-out;
         }
-        .corner-box.tl { top: 0; left: 0; border-bottom: none; border-right: none; }
-        .corner-box.tr { top: 0; right: 0; border-bottom: none; border-left: none; }
-        .corner-box.bl { bottom: 0; left: 0; border-top: none; border-right: none; }
-        .corner-box.br { bottom: 0; right: 0; border-top: none; border-left: none; }
+        .tn-corner.tl { top: -2px; left: -2px; }
+        .tn-corner.tr { top: -2px; right: -2px; }
+        .tn-corner.bl { bottom: -2px; left: -2px; }
+        .tn-corner.br { bottom: -2px; right: -2px; }
 
         .cam-controls { 
             position: absolute; bottom: 0; left: 0; width: 100%; 
@@ -77,12 +75,11 @@
             background: linear-gradient(transparent, rgba(0,0,0,0.95)); 
             text-align: center; z-index: 20; 
         }
-        #hud-text { color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 10px; min-height: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        #hud-text { color: #fff; font-size: 16px; font-weight: bold; margin-bottom: 10px; min-height: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .cam-btn-group { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; }
         .speed-select { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 8px; border-radius: 8px; font-weight: bold; outline: none; }
         .speed-select option { color: black; }
 
-        /* Nền chứa thông báo chống khoảng trắng */
         #scan-status {
             font-size: 14px; font-weight: 700; color: #64748b; text-align: center; 
             margin-bottom: 12px; padding: 16px 10px; border: 2px dashed #cbd5e1; 
@@ -117,9 +114,9 @@
 <body>
 
 <header>
-    <h1>App chấm trắc nghiệm NTMIX</h1>
+    <h1>V1.0 App chấm trắc nghiệm NTMIX</h1>
     <p>Tác giả: Nguyễn Thanh Tùng</p>
-    <span class="badge-cv">NTMIX - v0.1</span>
+    <span class="badge-cv">V4.1 - Nới lỏng Cảm biến & Homography PRO</span>
 </header>
 
 <div class="container">
@@ -161,11 +158,11 @@
                 <div class="grid-2">
                     <div>
                         <span style="font-size: 11px; color: #64748b;">Dịch Ngang (X)</span>
-                        <input type="number" id="cfg-offset-x" value="0" onchange="drawVirtualGrid()" style="color: #dc2626;">
+                        <input type="number" id="cfg-offset-x" value="0">
                     </div>
                     <div>
                         <span style="font-size: 11px; color: #64748b;">Dịch Dọc (Y)</span>
-                        <input type="number" id="cfg-offset-y" value="0" onchange="drawVirtualGrid()" style="color: #dc2626;">
+                        <input type="number" id="cfg-offset-y" value="0">
                     </div>
                 </div>
             </div>
@@ -192,11 +189,10 @@
                     <input type="number" id="cfg-conf-minus" step="0.02" value="0.42">
                 </div>
             </div>
-            <!-- KHÔI PHỤC PHẦN TỬ LỰA CHỌN HIỂN THỊ LƯỚI ĐỂ FIX LỖI -->
             <div class="form-group">
                 <label class="check-inline" style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #1e3a8a; cursor: pointer;">
                     <input type="checkbox" id="cfg-show-grid" style="width: 18px; height: 18px;" checked>
-                    📐 Vẽ lưới định vị xanh lam bao phủ ô tròn
+                    📐 Vẽ ô vuông bọc đáp án (như TNMaker)
                 </label>
             </div>
             <div class="form-group" style="margin-top: 12px;"><label>🔧 Mã đề dự phòng (Khi HS quên tô):</label><input type="text" id="fallback-code" placeholder="VD: 0234"></div>
@@ -210,11 +206,9 @@
             <div class="grid-2" style="margin-bottom: 10px;">
                 <button class="btn btn-primary" onclick="openFullscreenCamera()">📷 Mở Máy Quét</button>
                 <div class="btn btn-success" style="margin: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="document.getElementById('file-images').click()">🖼️ Chọn Từ Máy</div>
-                <!-- Truyền từ khóa 'this' để tự động reset thẻ input, tránh lỗi chọn lại 1 file không chạy -->
                 <input type="file" id="file-images" accept="image/*" capture="environment" multiple style="display: none;" onchange="handleImageFiles(this)">
             </div>
             
-            <!-- Khung trạng thái mặc định hiển thị để chống lỗi khoảng trắng -->
             <div id="scan-status">👋 Sẵn sàng! Hãy Mở máy quét hoặc Chọn ảnh từ máy.</div>
 
             <div id="score-dashboard" class="score-dashboard">
@@ -248,7 +242,6 @@
             <div class="card-title">
                 <span>Danh sách đã chấm (<span id="count-graded">0</span>)</span>
             </div>
-            <!-- Cụm Nút chức năng Bảng điểm và Lưu ZIP -->
             <div class="grid-2" style="margin-bottom: 12px;">
                 <button class="btn btn-success" onclick="exportResultsExcel()">📥 Xuất Excel Điểm</button>
                 <button class="btn btn-warning" onclick="downloadAllImagesZip()">📦 Tải Tất Cả Ảnh (ZIP)</button>
@@ -268,20 +261,19 @@
     <div id="video-container">
         <video id="video" autoplay playsinline muted></video>
         <div id="cam-overlay">
-            <canvas id="grid-preview"></canvas>
-            <div class="corner-box tl" id="cb-tl"></div>
-            <div class="corner-box tr" id="cb-tr"></div>
-            <div class="corner-box bl" id="cb-bl"></div>
-            <div class="corner-box br" id="cb-br"></div>
+            <div class="tn-corner tl" id="cb-tl"></div>
+            <div class="tn-corner tr" id="cb-tr"></div>
+            <div class="tn-corner bl" id="cb-bl"></div>
+            <div class="tn-corner br" id="cb-br"></div>
         </div>
     </div>
     <div class="cam-controls">
-        <p id="hud-text">Đưa 4 ô đen ngoài cùng vào 4 góc xanh lục</p>
+        <p id="hud-text">Đưa 4 ô đen của giấy lấp đầy 4 ô vuông trắng</p>
         <div class="cam-btn-group">
             <select id="cam-speed-select" class="speed-select">
-                <option value="4">Lấy nét: Nhanh</option>
-                <option value="6" selected>Lấy nét: Vừa</option>
-                <option value="12">Lấy nét: Chậm</option>
+                <option value="4">Bắt nét: Nhanh (1.0s)</option>
+                <option value="6" selected>Bắt nét: Tiêu chuẩn (1.5s)</option>
+                <option value="8">Bắt nét: Chậm (2.0s)</option>
             </select>
             <button class="btn btn-danger" style="padding: 10px 15px; font-size: 15px;" onclick="manualCapture()">📸 Chụp Mẫu</button>
             <button class="btn btn-secondary" style="padding: 10px 15px; font-size: 15px;" onclick="closeFullscreenCamera()">❌ Đóng</button>
@@ -296,16 +288,13 @@
 </div>
 
 <script>
-window.addEventListener('DOMContentLoaded', () => {
-    drawVirtualGrid(); 
-});
-
 let answerKey = {}; let dshsDict = {}; let gradedRows = [];
-let gradedImagesData = []; // Mảng lưu trữ toàn bộ file ảnh base64 để tải ZIP
+let gradedImagesData = []; 
 let videoStream = null; let qrStream = null; let qrScanTimer = null;
 let autoScanTimer = null; let stableFrames = 0;
 let lastGradedSbd = "Phieu";
 
+// LƯỚI TỌA ĐỘ BGD 2025
 const GRID_SPEC = {
     sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
     made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299] },
@@ -315,39 +304,11 @@ const GRID_SPEC = {
         blockX: [64, 184, 304, 424, 544, 664], 
         offsetsX: [0, 26, 52, 78], 
         yMinus: 852, 
-        yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], 
-        digitChars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] 
+        yComma: 871,
+        yDigit: [891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], 
+        digitChars: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] 
     }
 };
-
-function drawVirtualGrid() {
-    const canvas = document.getElementById('grid-preview');
-    if(!canvas) return;
-    canvas.width = 800; canvas.height = 1130;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 800, 1130);
-    
-    ctx.strokeStyle = "rgba(100, 149, 237, 0.4)"; 
-    ctx.lineWidth = 2;
-    const radius = 9;
-
-    let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
-    let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
-
-    function drawCircle(x, y) { ctx.beginPath(); ctx.arc(x + ox, y + oy, radius, 0, 2 * Math.PI); ctx.stroke(); }
-    
-    GRID_SPEC.sbd.x.forEach(x => { GRID_SPEC.sbd.y.forEach(y => drawCircle(x, y)); });
-    GRID_SPEC.made.x.forEach(x => { GRID_SPEC.made.y.forEach(y => drawCircle(x, y)); });
-    GRID_SPEC.p1.blockX.forEach(bx => { GRID_SPEC.p1.offsetsX.forEach(offX => { GRID_SPEC.p1.y.forEach(y => drawCircle(bx + offX, y)); }); });
-    GRID_SPEC.p2.blockX.forEach(bx => { let offsets = [0, 38, 76, 114]; offsets.forEach(offX => { GRID_SPEC.p2.y.forEach(y => drawCircle(bx + offX, y)); }); });
-    
-    GRID_SPEC.p3.blockX.forEach(bx => { 
-        drawCircle(bx, GRID_SPEC.p3.yMinus);
-        GRID_SPEC.p3.offsetsX.forEach(offX => { 
-            GRID_SPEC.p3.yDigit.forEach(y => drawCircle(bx + offX, y)); 
-        }); 
-    });
-}
 
 function switchTab(tabId) {
     if (tabId !== 'tab-config') stopQrScanner();
@@ -466,11 +427,29 @@ async function openFullscreenCamera() {
     if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp đáp án ở Tab Cấu hình trước!"); switchTab('tab-config'); return; }
     
     try {
-        videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } } });
+        const constraints = {
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                focusMode: { ideal: "continuous" },
+                advanced: [{ focusMode: "continuous" }]
+            }
+        };
+        videoStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = videoStream;
         ui.style.display = 'flex';
         video.onloadedmetadata = () => { video.play(); startAutoScan(); };
-    } catch (err) { alert("Trình duyệt chặn Camera nội bộ, hãy dùng nút 'Chọn Từ Máy' !"); }
+    } catch (err) { 
+        try {
+            videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1920 } } });
+            video.srcObject = videoStream;
+            ui.style.display = 'flex';
+            video.onloadedmetadata = () => { video.play(); startAutoScan(); };
+        } catch(e) {
+            alert("Trình duyệt chặn Camera nội bộ, hãy dùng nút 'Chọn Từ Máy' !");
+        }
+    }
 }
 
 function closeFullscreenCamera() {
@@ -522,29 +501,36 @@ function startAutoScan() {
         
         function checkDarkness(cx, cy, w, h) {
             let darkCount = 0;
-            for(let y = cy; y < cy+h; y++) {
-                for(let x = cx; x < cx+w; x++) {
+            for(let y = cy; y < cy+h; y+=2) {
+                for(let x = cx; x < cx+w; x+=2) {
                     let i = (y * 200 + x) * 4;
-                    if (imgData[i+1] < 100) darkCount++;
+                    // V4.1 NỚI LỎNG CẢM BIẾN (Chống lỗi mặt bàn đen)
+                    if (imgData[i+1] < 130) darkCount++; 
                 }
             }
-            return darkCount / (w * h);
+            return darkCount / ((w/2) * (h/2));
         }
 
-        const startX = 0; const startY = 0; const bw = Math.round(200 * 0.10);
-        const tl = checkDarkness(startX, startY, bw, bw);
-        const tr = checkDarkness(200 - bw, startY, bw, bw);
-        const bl = checkDarkness(startX, 282 - bw, bw, bw);
-        const br = checkDarkness(200 - bw, 282 - bw, bw, bw);
+        const bw = Math.round(200 * 0.15);
+        const bh = Math.round(282 * 0.15);
 
-        function isValid(val) { return val > 0.05 && val < 0.60; }
+        const tl = checkDarkness(0, 0, bw, bh);
+        const tr = checkDarkness(200 - bw, 0, bw, bh);
+        const bl = checkDarkness(0, 282 - bh, bw, bh);
+        const br = checkDarkness(200 - bw, 282 - bh, bw, bh);
+
+        // V4.1 NỚI LỎNG NGƯỠNG ĐỂ CAMERA DỄ THỞ HƠN TRÊN BÀN TỐI
+        function isValid(val) { return val > 0.015 && val < 0.85; } 
         
-        document.getElementById('cb-tl').style.background = isValid(tl) ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.15)";
-        document.getElementById('cb-tr').style.background = isValid(tr) ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.15)";
-        document.getElementById('cb-bl').style.background = isValid(bl) ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.15)";
-        document.getElementById('cb-br').style.background = isValid(br) ? "rgba(0, 255, 0, 0.6)" : "rgba(0, 255, 0, 0.15)";
+        const okTL = isValid(tl); const okTR = isValid(tr);
+        const okBL = isValid(bl); const okBR = isValid(br);
 
-        if (isValid(tl) && isValid(tr) && isValid(bl) && isValid(br)) {
+        document.getElementById('cb-tl').style.background = okTL ? "rgba(0, 255, 0, 0.45)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-tr').style.background = okTR ? "rgba(0, 255, 0, 0.45)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-bl').style.background = okBL ? "rgba(0, 255, 0, 0.45)" : "rgba(255, 255, 255, 0.9)";
+        document.getElementById('cb-br').style.background = okBR ? "rgba(0, 255, 0, 0.45)" : "rgba(255, 255, 255, 0.9)";
+
+        if (okTL && okTR && okBL && okBR) {
             stableFrames++;
             hudText.innerHTML = `🎯 Đang lấy nét... Giữ yên (${stableFrames}/${requiredFrames})`;
             hudText.style.color = "#00ff00";
@@ -567,8 +553,8 @@ function startAutoScan() {
                 }
             }
         } else {
-            stableFrames = 0;
-            hudText.innerHTML = "Khớp 4 ô đen ngoài cùng vào 4 ô xanh lục";
+            if (stableFrames > 0) stableFrames--;
+            hudText.innerHTML = "Đưa 4 ô đen của giấy lấp đầy 4 ô vuông trắng";
             hudText.style.color = "#fff";
         }
     }, 250);
@@ -662,6 +648,7 @@ async function handleImageFiles(inputElement) {
     inputElement.value = ''; 
 }
 
+// ================= LÕI HOMOGRAPHY PRO =================
 function processImagePureJS(sourceCanvas, fileName) {
     const WIDTH = 800, HEIGHT = 1130;
     const scaledCanvas = document.createElement('canvas');
@@ -681,76 +668,93 @@ function processImagePureJS(sourceCanvas, fileName) {
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
     const diemP3 = parseFloat(document.getElementById('cfg-p3')?.value) || 0.5;
     const fallbackCode = document.getElementById('fallback-code')?.value.trim() || "";
-    // XỬ LÝ AN TOÀN TRÁNH LỖI NULL KHI ĐỌC CHECKBOX
+    
     const showSquareGridCheckbox = document.getElementById('cfg-show-grid');
     const showSquareGrid = showSquareGridCheckbox ? showSquareGridCheckbox.checked : true;
 
-    function findDarkestSolidPatch(startX, startY, w, h) {
-        let bestScore = Infinity;
+    // TÌM TÂM Ô VUÔNG ĐEN (Loại bỏ bảng Điểm bằng giới hạn tìm kiếm)
+    function findBlackSquareCenter(startX, startY, w, h) {
         let bestX = startX + w/2;
         let bestY = startY + h/2;
-        let iw = 22, ih = 22, hw = 44, hh = 44; 
         
-        for (let y = startY + hw/2; y < startY + h - hw/2; y += 2) {
-            for (let x = startX + hw/2; x < startX + w - hw/2; x += 2) {
-                let innerSum = 0, innerCount = 0;
-                let haloSum = 0, haloCount = 0;
-
-                let top = y - hh/2, bottom = y + hh/2;
-                let left = x - hw/2, right = x + hw/2;
-                let itop = y - ih/2, ibottom = y + ih/2;
-                let ileft = x - iw/2, iright = x + iw/2;
-
-                for (let py = top; py < bottom; py += 2) {
-                    for (let px = left; px < right; px += 2) {
-                        if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
-                        let idx = (py * WIDTH + px) * 4;
-                        let gray = data[idx+1]; 
-                        
-                        if (px >= ileft && px <= iright && py >= itop && py <= ibottom) {
-                            innerSum += gray; innerCount++;
-                        } else {
-                            haloSum += gray; haloCount++;
-                        }
-                    }
-                }
-                if (innerCount === 0 || haloCount === 0) continue;
-                let innerAvg = innerSum / innerCount;
-                let haloAvg = haloSum / haloCount;
-                
-                if (innerAvg > 160) continue; 
-                let score = innerAvg - haloAvg; 
-
-                if (score < bestScore) { bestScore = score; bestX = x; bestY = y; }
+        let minVal = 255;
+        for (let y = startY; y < startY + h; y += 2) {
+            for (let x = startX; x < startX + w; x += 2) {
+                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
+                let idx = (y * WIDTH + x) * 4;
+                let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                if (gray < minVal) minVal = gray;
             }
         }
-        return {x: bestX, y: bestY};
+        
+        let thresh = Math.min(130, minVal + 40); 
+        
+        let sumX = 0, sumY = 0, count = 0;
+        for (let y = startY; y < startY + h; y++) {
+            for (let x = startX; x < startX + w; x++) {
+                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
+                let idx = (y * WIDTH + x) * 4;
+                let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                if (gray <= thresh) {
+                    sumX += x; sumY += y; count++;
+                }
+            }
+        }
+        
+        if (count > 20) return { x: sumX / count, y: sumY / count };
+        return { x: bestX, y: bestY }; 
     }
 
-    let searchW = 150, searchH = 150;
-    let pTL = findDarkestSolidPatch(0, 0, searchW, searchH);
-    let pTR = findDarkestSolidPatch(WIDTH - searchW, 0, searchW, searchH);
-    let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
-    let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
+    // V4.1 TĂNG NHẸ TRƯỜNG NHÌN TÌM GÓC TỪ 80 LÊN 120 ĐỂ TRÁNH HỤT
+    let searchW = 120, searchH = 120;
+    let pTL = findBlackSquareCenter(10, 10, searchW, searchH);
+    let pTR = findBlackSquareCenter(WIDTH - searchW - 10, 10, searchW, searchH);
+    let pBL = findBlackSquareCenter(10, HEIGHT - searchH - 10, searchW, searchH);
+    let pBR = findBlackSquareCenter(WIDTH - searchW - 10, HEIGHT - searchH - 10, searchW, searchH);
+
+    // THUẬT TOÁN HOMOGRAPHY
+    function createPerspectiveTransform(src, dst) {
+        let a = [];
+        for (let i = 0; i < 4; i++) {
+            let x = src[i].x, y = src[i].y;
+            let u = dst[i].x, v = dst[i].y;
+            a.push([x, y, 1, 0, 0, 0, -u*x, -u*y, u]);
+            a.push([0, 0, 0, x, y, 1, -v*x, -v*y, v]);
+        }
+        for (let i = 0; i < 8; i++) {
+            let maxRow = i;
+            for (let j = i + 1; j < 8; j++) { if (Math.abs(a[j][i]) > Math.abs(a[maxRow][i])) maxRow = j; }
+            let temp = a[i]; a[i] = a[maxRow]; a[maxRow] = temp;
+            for (let j = i + 1; j < 8; j++) {
+                let f = a[j][i] / a[i][i];
+                for (let k = i; k <= 8; k++) a[j][k] -= a[i][k] * f;
+            }
+        }
+        let h = new Array(8);
+        for (let i = 7; i >= 0; i--) {
+            let sum = 0;
+            for (let j = i + 1; j < 8; j++) sum += a[i][j] * h[j];
+            h[i] = (a[i][8] - sum) / a[i][i];
+        }
+        return h;
+    }
+
+    const srcPoints = [ {x: 40, y: 40}, {x: 760, y: 40}, {x: 40, y: 1090}, {x: 760, y: 1090} ];
+    const dstPoints = [ pTL, pTR, pBL, pBR ];
+    const H_Matrix = createPerspectiveTransform(srcPoints, dstPoints);
 
     function mapCoord(sx, sy) {
-        let u = (sx + ox) / 800;
-        let v = (sy + oy) / 1130;
-        let ax = (1-u)*(1-v)*pTL.x + u*(1-v)*pTR.x + (1-u)*v*pBL.x + u*v*pBR.x;
-        let ay = (1-u)*(1-v)*pTL.y + u*(1-v)*pTR.y + (1-u)*v*pBL.y + u*v*pBR.y;
-        return { x: ax, y: ay };
+        let x = sx + ox; let y = sy + oy;
+        let denominator = H_Matrix[6]*x + H_Matrix[7]*y + 1;
+        let nx = (H_Matrix[0]*x + H_Matrix[1]*y + H_Matrix[2]) / denominator;
+        let ny = (H_Matrix[3]*x + H_Matrix[4]*y + H_Matrix[5]) / denominator;
+        return { x: nx, y: ny };
     }
 
     function getBestMappedDarkness(sx, sy, w, h) {
         let center = mapCoord(sx, sy);
         let cx = Math.round(center.x);
         let cy = Math.round(center.y);
-
-        if (showSquareGrid) {
-            sCtx.strokeStyle = "rgba(100, 149, 237, 0.6)"; 
-            sCtx.lineWidth = 1;
-            sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(h/2), w, h);
-        }
 
         let bestScore = 0;
         for (let dy = -6; dy <= 6; dy += 3) {
@@ -784,23 +788,42 @@ function processImagePureJS(sourceCanvas, fileName) {
                 if (score > bestScore) { bestScore = score; }
             }
         }
+        
+        if (showSquareGrid) {
+            sCtx.strokeStyle = "rgba(100, 149, 237, 0.6)"; 
+            sCtx.lineWidth = 1;
+            sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(h/2), w, h);
+        }
+        
         return bestScore;
     }
 
     function drawMappedBubble(sx, sy, status) {
         let pt = mapCoord(sx, sy);
         sCtx.beginPath();
-        if (status === 'correct_fill') { sCtx.fillStyle = "rgba(0, 200, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
-        else if (status === 'wrong_fill') { sCtx.fillStyle = "rgba(255, 0, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
-        else if (status === 'missing_key') { sCtx.fillStyle = "rgba(255, 215, 0, 1)"; sCtx.arc(pt.x, pt.y, 6, 0, 2*Math.PI); sCtx.fill(); }
-        else if (status === 'info_read') { sCtx.fillStyle = "rgba(0, 80, 255, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+        let boxSize = 14;
+        let hsx = pt.x - boxSize/2;
+        let hsy = pt.y - boxSize/2;
+        
+        if (showSquareGrid) {
+            sCtx.lineWidth = 2;
+            if (status === 'correct_fill') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
+            else if (status === 'wrong_fill') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
+            else if (status === 'missing_key') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.strokeRect(hsx+1, hsy+1, boxSize-2, boxSize-2); }
+            else if (status === 'info_read') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(hsx, hsy, boxSize, boxSize); }
+        } else {
+            if (status === 'correct_fill') { sCtx.fillStyle = "rgba(0, 200, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+            else if (status === 'wrong_fill') { sCtx.fillStyle = "rgba(255, 0, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+            else if (status === 'missing_key') { sCtx.fillStyle = "rgba(255, 215, 0, 1)"; sCtx.arc(pt.x, pt.y, 6, 0, 2*Math.PI); sCtx.fill(); }
+            else if (status === 'info_read') { sCtx.fillStyle = "rgba(0, 80, 255, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+        }
     }
 
     sCtx.fillStyle = "rgba(255, 0, 255, 1)";
-    sCtx.beginPath(); sCtx.arc(pTL.x, pTL.y, 8, 0, 2*Math.PI); sCtx.fill();
-    sCtx.beginPath(); sCtx.arc(pTR.x, pTR.y, 8, 0, 2*Math.PI); sCtx.fill();
-    sCtx.beginPath(); sCtx.arc(pBL.x, pBL.y, 8, 0, 2*Math.PI); sCtx.fill();
-    sCtx.beginPath(); sCtx.arc(pBR.x, pBR.y, 8, 0, 2*Math.PI); sCtx.fill();
+    sCtx.beginPath(); sCtx.arc(pTL.x, pTL.y, 6, 0, 2*Math.PI); sCtx.fill();
+    sCtx.beginPath(); sCtx.arc(pTR.x, pTR.y, 6, 0, 2*Math.PI); sCtx.fill();
+    sCtx.beginPath(); sCtx.arc(pBL.x, pBL.y, 6, 0, 2*Math.PI); sCtx.fill();
+    sCtx.beginPath(); sCtx.arc(pBR.x, pBR.y, 6, 0, 2*Math.PI); sCtx.fill();
 
     let scannedSbd = "";
     for (let x of GRID_SPEC.sbd.x) {
@@ -912,30 +935,34 @@ function processImagePureJS(sourceCanvas, fileName) {
             let x = baseX + GRID_SPEC.p3.offsetsX[colIdx];
             let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
             
+            let scoreComma = getBestMappedDarkness(x, GRID_SPEC.p3.yComma, 13, 13);
             let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestMappedDarkness(x, y, 13, 13));
+            
             let maxDigitScore = Math.max(...scoresDigits);
             let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
             
-            let sortedScores = [...scoresDigits].sort((a,b) => a - b);
-            let contrast = maxDigitScore - sortedScores[5]; 
+            let isFilled = false;
+            let filledChar = '';
+            let filledY = 0;
             
-            let isFilled = (maxDigitScore > minConf) && (contrast > 0.08);
-            let filledChar = isFilled ? GRID_SPEC.p3.digitChars[maxDigitIdx] : '';
+            if (scoreComma > minConf && scoreComma > maxDigitScore) {
+                isFilled = true; filledChar = ','; filledY = GRID_SPEC.p3.yComma;
+            } else if (maxDigitScore > minConf) {
+                isFilled = true; filledChar = GRID_SPEC.p3.digitChars[maxDigitIdx]; filledY = GRID_SPEC.p3.yDigit[maxDigitIdx];
+            }
 
             if (isFilled) {
                 stuAnsStr += filledChar;
                 if (filledChar === expectedChar) {
-                    drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'correct_fill');
+                    drawMappedBubble(x, filledY, 'correct_fill');
                 } else { 
-                    drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'wrong_fill'); 
-                    if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
-                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key'); 
-                    }
+                    drawMappedBubble(x, filledY, 'wrong_fill'); 
+                    if (expectedChar === ',') drawMappedBubble(x, GRID_SPEC.p3.yComma, 'missing_key'); 
+                    else if (expectedChar) drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
                 }
-            } else {
-                if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
-                    drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
-                }
+            } else if (expectedChar) {
+                if (expectedChar === ',') drawMappedBubble(x, GRID_SPEC.p3.yComma, 'missing_key'); 
+                else drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
             }
         }
         if (stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
