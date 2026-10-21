@@ -675,7 +675,7 @@ function processImagePureJS(sourceCanvas, fileName) {
     let ox = parseInt(document.getElementById('cfg-offset-x')?.value) || 0;
     let oy = parseInt(document.getElementById('cfg-offset-y')?.value) || 0;
 
-    const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.35;
+    const minConf = parseFloat(document.getElementById('cfg-conf')?.value) || 0.25;
     const minConfMinus = parseFloat(document.getElementById('cfg-conf-minus')?.value) || 0.42;
     const diemP1 = parseFloat(document.getElementById('cfg-p1')?.value) || 0.25;
     const diemP2 = [parseFloat(document.getElementById('cfg-p2-1')?.value)||0.1, parseFloat(document.getElementById('cfg-p2-2')?.value)||0.25, parseFloat(document.getElementById('cfg-p2-3')?.value)||0.5, parseFloat(document.getElementById('cfg-p2-4')?.value)||1.0];
