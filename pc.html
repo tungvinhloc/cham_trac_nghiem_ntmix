@@ -81,8 +81,8 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - V61.0 Tọa Độ Toán Học Tuyệt Đối</h1>
-    <p>Phân luồng thông minh: Khắc phục lỗi lệch lề giấy in/scan</p>
+    <h1>NTMIX OMR PC - V62.0 Khóa Tọa Độ Tuyệt Đối</h1>
+    <p>Thuật toán lõi: Chống nhiễu viền bóng mờ của máy Scan</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
 
@@ -154,7 +154,7 @@
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" onchange="drawVirtualGrid()"> Vẽ viền định vị lên ảnh chấm (Vuông thay vì tròn)
+                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" onchange="drawVirtualGrid()"> Vẽ viền định vị lên ảnh chấm (Vuông)
                 </label>
             </div>
         </div>
@@ -237,15 +237,14 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = [];
 let videoStream = null; let scanInterval = null;
 let stableFrames = 0; let lastGradedSbd = "Phieu";
 
-// V61: KHÔI PHỤC TỌA ĐỘ GỐC CHUẨN XÁC, SỬ DỤNG CÔNG THỨC TOÁN HỌC ĐỂ BÙ TRỪ KÍCH THƯỚC GIẤY
 const SHEET_CONFIGS = {
     'bgd_2025_8sbd': {
         name: 'Phiếu BGD 2025 (SBD 8 số)',
         sbd: { x: [558, 577, 596, 615, 634, 653, 672, 691], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
         made: { x: [724, 743, 762, 781], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
-        p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584], cw: 14, ch: 14 },
-        p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743], cw: 14, ch: 14 },
-        p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
+        p1: { blockX: [69, 257, 445, 633], offsetsX: [0, 38, 76, 114], y: [409, 427, 446, 465, 483, 502, 520, 539, 557, 576], cw: 14, ch: 14 },
+        p2: { blockX: [69, 257, 445, 633], y: [678, 697, 716, 735], cw: 14, ch: 14 },
+        p3: { blockX: [60, 180, 300, 420, 540, 660], offsetsX: [0, 26, 52, 78], yMinus: 838, yDigit: [857, 877, 896, 915, 934, 953, 972, 991, 1010, 1029, 1048], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
     },
     'old_tnmaker': {
         name: 'Phiếu TNMaker Cũ',
@@ -580,45 +579,12 @@ function processImagePureJS(flatCanvas, isUpload) {
         let ox = getNumVal('cfg-offset-x', 0);
         let oy = getNumVal('cfg-offset-y', 0);
 
-        function findBlackSquareCenter(startX, startY, w, h) {
-            let minVal = 255;
-            let inset = 15;
-            let sx = Math.max(0, startX + inset);
-            let sy = Math.max(0, startY + inset);
-            let ew = Math.min(WIDTH, startX + w - inset);
-            let eh = Math.min(HEIGHT, startY + h - inset);
+        // V62: LOẠI BỎ PURE JS SEARCH, KHÓA CHẾT TỌA ĐỘ VÀO GÓC OPENCV
+        let pTL = { x: 40, y: 40 };
+        let pTR = { x: 760, y: 40 };
+        let pBL = { x: 40, y: 1090 };
+        let pBR = { x: 760, y: 1090 };
 
-            for (let y = sy; y < eh; y += 2) {
-                for (let x = sx; x < ew; x += 2) {
-                    let idx = (y * WIDTH + x) * 4;
-                    let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                    if (gray < minVal) minVal = gray;
-                }
-            }
-            
-            let thresh = Math.min(130, minVal + 50); 
-            
-            let sumX = 0, sumY = 0, count = 0;
-            for (let y = sy; y < eh; y++) {
-                for (let x = sx; x < ew; x++) {
-                    let idx = (y * WIDTH + x) * 4;
-                    let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                    if (gray <= thresh) {
-                        sumX += x; sumY += y; count++;
-                    }
-                }
-            }
-            if (count > 10) return { x: sumX / count, y: sumY / count };
-            return { x: startX + w/2, y: startY + h/2 }; 
-        }
-
-        let searchW = 100, searchH = 100;
-        let pTL = findBlackSquareCenter(0, 0, searchW, searchH);
-        let pTR = findBlackSquareCenter(WIDTH - searchW, 0, searchW, searchH);
-        let pBL = findBlackSquareCenter(0, HEIGHT - searchH, searchW, searchH);
-        let pBR = findBlackSquareCenter(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
-
-        // V61: CÔNG THỨC MAPPING TOÁN HỌC CHUẨN XÁC TỰ CO GIÃN THEO 4 GÓC
         function mapCoord(idealX, idealY) {
             let u = (idealX - 40) / 720;
             let v = (idealY - 40) / 1050;
