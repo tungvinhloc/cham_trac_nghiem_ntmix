@@ -8,8 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <!-- Trọng tâm: Tải thư viện OpenCV.js -->
-    <script async src="opencv.js" onload="onOpenCvReady();"></script>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady();"></script>
 
     <style>
         :root { --primary: #1a73e8; --success: #0f9d58; --danger: #d93025; --dark: #1e293b; --bg: #f1f5f9; }
@@ -22,7 +21,7 @@
         .badge-cv.ready { background: var(--success); }
 
         .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; display: grid; grid-template-columns: 1fr; gap: 20px; }
-        @media(min-width: 800px) { .container { grid-template-columns: 350px 1fr; } } /* Bố cục 2 cột cho PC */
+        @media(min-width: 800px) { .container { grid-template-columns: 350px 1fr; } } 
         
         .card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .card-title { font-size: 16px; font-weight: 700; color: #1e3a8a; margin-bottom: 12px; border-bottom: 2px solid #eff6ff; padding-bottom: 8px; }
@@ -43,7 +42,6 @@
         .btn-secondary { background: #64748b; }
         .btn-outline { background: transparent; border: 2px dashed #cbd5e1; color: #334155; }
 
-        /* Bảng điểm */
         .score-dashboard { background: #fff; border: 2px solid #dc2626; border-radius: 12px; padding: 15px; margin-top: 15px; display: none; }
         .score-header { display: flex; justify-content: space-between; border-bottom: 1px dashed #fca5a5; padding-bottom: 10px; margin-bottom: 12px; }
         .score-total-box { font-size: 28px; font-weight: 900; color: #dc2626; }
@@ -58,9 +56,8 @@
         th, td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; }
         th { background: #f1f5f9; color: #1e293b; font-weight: 700; }
 
-        /* Vùng Camera PC */
         .webcam-wrapper { position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; aspect-ratio: 4/3; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        #webcam-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(1); /* Không lật gương để chữ khỏi ngược */ }
+        #webcam-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(1); }
         #webcam-canvas-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
         .webcam-hud { position: absolute; bottom: 15px; left: 0; width: 100%; text-align: center; z-index: 20; }
         #cam-status-text { background: rgba(0,0,0,0.7); color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; display: inline-block; border: 2px solid transparent; transition: 0.3s; }
@@ -77,7 +74,6 @@
 </header>
 
 <div class="container">
-    <!-- CỘT TRÁI: CẤU HÌNH -->
     <div class="left-panel">
         <div class="card">
             <div class="card-title">1. Dữ Liệu Chấm</div>
@@ -132,6 +128,10 @@
                 </div>
             </div>
             <div class="form-group">
+                <label>Mã đề dự phòng (Khi tô thiếu):</label>
+                <input type="text" id="fallback-code" placeholder="VD: 0234">
+            </div>
+            <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                     <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" checked> Vẽ viền ĐÚNG/SAI lên ảnh
                 </label>
@@ -139,7 +139,6 @@
         </div>
     </div>
 
-    <!-- CỘT PHẢI: CAMERA & BẢNG ĐIỂM -->
     <div class="right-panel">
         <div class="card">
             <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -308,15 +307,11 @@ function handleImageUpload(input) {
         let cvs = document.createElement('canvas');
         cvs.width = img.width; cvs.height = img.height;
         cvs.getContext('2d').drawImage(img, 0, 0);
-        processFullFrameOpenCV(cvs, true); // true = bypass stabilization
+        processFullFrameOpenCV(cvs, true); 
     };
     img.src = URL.createObjectURL(file);
     input.value = '';
 }
-
-// =====================================================================
-// LÕI OPENCV.JS - AUTO SCAN TRÊN WEBCAM PC
-// =====================================================================
 
 function startOpenCVScanLoop() {
     if (scanInterval) clearInterval(scanInterval);
@@ -339,7 +334,6 @@ function startOpenCVScanLoop() {
         scanCanvas.width = VW; scanCanvas.height = VH;
         scanCtx.drawImage(video, 0, 0, VW, VH);
         
-        // 1. Dùng OpenCV tìm hình chữ nhật lớn nhất (tờ giấy)
         let src = cv.matFromImageData(scanCtx.getImageData(0, 0, VW, VH));
         let gray = new cv.Mat(); cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
         let blur = new cv.Mat(); cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
@@ -351,7 +345,7 @@ function startOpenCVScanLoop() {
         let maxArea = 0; let bestApprox = new cv.Mat();
         for (let i = 0; i < contours.size(); i++) {
             let cnt = contours.get(i); let area = cv.contourArea(cnt);
-            if (area > (VW * VH * 0.2)) { // Lớn hơn 20% khung hình
+            if (area > (VW * VH * 0.2)) { 
                 let peri = cv.arcLength(cnt, true);
                 let approx = new cv.Mat();
                 cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
@@ -367,7 +361,6 @@ function startOpenCVScanLoop() {
         ctx.clearRect(0, 0, VW, VH);
 
         if (maxArea > 0 && bestApprox.rows === 4) {
-            // Vẽ khung viền xanh lá báo hiệu đã bắt được giấy
             ctx.strokeStyle = "#0f9d58"; ctx.lineWidth = 4;
             ctx.beginPath();
             let pts = [];
@@ -387,7 +380,6 @@ function startOpenCVScanLoop() {
                 statusText.textContent = "⚡ ĐÃ CHỤP! ĐANG XỬ LÝ...";
                 statusText.style.background = "#0f9d58"; statusText.style.color = "#fff";
                 playBeep();
-                // Chụp khung hình gốc để nắn phẳng
                 let fullCanvas = document.createElement('canvas');
                 fullCanvas.width = VW; fullCanvas.height = VH;
                 fullCanvas.getContext('2d').drawImage(video, 0, 0);
@@ -404,7 +396,6 @@ function startOpenCVScanLoop() {
     }, 100);
 }
 
-// BƯỚC 2: TÌM 4 GÓC ĐEN & NẮN PHẲNG (HOMOGRAPHY BẰNG OPENCV)
 function processFullFrameOpenCV(sourceCanvas, isUpload) {
     try {
         const TARGET_W = 800; const TARGET_H = 1130;
@@ -462,28 +453,44 @@ function processFullFrameOpenCV(sourceCanvas, isUpload) {
 
         src.delete(); dstMat.delete(); srcTri.delete(); dstTri.delete(); M.delete();
 
-        // Gửi qua bộ xử lý tĩnh PURE JS để chấm
         processImagePureJS(flatCanvas, isUpload);
 
     } catch(err) { alert("Lỗi xử lý OpenCV: " + err.message); }
 }
 
-// BƯỚC 3: ĐỌC ĐIỂM TRÊN ẢNH ĐÃ NẮN PHẲNG BẰNG PURE JS
 function processImagePureJS(flatCanvas, isUpload) {
     try {
         const WIDTH = 800; const HEIGHT = 1130;
         const sCtx = flatCanvas.getContext('2d', { willReadFrequently: true });
         const data = sCtx.getImageData(0, 0, WIDTH, HEIGHT).data;
 
-        let type = document.getElementById('cfg-sheet-type').value;
+        let type = document.getElementById('cfg-sheet-type')?.value || 'old_tnmaker';
         let GRID_SPEC = SHEET_CONFIGS[type];
-        let minConf = parseFloat(document.getElementById('cfg-conf').value) || 0.35; // Lấy theo setting 0.35
-        let minConfMinus = parseFloat(document.getElementById('cfg-conf-minus').value) || 0.42;
         
-        let diemP1 = parseFloat(document.getElementById('cfg-p1').value) || 0.25;
-        let diemP2 = [parseFloat(document.getElementById('cfg-p2-1').value), parseFloat(document.getElementById('cfg-p2-2').value), parseFloat(document.getElementById('cfg-p2-3').value), parseFloat(document.getElementById('cfg-p2-4').value)];
-        let diemP3 = parseFloat(document.getElementById('cfg-p3').value) || 0.5;
-        let showGrid = document.getElementById('cfg-show-grid').checked;
+        let confInput = document.getElementById('cfg-conf');
+        let minConf = confInput && confInput.value ? parseFloat(confInput.value) : 0.35;
+        
+        let confMinusInput = document.getElementById('cfg-conf-minus');
+        let minConfMinus = confMinusInput && confMinusInput.value ? parseFloat(confMinusInput.value) : 0.42;
+        
+        let p1Input = document.getElementById('cfg-p1');
+        let diemP1 = p1Input && p1Input.value ? parseFloat(p1Input.value) : 0.25;
+        
+        let diemP2 = [
+            parseFloat(document.getElementById('cfg-p2-1')?.value || 0.1), 
+            parseFloat(document.getElementById('cfg-p2-2')?.value || 0.25), 
+            parseFloat(document.getElementById('cfg-p2-3')?.value || 0.5), 
+            parseFloat(document.getElementById('cfg-p2-4')?.value || 1.0)
+        ];
+        
+        let p3Input = document.getElementById('cfg-p3');
+        let diemP3 = p3Input && p3Input.value ? parseFloat(p3Input.value) : 0.5;
+        
+        let showGridCheckbox = document.getElementById('cfg-show-grid');
+        let showGrid = showGridCheckbox ? showGridCheckbox.checked : true;
+        
+        let fallbackInput = document.getElementById('fallback-code');
+        let fallbackCode = fallbackInput ? fallbackInput.value.trim() : "";
 
         function getRegionDarkness(cx, cy, w) {
             let darkCount = 0; let total = 0;
@@ -516,7 +523,6 @@ function processImagePureJS(flatCanvas, isUpload) {
             }
         }
 
-        // 1. SBD & MÃ ĐỀ
         let scannedSbd = "";
         for (let x of GRID_SPEC.sbd.x) {
             let scores = GRID_SPEC.sbd.y.map(y => getRegionDarkness(x, y, 12));
@@ -525,6 +531,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                 scannedSbd += String(maxIdx); drawBubble(x, GRID_SPEC.sbd.y[maxIdx], 'info_read'); 
             } else scannedSbd += "0";
         }
+        
         let scannedCode = "";
         for (let x of GRID_SPEC.made.x) {
             let scores = GRID_SPEC.made.y.map(y => getRegionDarkness(x, y, 12));
@@ -535,7 +542,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
 
         let code = scannedCode.replace(/\?/g, '0'); let warnings = [];
-        let fallbackCode = document.getElementById('fallback-code').value.trim();
         if (!answerKey[code]) {
             if (fallbackCode && answerKey[fallbackCode]) code = fallbackCode;
             else warnings.push(`Mã đề ${scannedCode} không có`);
@@ -543,7 +549,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
         let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
-        // 3. PHẦN I
         let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
         for (let i = 0; i < key.p1.length; i++) {
             let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
@@ -563,7 +568,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
         let scoreP1 = +(right1 * diemP1).toFixed(2);
 
-        // 4. PHẦN II
         let key2Str = key.p2.join(''), student2 = '', scoreP2 = 0, right2Details = 0;
         let sp = GRID_SPEC.sbd.x[1] - GRID_SPEC.sbd.x[0];
         for (let i = 0; i < key.p2.length; i++) {
@@ -595,7 +599,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
         scoreP2 = +scoreP2.toFixed(2);
 
-        // 5. PHẦN III
         let scoreP3 = 0, right3 = 0, validP3Count = 0; 
         for (let q = 0; q < 6; q++) {
             let rawKey = (q < key.p3.length) ? String(key.p3[q]) : "";
@@ -639,7 +642,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         scoreP3 = +scoreP3.toFixed(2);
         let totalScore = +(scoreP1 + scoreP2 + scoreP3).toFixed(2);
 
-        // HIỂN THỊ
         sCtx.fillStyle = "#ffffff"; sCtx.fillRect(12, 85, 230, 165);
         sCtx.lineWidth = 3; sCtx.strokeStyle = "#dc2626"; sCtx.strokeRect(12, 85, 230, 165);
         sCtx.fillStyle = "#dc2626"; sCtx.font = "bold 26px Arial"; sCtx.fillText(`TỔNG: ${totalScore}đ`, 24, 125);
@@ -652,20 +654,34 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         document.getElementById('score-dashboard').style.display = 'block';
         document.getElementById('ui-total').textContent = `${totalScore}đ`;
-        document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
-        document.getElementById('ui-sbd-made').textContent = `SBD: ${scannedSbd} | Mã đề: ${code}`;
         
-        document.getElementById('ui-p1-score').textContent = `${scoreP1}đ`; document.getElementById('ui-p1-detail').textContent = `Đúng ${right1}/${key.p1.length}`;
-        document.getElementById('ui-p2-score').textContent = `${scoreP2}đ`; document.getElementById('ui-p2-detail').textContent = `Đúng ${right2Details}/${key2Str.length}`;
-        document.getElementById('ui-p3-score').textContent = `${scoreP3}đ`; document.getElementById('ui-p3-detail').textContent = `Đúng ${right3}/${validP3Count}`;
+        let uiStuName = document.getElementById('ui-stu-name');
+        if(uiStuName) uiStuName.textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
         
-        document.getElementById('ui-warnings').innerHTML = warnings.length > 0 ? `⚠️ ${warnings.join(' | ')}` : "";
+        let uiSbdMade = document.getElementById('ui-sbd-made');
+        if(uiSbdMade) uiSbdMade.textContent = `SBD: ${scannedSbd} | Mã đề: ${code}`;
+        
+        let uiP1Score = document.getElementById('ui-p1-score'); if(uiP1Score) uiP1Score.textContent = `${scoreP1}đ`; 
+        let uiP1Detail = document.getElementById('ui-p1-detail'); if(uiP1Detail) uiP1Detail.textContent = `Đúng ${right1}/${key.p1.length}`;
+        
+        let uiP2Score = document.getElementById('ui-p2-score'); if(uiP2Score) uiP2Score.textContent = `${scoreP2}đ`; 
+        let uiP2Detail = document.getElementById('ui-p2-detail'); if(uiP2Detail) uiP2Detail.textContent = `Đúng ${right2Details}/${key2Str.length}`;
+        
+        let uiP3Score = document.getElementById('ui-p3-score'); if(uiP3Score) uiP3Score.textContent = `${scoreP3}đ`; 
+        let uiP3Detail = document.getElementById('ui-p3-detail'); if(uiP3Detail) uiP3Detail.textContent = `Đúng ${right3}/${validP3Count}`;
+        
+        let warningsEl = document.getElementById('ui-warnings');
+        if(warningsEl) warningsEl.innerHTML = warnings.length > 0 ? `⚠️ ${warnings.join(' | ')}` : "";
 
         gradedRows.push({ sbd: scannedSbd, name: stuInfo.name, className: stuInfo.className, code: code, scoreP1, scoreP2, scoreP3, totalScore, warnings: warnings.join('; ') });
-        document.getElementById('count-graded').textContent = gradedRows.length;
-        document.getElementById('results-tbody').innerHTML = gradedRows.map((r, i) => `<tr><td>${i+1}</td><td><b>${r.sbd}</b></td><td style="text-align:left;">${r.name}</td><td>${r.code}</td><td><b style="color:#dc2626;">${r.totalScore}</b></td></tr>`).join('');
+        
+        let countGradedEl = document.getElementById('count-graded');
+        if(countGradedEl) countGradedEl.textContent = gradedRows.length;
+        
+        let resultsTbody = document.getElementById('results-tbody');
+        if(resultsTbody) resultsTbody.innerHTML = gradedRows.map((r, i) => `<tr><td>${i+1}</td><td><b>${r.sbd}</b></td><td style="text-align:left;">${r.name}</td><td>${r.code}</td><td><b style="color:#dc2626;">${r.totalScore}</b></td></tr>`).join('');
 
-        if (!isUpload) setTimeout(startOpenCVScanLoop, 1500); // Tự động quét tiếp nếu dùng Webcam
+        if (!isUpload) setTimeout(startOpenCVScanLoop, 1500);
 
     } catch(err) { alert("Lỗi xử lý: " + err.message); }
 }
