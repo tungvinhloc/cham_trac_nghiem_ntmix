@@ -55,6 +55,8 @@
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 15px; }
         th, td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; }
         th { background: #f1f5f9; color: #1e293b; font-weight: 700; }
+        .row-warn { background-color: #fef2f2; }
+        .badge-warn { background: var(--danger); color: white; padding: 2px 6px; border-radius: 12px; font-size: 11px; font-weight: bold; }
 
         .webcam-wrapper { 
             position: relative; width: 100%; background: #1e293b; border-radius: 12px; 
@@ -81,8 +83,8 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - V64.0 Đa Tầng Mỏ Neo</h1>
-    <p>Khóa lưới tuyệt đối bằng các ô vuông phân khu I, II, III</p>
+    <h1>NTMIX OMR PC - V65.0 Trạm Dữ Liệu</h1>
+    <p>Lưu trữ vĩnh cửu · Tự động ghi nhớ điểm số · Tránh mất dữ liệu</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
 
@@ -113,7 +115,6 @@
                 <select id="cfg-sheet-type" onchange="drawVirtualGrid()">
                     <option value="bgd_2025_8sbd" selected>Phiếu BGD 2025 (SBD 8 số - Mã 4 số)</option>
                     <option value="old_tnmaker">Phiếu TNMaker Cũ (SBD 8 số - Mã 4 số)</option>
-                    <option value="new_ntmix3">Phiếu NTMIX NEW (SBD 8 số - Mã 4 số)</option>
                 </select>
             </div>
             
@@ -154,7 +155,7 @@
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" onchange="drawVirtualGrid()"> Vẽ viền định vị lên ảnh chấm (Vuông)
+                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" checked onchange="drawVirtualGrid()"> Vẽ viền định vị lên ảnh chấm
                 </label>
             </div>
         </div>
@@ -208,12 +209,17 @@
         </div>
 
         <div class="card">
-            <div class="card-title">Danh sách bài đã chấm (<span id="count-graded">0</span>)</div>
-            <button class="btn btn-success" style="margin-bottom: 10px;" onclick="exportResultsExcel()">📥 Xuất Excel Bảng Điểm</button>
+            <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Danh sách bài đã chấm (<span id="count-graded">0</span>)</span>
+                <div>
+                    <button class="btn btn-success" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="exportResultsExcel()">📥 Xuất Excel</button>
+                    <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px; width: auto; margin-left: 5px;" onclick="clearResults()">🗑️ Xóa hết</button>
+                </div>
+            </div>
             <div style="overflow-x: auto;">
                 <table>
-                    <thead><tr><th>STT</th><th>SBD</th><th>Họ và Tên</th><th>Mã Đề</th><th>TỔNG ĐIỂM</th></tr></thead>
-                    <tbody id="results-tbody"><tr><td colspan="5" style="color:#94a3b8; font-style:italic;">Chưa có dữ liệu</td></tr></tbody>
+                    <thead><tr><th>STT</th><th>SBD</th><th>Họ và Tên</th><th>Mã Đề</th><th>TỔNG ĐIỂM</th><th>Cảnh báo</th></tr></thead>
+                    <tbody id="results-tbody"><tr><td colspan="6" style="color:#94a3b8; font-style:italic;">Chưa có dữ liệu</td></tr></tbody>
                 </table>
             </div>
         </div>
@@ -233,17 +239,59 @@ function getNumVal(id, defVal) { let el = document.getElementById(id); return (e
 function getStrVal(id, defVal) { let el = document.getElementById(id); return (el && el.value) ? el.value.trim() : defVal; }
 function getCheckVal(id, defVal) { let el = document.getElementById(id); return el ? el.checked : defVal; }
 
-let answerKey = {}; let dshsDict = {}; let gradedRows = [];
+let answerKey = {}; let dshsDict = {}; 
+// V65: Tải dữ liệu cũ từ LocalStorage để F5 không mất điểm
+let gradedRows = JSON.parse(localStorage.getItem('ntmix_history') || '[]');
 let videoStream = null; let scanInterval = null;
 let stableFrames = 0; let lastGradedSbd = "Phieu";
 
-// V64: BỔ SUNG CẤU HÌNH ANCHORY ĐỂ DÒ TÌM Ô VUÔNG PHÂN KHU (MỎ NEO ĐỊA PHƯƠNG)
+// Hàm kết xuất bảng kết quả lên giao diện
+function renderResultsTable() {
+    let countGradedEl = document.getElementById('count-graded');
+    if(countGradedEl) countGradedEl.textContent = gradedRows.length;
+    
+    let resultsTbody = document.getElementById('results-tbody');
+    if(resultsTbody) {
+        if(gradedRows.length === 0) {
+            resultsTbody.innerHTML = `<tr><td colspan="6" style="color:#94a3b8; font-style:italic;">Chưa có dữ liệu (Kết quả sẽ được tự động lưu lại tại đây)</td></tr>`;
+        } else {
+            resultsTbody.innerHTML = gradedRows.map((r, i) => {
+                let warnHtml = r.warnings ? `<span class="badge-warn">${r.warnings}</span>` : `<span style="color:var(--success)">OK</span>`;
+                let rowClass = r.warnings ? 'row-warn' : '';
+                return `<tr class="${rowClass}">
+                    <td>${i+1}</td>
+                    <td><b>${r.sbd}</b></td>
+                    <td style="text-align:left;">${r.name}</td>
+                    <td>${r.code}</td>
+                    <td><b style="color:#dc2626;">${r.totalScore}</b></td>
+                    <td>${warnHtml}</td>
+                </tr>`;
+            }).join('');
+        }
+    }
+}
+
+// Xóa lịch sử chấm
+function clearResults() {
+    if(confirm('Thầy có chắc chắn muốn xóa toàn bộ lịch sử chấm bài? Dữ liệu không thể khôi phục.')) {
+        gradedRows = [];
+        localStorage.removeItem('ntmix_history');
+        renderResultsTable();
+    }
+}
+
+// Chạy khởi tạo bảng khi load trang
+window.addEventListener('DOMContentLoaded', () => { 
+    drawVirtualGrid(); 
+    renderResultsTable(); 
+});
+
 const SHEET_CONFIGS = {
     'bgd_2025_8sbd': {
         name: 'Phiếu BGD 2025 (SBD 8 số)',
         anchorY: { p1: 390, p2: 630, p3: 785 },
-        sbd: { x: [558, 577, 596, 615, 634, 653, 672, 691], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
-        made: { x: [724, 743, 762, 781], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
+        sbd: { x: [558, 577, 596, 615, 634, 653, 672, 691], y: [85, 109, 133, 157, 181, 205, 229, 253, 277, 301], cw: 14, ch: 14 },
+        made: { x: [723, 741, 759, 777], y: [85, 109, 133, 157, 181, 205, 229, 253, 277, 301], cw: 14, ch: 14 },
         p1: { blockX: [75, 260, 445, 630], offsetsX: [0, 20, 40, 60], y: [415, 434, 453, 472, 491, 510, 529, 548, 567, 586], cw: 14, ch: 14 },
         p2: { blockX: [75, 260, 445, 630], offsetsX: [0, 20, 65, 85], y: [655, 675, 695, 715], cw: 14, ch: 14 },
         p3: { blockX: [85, 205, 325, 445, 565, 685], offsetsX: [0, 20, 40, 60], yMinus: 810, yDigit: [830, 849, 868, 887, 906, 925, 944, 963, 982, 1001, 1020], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
@@ -256,15 +304,6 @@ const SHEET_CONFIGS = {
         p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584], cw: 14, ch: 14 },
         p2: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [686, 705, 724, 743], cw: 14, ch: 14 },
         p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
-    },
-    'new_ntmix3': {
-        name: 'Phiếu NTMIX NEW',
-        anchorY: { p1: 390, p2: 630, p3: 785 },
-        sbd: { x: [545, 565, 585, 605, 625, 645, 665, 685], y: [185, 205, 225, 245, 265, 285, 305, 325, 345, 365], cw: 18, ch: 18 },
-        made: { x: [700, 720, 740, 760], y: [185, 205, 225, 245, 265, 285, 305, 325, 345, 365], cw: 18, ch: 18 },
-        p1: { blockX: [75, 255, 435, 615], offsetsX: [20, 40, 60, 80], y: [415, 435, 455, 475, 495, 515, 535, 555, 575, 595], cw: 18, ch: 18 },
-        p2: { blockX: [75, 260, 450, 635], offsetsX: [0, 20, 65, 85], y: [650, 670, 690, 710], cw: 18, ch: 18 },
-        p3: { blockX: [85, 205, 325, 445, 565, 685], offsetsX: [20, 40, 60, 80], yMinus: 805, yDigit: [825, 845, 865, 885, 905, 925, 945, 965, 985, 1005, 1025], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 18, ch: 18 }
     }
 };
 
@@ -367,7 +406,6 @@ function drawVirtualGrid() {
         C.p3.offsetsX.forEach(offX => { C.p3.yDigit.forEach(y => drawShape(bx + offX, y, C.p3.cw, C.p3.ch)); }); 
     });
 }
-window.addEventListener('DOMContentLoaded', () => { drawVirtualGrid(); });
 
 async function startWebcam() {
     if (!window.cvReady) return alert("OpenCV đang tải, xin đợi 2 giây...");
@@ -596,10 +634,9 @@ function processImagePureJS(flatCanvas, isUpload) {
         let ox = getNumVal('cfg-offset-x', 0);
         let oy = getNumVal('cfg-offset-y', 0);
 
-        // V64: HÀM TÌM MỎ NEO ĐỊA PHƯƠNG (LOCAL ANCHOR) ĐỂ CHỐNG CO GIÃN GIẤY IN
         function findLocalAnchor(idealY) {
             if(!idealY) return {dx: 0, dy: 0};
-            let sx = 15, sy = idealY - 30; // Quét vùng nhỏ sát viền trái
+            let sx = 15, sy = idealY - 30; 
             let ew = 65, eh = idealY + 30;
             let minVal = 255;
             for (let y = sy; y < eh; y += 2) {
@@ -622,14 +659,12 @@ function processImagePureJS(flatCanvas, isUpload) {
             }
             if (count > 15) { 
                 let actualX = sumX / count; let actualY = sumY / count;
-                // Vẽ ô vuông màu Tím để biểu diễn Mỏ Neo đã tìm thấy
                 if (showGrid) { sCtx.strokeStyle = "#ff00ff"; sCtx.lineWidth = 2; sCtx.strokeRect(actualX - 8, actualY - 8, 16, 16); }
                 return { dx: actualX - 40, dy: actualY - idealY };
             }
             return { dx: 0, dy: 0 };
         }
 
-        // TÌM 3 MỎ NEO ĐỊA PHƯƠNG CHO 3 PHẦN
         let anchorP1 = findLocalAnchor(GRID_SPEC.anchorY?.p1);
         let anchorP2 = findLocalAnchor(GRID_SPEC.anchorY?.p2);
         let anchorP3 = findLocalAnchor(GRID_SPEC.anchorY?.p3);
@@ -688,7 +723,7 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         let scannedSbd = "";
         for (let idealX of GRID_SPEC.sbd.x) {
-            let x = idealX + ox; // SBD nằm sát trên cùng, ko cần anchor
+            let x = idealX + ox;
             let scores = GRID_SPEC.sbd.y.map(idealY => getRegionDarkness(x, idealY + oy, 12));
             let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
             if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { 
@@ -716,7 +751,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
         let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
-        // PHẦN I
         let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
         let limitP1 = key.p1 && key.p1.length > 0 ? key.p1.length : 40;
         
@@ -724,7 +758,6 @@ function processImagePureJS(flatCanvas, isUpload) {
             let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
             if (blockIdx >= 4) break;
             
-            // Ép tọa độ theo mỏ neo P1
             let y = GRID_SPEC.p1.y[rowIdx] + anchorP1.dy + oy;
             let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off + anchorP1.dx + ox);
             
@@ -751,13 +784,11 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
         let scoreP1 = +(right1 * diemP1).toFixed(2);
 
-        // PHẦN II
         let key2Str = key.p2 ? key.p2.join('') : ''; let student2 = '', scoreP2 = 0, right2Details = 0;
         let limitP2 = key2Str.length > 0 ? (key2Str.length / 4) : 4; 
 
         for (let i = 0; i < limitP2; i++) {
             let blockIdx = Math.floor(i / 2);
-            // Ép tọa độ theo mỏ neo P2
             let baseX = GRID_SPEC.p2.blockX[blockIdx] + anchorP2.dx + ox;
             let qOffsetIdx = (i % 2 === 0) ? 0 : 2; 
             
@@ -803,7 +834,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
         scoreP2 = +scoreP2.toFixed(2);
 
-        // PHẦN III
         let scoreP3 = 0, right3 = 0, validP3Count = 0; 
         let limitP3 = key.p3 && key.p3.length > 0 ? key.p3.length : 6;
 
@@ -812,7 +842,6 @@ function processImagePureJS(flatCanvas, isUpload) {
             let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
             if (cleanKey) validP3Count++;
             
-            // Ép tọa độ theo mỏ neo P3
             let baseX = GRID_SPEC.p3.blockX[q] + anchorP3.dx + ox;
             let minusY = GRID_SPEC.p3.yMinus + anchorP3.dy + oy;
             
@@ -908,13 +937,20 @@ function processImagePureJS(flatCanvas, isUpload) {
             if(statusText) { statusText.textContent = `✅ Đã chấm xong SBD: ${scannedSbd}`; statusText.style.background = "var(--success)"; }
         }
 
-        gradedRows.push({ sbd: scannedSbd, name: stuInfo.name, className: stuInfo.className, code: code, scoreP1, scoreP2, scoreP3, totalScore, warnings: warnings.join('; ') });
-        
-        let countGradedEl = document.getElementById('count-graded');
-        if(countGradedEl) countGradedEl.textContent = gradedRows.length;
-        
-        let resultsTbody = document.getElementById('results-tbody');
-        if(resultsTbody) resultsTbody.innerHTML = gradedRows.map((r, i) => `<tr><td>${i+1}</td><td><b>${r.sbd}</b></td><td style="text-align:left;">${r.name}</td><td>${r.code}</td><td><b style="color:#dc2626;">${r.totalScore}</b></td></tr>`).join('');
+        // V65: LƯU TRỮ VÀO LOCAL STORAGE
+        gradedRows.push({ 
+            sbd: scannedSbd, 
+            name: stuInfo.name, 
+            className: stuInfo.className, 
+            code: code, 
+            scoreP1: scoreP1, 
+            scoreP2: scoreP2, 
+            scoreP3: scoreP3, 
+            totalScore: totalScore, 
+            warnings: warnings.join('; ') 
+        });
+        localStorage.setItem('ntmix_history', JSON.stringify(gradedRows));
+        renderResultsTable();
 
         if (!isUpload && warnings.length === 0) setTimeout(startOpenCVScanLoop, 1500);
 
@@ -930,8 +966,12 @@ function downloadResultImage() {
 
 function exportResultsExcel() {
     if (!gradedRows.length) return alert("Chưa có phiếu nào!");
-    const data = [["STT", "Họ Tên", "Lớp", "SBD", "Mã Đề", "Điểm P.I", "Điểm P.II", "Điểm P.III", "TỔNG ĐIỂM", "Cảnh báo"], ...gradedRows.map((r, i) => [i + 1, r.name, r.className, r.sbd, r.code, r.scoreP1, r.scoreP2, r.scoreP3, r.totalScore, r.warnings])];
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), "BangDiem"); XLSX.writeFile(wb, `BangDiem_NTMIX_${Date.now()}.xlsx`);
+    // V65: XUẤT ĐIỂM CHI TIẾT TỪNG PHẦN
+    const data = [["STT", "Họ Tên", "Lớp", "SBD", "Mã Đề", "Điểm P.I", "Điểm P.II", "Điểm P.III", "TỔNG ĐIỂM", "Cảnh báo"], 
+                  ...gradedRows.map((r, i) => [i + 1, r.name, r.className, r.sbd, r.code, r.scoreP1, r.scoreP2, r.scoreP3, r.totalScore, r.warnings])];
+    const wb = XLSX.utils.book_new(); 
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), "BangDiem"); 
+    XLSX.writeFile(wb, `BangDiem_NTMIX_${Date.now()}.xlsx`);
 }
 </script>
 </body>
