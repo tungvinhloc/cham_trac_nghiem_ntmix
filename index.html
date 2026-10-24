@@ -1357,7 +1357,7 @@ h3.ph {
         <path d="M16 11h5M16 18h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         <path d="M20 26l3.4 3 6-8" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <h1>B&amp;T Pro Mark - 1.0</h1>
+      <h1>NTMIX-v1</h1>
     </div>
     <span class="pill" id="cfgChip"></span>
   </header>
@@ -1529,11 +1529,11 @@ const SHEET_NH = {
   MAX2: 8,
   MAX3: 6
 };
-/* ---- Phiếu B&T Pro S (đơn vị = điểm ảnh của ảnh mẫu 1901 x 861): 4 ô góc + 1 ô giữa mép trên; Phần I 10
+/* ---- Phiếu NTMIX S (đơn vị = điểm ảnh của ảnh mẫu 1901 x 861): 4 ô góc + 1 ô giữa mép trên; Phần I 10
    câu, Phần II 2 câu, Phần III 3 câu ---- */
 const SHEET_KT = {
   id: 'kt',
-  name: 'Phiếu B&T Pro - S',
+  name: 'Phiếu NTMIX - S',
   PW: 1901,
   PH: 861,
   RB: 11.2,
@@ -1574,11 +1574,11 @@ const SHEET_KT = {
   MAX2: 2,
   MAX3: 3
 };
-/* ---- Phiếu B&T Pro M (đơn vị = điểm ảnh của ảnh mẫu 1100 x 914): 6 ô vuông neo (4 góc + 2 giữa mép),
+/* ---- Phiếu NTMIX M (đơn vị = điểm ảnh của ảnh mẫu 1100 x 914): 6 ô vuông neo (4 góc + 2 giữa mép),
    Phần I 12 câu, Phần II 2 câu, Phần III 4 câu ---- */
 const SHEET_M = {
   id: 'm',
-  name: 'Phiếu B&T Pro - M',
+  name: 'Phiếu NTMIX - M',
   PW: 1100,
   PH: 914,
   RB: 6.4,
@@ -4163,7 +4163,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         '<p class="hint">Mẫu phiếu M: số báo danh 8 chữ số, mã đề 4 chữ số, Phần I tối đa 12 câu, ' +
         'Phần II tối đa 2 câu, Phần III tối đa 4 câu. Ứng dụng căn ảnh theo 6 ô vuông đen (4 góc ' +
         'và 2 ô giữa hai mép bên), chiều của phiếu nhận ra nhờ các vòng tròn in sẵn.</p>' +
-        '<img class="sheetimg" alt="Xem trước phiếu B&T Pro - M" src="' +
+        '<img class="sheetimg" alt="Xem trước phiếu NTMIX - M" src="' +
         SHEET3_JPG +
         '">' +
         '<div class="actions"><button type="button" class="btn primary" id="pdfBtn">Tải ảnh phiếu ' +
@@ -4188,7 +4188,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         '<p class="hint">Mẫu phiếu S (ngắn): số thứ tự 2 chữ số, mã đề 3 chữ số, Phần I tối đa 10 ' +
         'câu, Phần II tối đa 2 câu, Phần III tối đa 3 câu. Ứng dụng căn ảnh theo 4 ô vuông đen ở ' +
         'góc, ô vuông thứ năm giữa mép trên giúp nhận ra phiếu bị đặt ngược.</p>' +
-        '<img class="sheetimg" alt="Xem trước phiếu B&T Pro - S" src="' +
+        '<img class="sheetimg" alt="Xem trước phiếu NTMIX - S" src="' +
         SHEET2_JPG +
         '">' +
         '<div class="actions"><button type="button" class="btn primary" id="pdfBtn">Tải ảnh phiếu ' +
@@ -4211,7 +4211,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       '<p class="hint">Ứng dụng chấm đúng trên mẫu phiếu này: số báo danh 8 chữ số, mã đề 4 chữ ' +
       'số, Phần I tối đa 40 câu, Phần II tối đa 8 câu, Phần III tối đa 6 câu. Mỗi tờ có 4 ô ' +
       'vuông đen ở góc để căn ảnh.</p>' +
-      '<img class="sheetimg" alt="Xem trước phiếu B&T Pro - F" src="' +
+      '<img class="sheetimg" alt="Xem trước phiếu NTMIX - F" src="' +
       SHEET_JPG +
       '">' +
       '<div class="actions"><button type="button" class="btn primary" id="pdfBtn">Tải phiếu gốc ' +
