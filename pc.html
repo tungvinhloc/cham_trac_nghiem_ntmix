@@ -81,8 +81,8 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - V62.0 Khóa Tọa Độ Tuyệt Đối</h1>
-    <p>Thuật toán lõi: Chống nhiễu viền bóng mờ của máy Scan</p>
+    <h1>NTMIX OMR PC - V63.0 Tọa Độ Pixel-Perfect</h1>
+    <p>May đo chuẩn xác lưới định vị theo mẫu BGD 2025</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
 
@@ -113,7 +113,6 @@
                 <select id="cfg-sheet-type" onchange="drawVirtualGrid()">
                     <option value="bgd_2025_8sbd" selected>Phiếu BGD 2025 (SBD 8 số - Mã 4 số)</option>
                     <option value="old_tnmaker">Phiếu TNMaker Cũ (SBD 8 số - Mã 4 số)</option>
-                    <option value="new_ntmix3">Phiếu NTMIX NEW (SBD 8 số - Mã 4 số)</option>
                 </select>
             </div>
             
@@ -154,7 +153,7 @@
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" onchange="drawVirtualGrid()"> Vẽ viền định vị lên ảnh chấm (Vuông)
+                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" checked onchange="drawVirtualGrid()"> Vẽ viền định vị lên ảnh chấm
                 </label>
             </div>
         </div>
@@ -237,30 +236,26 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = [];
 let videoStream = null; let scanInterval = null;
 let stableFrames = 0; let lastGradedSbd = "Phieu";
 
+// V63: TỌA ĐỘ PIXEL-PERFECT MAY ĐO TRỰC TIẾP TỪ BẢN GỐC BGD 2025
 const SHEET_CONFIGS = {
     'bgd_2025_8sbd': {
         name: 'Phiếu BGD 2025 (SBD 8 số)',
-        sbd: { x: [558, 577, 596, 615, 634, 653, 672, 691], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
-        made: { x: [724, 743, 762, 781], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
-        p1: { blockX: [69, 257, 445, 633], offsetsX: [0, 38, 76, 114], y: [409, 427, 446, 465, 483, 502, 520, 539, 557, 576], cw: 14, ch: 14 },
-        p2: { blockX: [69, 257, 445, 633], y: [678, 697, 716, 735], cw: 14, ch: 14 },
-        p3: { blockX: [60, 180, 300, 420, 540, 660], offsetsX: [0, 26, 52, 78], yMinus: 838, yDigit: [857, 877, 896, 915, 934, 953, 972, 991, 1010, 1029, 1048], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
+        sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [85, 109, 133, 157, 181, 205, 229, 253, 277, 301], cw: 14, ch: 14 },
+        made: { x: [723, 741, 759, 777], y: [85, 109, 133, 157, 181, 205, 229, 253, 277, 301], cw: 14, ch: 14 },
+        // Khoảng cách A-B-C-D giảm từ 38px xuống 20px
+        p1: { blockX: [75, 260, 445, 630], offsetsX: [0, 20, 40, 60], y: [415, 434, 453, 472, 491, 510, 529, 548, 567, 586], cw: 14, ch: 14 },
+        // Câu 1 (Đ,S), Câu 2 (Đ,S). Đ-S cách nhau 20px. Câu 1 cách Câu 2 là 45px.
+        p2: { blockX: [75, 260, 445, 630], offsetsX: [0, 20, 65, 85], y: [655, 675, 695, 715], cw: 14, ch: 14 },
+        // Các cột số cách nhau 20px
+        p3: { blockX: [85, 205, 325, 445, 565, 685], offsetsX: [0, 20, 40, 60], yMinus: 810, yDigit: [830, 849, 868, 887, 906, 925, 944, 963, 982, 1001, 1020], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
     },
     'old_tnmaker': {
         name: 'Phiếu TNMaker Cũ',
         sbd: { x: [520, 539, 558, 577, 596, 615, 634, 653], y: [168, 187, 206, 225, 244, 263, 282, 301, 320, 339], cw: 14, ch: 14 },
         made: { x: [680, 699, 718, 737], y: [168, 187, 206, 225, 244, 263, 282, 301, 320, 339], cw: 14, ch: 14 },
         p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584], cw: 14, ch: 14 },
-        p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743], cw: 14, ch: 14 },
+        p2: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [686, 705, 724, 743], cw: 14, ch: 14 },
         p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
-    },
-    'new_ntmix3': {
-        name: 'Phiếu NTMIX NEW',
-        sbd: { x: [545, 565, 585, 605, 625, 645, 665, 685], y: [185, 205, 225, 245, 265, 285, 305, 325, 345, 365], cw: 18, ch: 18 },
-        made: { x: [700, 720, 740, 760], y: [185, 205, 225, 245, 265, 285, 305, 325, 345, 365], cw: 18, ch: 18 },
-        p1: { blockX: [75, 255, 435, 615], offsetsX: [20, 40, 60, 80], y: [415, 435, 455, 475, 495, 515, 535, 555, 575, 595], cw: 18, ch: 18 },
-        p2: { blockX: [75, 260, 450, 635], y: [650, 670, 690, 710], cw: 18, ch: 18 },
-        p3: { blockX: [85, 205, 325, 445, 565, 685], offsetsX: [20, 40, 60, 80], yMinus: 805, yDigit: [825, 845, 865, 885, 905, 925, 945, 965, 985, 1005, 1025], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 18, ch: 18 }
     }
 };
 
@@ -344,7 +339,17 @@ function drawVirtualGrid() {
     C.sbd.x.forEach(x => { C.sbd.y.forEach(y => drawShape(x, y, C.sbd.cw, C.sbd.ch)); });
     C.made.x.forEach(x => { C.made.y.forEach(y => drawShape(x, y, C.made.cw, C.made.ch)); });
     C.p1.blockX.forEach(bx => { C.p1.offsetsX.forEach(offX => { C.p1.y.forEach(y => drawShape(bx + offX, y, C.p1.cw, C.p1.ch)); }); });
-    C.p2.blockX.forEach(bx => { C.p1.offsetsX.forEach(offX => { C.p2.y.forEach(y => drawShape(bx + offX, y, C.p2.cw, C.p2.ch)); }); });
+    
+    // Tách logic vẽ Phần 2 để phù hợp tọa độ mới
+    C.p2.blockX.forEach(bx => { 
+        C.p2.y.forEach(y => {
+            drawShape(bx + C.p2.offsetsX[0], y, C.p2.cw, C.p2.ch); // Câu 1 Đ
+            drawShape(bx + C.p2.offsetsX[1], y, C.p2.cw, C.p2.ch); // Câu 1 S
+            drawShape(bx + C.p2.offsetsX[2], y, C.p2.cw, C.p2.ch); // Câu 2 Đ
+            drawShape(bx + C.p2.offsetsX[3], y, C.p2.cw, C.p2.ch); // Câu 2 S
+        }); 
+    });
+
     C.p3.blockX.forEach(bx => { 
         drawShape(bx + C.p3.offsetsX[0], C.p3.yMinus, C.p3.cw, C.p3.ch);
         C.p3.offsetsX.forEach(offX => { C.p3.yDigit.forEach(y => drawShape(bx + offX, y, C.p3.cw, C.p3.ch)); }); 
@@ -579,11 +584,43 @@ function processImagePureJS(flatCanvas, isUpload) {
         let ox = getNumVal('cfg-offset-x', 0);
         let oy = getNumVal('cfg-offset-y', 0);
 
-        // V62: LOẠI BỎ PURE JS SEARCH, KHÓA CHẾT TỌA ĐỘ VÀO GÓC OPENCV
-        let pTL = { x: 40, y: 40 };
-        let pTR = { x: 760, y: 40 };
-        let pBL = { x: 40, y: 1090 };
-        let pBR = { x: 760, y: 1090 };
+        function findBlackSquareCenter(startX, startY, w, h) {
+            let minVal = 255;
+            let inset = 15;
+            let sx = Math.max(0, startX + inset);
+            let sy = Math.max(0, startY + inset);
+            let ew = Math.min(WIDTH, startX + w - inset);
+            let eh = Math.min(HEIGHT, startY + h - inset);
+
+            for (let y = sy; y < eh; y += 2) {
+                for (let x = sx; x < ew; x += 2) {
+                    let idx = (y * WIDTH + x) * 4;
+                    let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                    if (gray < minVal) minVal = gray;
+                }
+            }
+            
+            let thresh = Math.min(130, minVal + 50); 
+            
+            let sumX = 0, sumY = 0, count = 0;
+            for (let y = sy; y < eh; y++) {
+                for (let x = sx; x < ew; x++) {
+                    let idx = (y * WIDTH + x) * 4;
+                    let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                    if (gray <= thresh) {
+                        sumX += x; sumY += y; count++;
+                    }
+                }
+            }
+            if (count > 10) return { x: sumX / count, y: sumY / count };
+            return { x: startX + w/2, y: startY + h/2 }; 
+        }
+
+        let searchW = 100, searchH = 100;
+        let pTL = findBlackSquareCenter(0, 0, searchW, searchH);
+        let pTR = findBlackSquareCenter(WIDTH - searchW, 0, searchW, searchH);
+        let pBL = findBlackSquareCenter(0, HEIGHT - searchH, searchW, searchH);
+        let pBR = findBlackSquareCenter(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
         function mapCoord(idealX, idealY) {
             let u = (idealX - 40) / 720;
@@ -722,13 +759,15 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
         let scoreP1 = +(right1 * diemP1).toFixed(2);
 
+        // V63: Logic mới cho Phần 2 (Tách biệt Câu 1(Đ/S) và Câu 2(Đ/S))
         let key2Str = key.p2 ? key.p2.join('') : ''; let student2 = '', scoreP2 = 0, right2Details = 0;
-        let sp = GRID_SPEC.sbd.x[1] - GRID_SPEC.sbd.x[0];
         let limitP2 = key2Str.length > 0 ? (key2Str.length / 4) : 4; 
 
         for (let i = 0; i < limitP2; i++) {
             let blockIdx = Math.floor(i / 2), baseX = GRID_SPEC.p2.blockX[blockIdx];
-            let xList = (i % 2 === 1) ? [baseX + sp*4, baseX + sp*6] : [baseX, baseX + sp*2];
+            let qOffsetIdx = (i % 2 === 0) ? 0 : 2; // Câu chẵn lấy offset 0-1, lẻ lấy 2-3
+            let xList = [baseX + GRID_SPEC.p2.offsetsX[qOffsetIdx], baseX + GRID_SPEC.p2.offsetsX[qOffsetIdx + 1]];
+            
             for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
                 let y = GRID_SPEC.p2.y[rowIdx];
                 let gIdx = i * 4 + rowIdx, expected = (key2Str && gIdx < key2Str.length) ? key2Str[gIdx] : '';
