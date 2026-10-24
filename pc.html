@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NTMIX PC - Chấm Webcam Chuẩn 100%</title>
+    <title>NTMIX PC - Chấm Webcam & Scan Chuẩn 100%</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -81,8 +81,8 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - V56.0 Hiển Thị Mọi Điểm Chạm</h1>
-    <p>Thuật toán Hybrid: OpenCV Nắn Hình + PureJS Chấm Điểm</p>
+    <h1>NTMIX OMR PC - V57.0 Bắt Nét Chống Nhiễu</h1>
+    <p>Thuật toán Hybrid: OpenCV Nắn Hình + Tương Phản Động</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
 
@@ -132,8 +132,8 @@
             </div>
             
             <div class="grid-2">
-                <div class="form-group"><label>Ngưỡng Mực Chì:</label><input type="number" id="cfg-conf" step="0.02" value="0.35"></div>
-                <div class="form-group"><label>Ngưỡng Dấu Trừ:</label><input type="number" id="cfg-conf-minus" step="0.02" value="0.42"></div>
+                <div class="form-group"><label>Ngưỡng Mực Chì:</label><input type="number" id="cfg-conf" step="0.02" value="0.30"></div>
+                <div class="form-group"><label>Ngưỡng Dấu Trừ:</label><input type="number" id="cfg-conf-minus" step="0.02" value="0.40"></div>
             </div>
             <div class="grid-2">
                 <div class="form-group"><label>Điểm P.I:</label><input type="number" id="cfg-p1" step="0.05" value="0.25"></div>
@@ -154,7 +154,8 @@
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" checked onchange="drawVirtualGrid()"> Vẽ lưới định vị lên ảnh chấm
+                    <!-- MẶC ĐỊNH BỎ TICK ĐỂ HIỂN THỊ CHẤM TRÒN -->
+                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" onchange="drawVirtualGrid()"> Vẽ viền vuông thay vì chấm tròn
                 </label>
             </div>
         </div>
@@ -323,7 +324,7 @@ function drawVirtualGrid() {
     const ctx = canvas.getContext('2d');
     let type = getStrVal('cfg-sheet-type', 'bgd_2025_8sbd');
     let C = SHEET_CONFIGS[type];
-    let isSquare = getCheckVal('cfg-show-grid', true);
+    let isSquare = getCheckVal('cfg-show-grid', false); // Mặc định chấm tròn
     let ox = getNumVal('cfg-offset-x', 0);
     let oy = getNumVal('cfg-offset-y', 0);
 
@@ -349,7 +350,6 @@ window.addEventListener('DOMContentLoaded', () => { drawVirtualGrid(); });
 
 async function startWebcam() {
     if (!window.cvReady) return alert("OpenCV đang tải, xin đợi 2 giây...");
-    if (Object.keys(answerKey).length === 0) return alert("Vui lòng nạp File Excel Đáp án trước khi quét!");
     
     const video = document.getElementById('webcam-video');
     try {
@@ -570,7 +570,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         let diemP1 = getNumVal('cfg-p1', 0.25);
         let diemP2 = [getNumVal('cfg-p2-1', 0.1), getNumVal('cfg-p2-2', 0.25), getNumVal('cfg-p2-3', 0.5), getNumVal('cfg-p2-4', 1.0)];
         let diemP3 = getNumVal('cfg-p3', 0.5);
-        let showGrid = getCheckVal('cfg-show-grid', true);
+        let showGrid = getCheckVal('cfg-show-grid', false); // false = Chấm tròn
         let fallbackCode = getStrVal('fallback-code', "");
         let ox = getNumVal('cfg-offset-x', 0);
         let oy = getNumVal('cfg-offset-y', 0);
@@ -621,43 +621,67 @@ function processImagePureJS(flatCanvas, isUpload) {
             return { x: ax, y: ay };
         }
 
+        // TÍNH TOÁN NGƯỠNG TƯƠNG PHẢN ĐỘNG (ADAPTIVE THRESHOLD CỤC BỘ)
         function getMappedRegionDarkness(idealX, idealY, w) {
             let pt = mapCoord(idealX + ox, idealY + oy);
             let cx = Math.round(pt.x); let cy = Math.round(pt.y);
 
-            if (showGrid) {
-                sCtx.strokeStyle = "rgba(100, 149, 237, 0.6)"; 
-                sCtx.lineWidth = 1; sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(w/2), w, w);
-            }
+            // Vẽ khung vuông ảo xanh nhạt mờ để kiểm tra tọa độ
+            sCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; 
+            sCtx.lineWidth = 1; sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(w/2), w, w);
 
-            let darkCount = 0; let total = 0;
-            let startX = Math.round(cx - w/2); let startY = Math.round(cy - w/2);
-            for (let y = startY; y < startY + w; y++) {
-                for (let x = startX; x < startX + w; x++) {
-                    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
-                    let idx = (y * WIDTH + x) * 4;
-                    let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                    if (gray < 130) darkCount++;
-                    total++;
+            let bestScore = 0;
+            for (let dy = -3; dy <= 3; dy += 3) {
+                for (let dx = -3; dx <= 3; dx += 3) {
+                    let startX = (cx + dx) - Math.floor(w/2);
+                    let startY = (cy + dy) - Math.floor(w/2);
+                    
+                    // Lấy mẫu nền giấy xung quanh bọt nước
+                    let bgSum = 0, bgCount = 0;
+                    for (let py = cy + dy - 12; py <= cy + dy + 12; py+=3) {
+                        for (let px = cx + dx - 12; px <= cx + dx + 12; px+=3) {
+                            if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
+                            if (Math.abs(px - (cx+dx)) < 6 && Math.abs(py - (cy+dy)) < 6) continue;
+                            let idx = (py * WIDTH + px) * 4;
+                            bgSum += 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                            bgCount++;
+                        }
+                    }
+                    let bgAvg = bgCount > 0 ? bgSum / bgCount : 255;
+                    let localThresh = Math.min(150, bgAvg * 0.88); // Ngưỡng động
+
+                    let darkCount = 0, total = 0;
+                    for (let y = startY; y < startY + w; y++) {
+                        for (let x = startX; x < startX + w; x++) {
+                            if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
+                            let idx = (y * WIDTH + x) * 4;
+                            let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                            if (gray < localThresh) darkCount++;
+                            total++;
+                        }
+                    }
+                    let score = total > 0 ? darkCount / total : 0;
+                    if (score > bestScore) { bestScore = score; }
                 }
             }
-            return total > 0 ? darkCount / total : 0;
+            return bestScore;
         }
 
+        // HÀM VẼ CHẤM TRÒN / VUÔNG MÀU
         function drawMappedBubble(idealX, idealY, status) {
             let pt = mapCoord(idealX + ox, idealY + oy);
             sCtx.beginPath();
             if (showGrid) {
-                sCtx.lineWidth = 2;
-                if (status === 'correct_fill') { sCtx.strokeStyle = "rgba(0, 255, 0, 0.9)"; sCtx.strokeRect(pt.x-7, pt.y-7, 14, 14); }
-                else if (status === 'wrong_fill') { sCtx.strokeStyle = "rgba(255, 0, 0, 0.9)"; sCtx.strokeRect(pt.x-7, pt.y-7, 14, 14); }
-                else if (status === 'missing_key') { sCtx.strokeStyle = "rgba(255, 215, 0, 1)"; sCtx.strokeRect(pt.x-6, pt.y-6, 12, 12); }
-                else if (status === 'info_read') { sCtx.strokeStyle = "rgba(0, 80, 255, 0.9)"; sCtx.strokeRect(pt.x-7, pt.y-7, 14, 14); }
+                sCtx.lineWidth = 2.5;
+                if (status === 'correct_fill') { sCtx.strokeStyle = "#00c853"; sCtx.strokeRect(pt.x-8, pt.y-8, 16, 16); }
+                else if (status === 'wrong_fill') { sCtx.strokeStyle = "#d50000"; sCtx.strokeRect(pt.x-8, pt.y-8, 16, 16); }
+                else if (status === 'missing_key') { sCtx.strokeStyle = "#ffd600"; sCtx.strokeRect(pt.x-7, pt.y-7, 14, 14); }
+                else if (status === 'info_read') { sCtx.strokeStyle = "#2962ff"; sCtx.strokeRect(pt.x-8, pt.y-8, 16, 16); }
             } else {
-                if (status === 'correct_fill') { sCtx.fillStyle = "rgba(0, 200, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
-                else if (status === 'wrong_fill') { sCtx.fillStyle = "rgba(255, 0, 0, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
-                else if (status === 'missing_key') { sCtx.fillStyle = "rgba(255, 215, 0, 1)"; sCtx.arc(pt.x, pt.y, 6, 0, 2*Math.PI); sCtx.fill(); }
-                else if (status === 'info_read') { sCtx.fillStyle = "rgba(0, 80, 255, 0.8)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+                if (status === 'correct_fill') { sCtx.fillStyle = "rgba(0, 200, 0, 0.75)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+                else if (status === 'wrong_fill') { sCtx.fillStyle = "rgba(255, 0, 0, 0.75)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
+                else if (status === 'missing_key') { sCtx.fillStyle = "rgba(255, 215, 0, 0.9)"; sCtx.arc(pt.x, pt.y, 6, 0, 2*Math.PI); sCtx.fill(); }
+                else if (status === 'info_read') { sCtx.fillStyle = "rgba(41, 98, 255, 0.75)"; sCtx.arc(pt.x, pt.y, 8, 0, 2*Math.PI); sCtx.fill(); }
             }
         }
 
@@ -686,13 +710,17 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
 
         let code = scannedCode.replace(/\?/g, '0'); let warnings = [];
-        if (!answerKey[code]) {
+        if (Object.keys(answerKey).length === 0) {
+            warnings.push("Vui lòng nạp File Đáp án");
+        } else if (!answerKey[code]) {
             if (fallbackCode && answerKey[fallbackCode]) code = fallbackCode;
             else warnings.push(`Mã đề ${scannedCode} không có`);
         }
+        
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
         let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
+        // PHẦN I - CÓ BẮT TÔ ĐÚP NHIỀU Ô
         let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
         for (let i = 0; i < 40; i++) {
             let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
@@ -700,25 +728,34 @@ function processImagePureJS(flatCanvas, isUpload) {
             let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
             
             let scores = xList.map(x => getMappedRegionDarkness(x, y, 14));
-            let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
+            let maxScore = Math.max(...scores);
             
-            let isFilled = maxScore > minConf;
+            let filledIndices = [];
+            for (let j=0; j<4; j++) {
+                if (scores[j] > minConf && (maxScore - scores[j]) < 0.15) filledIndices.push(j);
+            }
+
             let corrLabel = (key.p1 && i < key.p1.length) ? key.p1[i] : null;
             let corrIdx = corrLabel ? labelsP1.indexOf(corrLabel) : -1;
 
-            if (isFilled) {
+            if (filledIndices.length === 1) {
+                let fIdx = filledIndices[0];
                 if (corrLabel) {
-                    if (labelsP1[maxIdx] === corrLabel) { right1++; drawMappedBubble(xList[maxIdx], y, 'correct_fill'); }
-                    else { drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key'); }
+                    if (fIdx === corrIdx) { right1++; drawMappedBubble(xList[fIdx], y, 'correct_fill'); }
+                    else { drawMappedBubble(xList[fIdx], y, 'wrong_fill'); if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key'); }
                 } else {
-                    drawMappedBubble(xList[maxIdx], y, 'info_read');
+                    drawMappedBubble(xList[fIdx], y, 'info_read');
                 }
-            } else if (corrIdx >= 0) {
-                drawMappedBubble(xList[corrIdx], y, 'missing_key');
+            } else if (filledIndices.length > 1) { // TÔ ĐÚP
+                filledIndices.forEach(idx => drawMappedBubble(xList[idx], y, 'wrong_fill'));
+                if (corrIdx >= 0 && !filledIndices.includes(corrIdx)) drawMappedBubble(xList[corrIdx], y, 'missing_key');
+            } else {
+                if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key');
             }
         }
         let scoreP1 = +(right1 * diemP1).toFixed(2);
 
+        // PHẦN II - CÓ BẮT TÔ ĐÚP 
         let key2Str = key.p2 ? key.p2.join('') : ''; let student2 = '', scoreP2 = 0, right2Details = 0;
         let sp = GRID_SPEC.sbd.x[1] - GRID_SPEC.sbd.x[0];
         for (let i = 0; i < 8; i++) {
@@ -729,24 +766,31 @@ function processImagePureJS(flatCanvas, isUpload) {
                 let gIdx = i * 4 + rowIdx, expected = (key2Str && gIdx < key2Str.length) ? key2Str[gIdx] : '';
                 
                 let scores = xList.map(x => getMappedRegionDarkness(x, y, 14));
-                let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
+                let maxScore = Math.max(...scores);
                 
-                let isFilled = maxScore > minConf;
-                let val = isFilled ? (maxIdx === 0 ? 'Đ' : 'S') : 'X';
-                student2 += val;
+                let filledIndices = [];
+                for (let j=0; j<2; j++) {
+                    if (scores[j] > minConf && (maxScore - scores[j]) < 0.15) filledIndices.push(j);
+                }
                 
-                if (isFilled) {
+                if (filledIndices.length === 1) {
+                    let fIdx = filledIndices[0];
+                    let val = fIdx === 0 ? 'Đ' : 'S';
+                    student2 += val;
                     if (expected) {
-                        if (val === expected) drawMappedBubble(xList[maxIdx], y, 'correct_fill');
-                        else { 
-                            drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); 
-                            drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key');
-                        }
-                    } else {
-                        drawMappedBubble(xList[maxIdx], y, 'info_read');
+                        if (val === expected) drawMappedBubble(xList[fIdx], y, 'correct_fill');
+                        else { drawMappedBubble(xList[fIdx], y, 'wrong_fill'); drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key'); }
+                    } else { drawMappedBubble(xList[fIdx], y, 'info_read'); }
+                } else if (filledIndices.length > 1) {
+                    student2 += 'X';
+                    filledIndices.forEach(idx => drawMappedBubble(xList[idx], y, 'wrong_fill'));
+                    if (expected) {
+                        let expIdx = expected === 'Đ' ? 0 : 1;
+                        if (!filledIndices.includes(expIdx)) drawMappedBubble(xList[expIdx], y, 'missing_key');
                     }
-                } else if (expected) {
-                    drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key');
+                } else {
+                    student2 += 'X';
+                    if (expected) drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key');
                 }
             }
         }
@@ -758,6 +802,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
         scoreP2 = +scoreP2.toFixed(2);
 
+        // PHẦN III - CÓ BẮT TÔ ĐÚP
         let scoreP3 = 0, right3 = 0, validP3Count = 0; 
         for (let q = 0; q < 6; q++) {
             let rawKey = (key.p3 && q < key.p3.length) ? String(key.p3[q]) : "";
@@ -769,9 +814,7 @@ function processImagePureJS(flatCanvas, isUpload) {
             let expectedMinus = cleanKey.startsWith('-');
             
             let minusScore = getMappedRegionDarkness(baseX + 10, GRID_SPEC.p3.yMinus, 10);
-            let filledMinus = minusScore > minConfMinus;
-            
-            if (filledMinus) {
+            if (minusScore > minConfMinus) {
                 if (cleanKey) drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill');
                 else drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, 'info_read');
                 stuAnsStr += "-";
@@ -786,33 +829,32 @@ function processImagePureJS(flatCanvas, isUpload) {
                 let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
                 
                 let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getMappedRegionDarkness(x, y, 13));
-                let maxDigitScore = Math.max(...scoresDigits);
-                let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
+                let maxScore = Math.max(...scoresDigits);
                 
-                let sortedScores = [...scoresDigits].sort((a,b) => a - b);
-                let contrast = maxDigitScore - sortedScores[5]; 
-                
-                let isFilled = (maxDigitScore > minConf) && (contrast > 0.08);
-                let filledChar = isFilled ? GRID_SPEC.p3.chars[maxDigitIdx] : '';
+                let filledIndices = [];
+                for (let j=0; j<11; j++) {
+                    if (scoresDigits[j] > minConf && (maxScore - scoresDigits[j]) < 0.15) filledIndices.push(j);
+                }
 
-                if (isFilled) {
+                if (filledIndices.length === 1) {
+                    let fIdx = filledIndices[0];
+                    let filledChar = GRID_SPEC.p3.chars[fIdx];
                     stuAnsStr += filledChar;
                     if (cleanKey) {
-                        if (filledChar === expectedChar) {
-                            drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'correct_fill');
-                        } else { 
-                            drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'wrong_fill'); 
-                            if (expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
-                                drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key'); 
-                            }
+                        if (filledChar === expectedChar) drawMappedBubble(x, GRID_SPEC.p3.yDigit[fIdx], 'correct_fill');
+                        else { 
+                            drawMappedBubble(x, GRID_SPEC.p3.yDigit[fIdx], 'wrong_fill'); 
+                            if (expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key'); 
                         }
-                    } else {
-                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'info_read');
+                    } else drawMappedBubble(x, GRID_SPEC.p3.yDigit[fIdx], 'info_read');
+                } else if (filledIndices.length > 1) { // TÔ ĐÚP Ở PHẦN 3
+                    filledIndices.forEach(idx => drawMappedBubble(x, GRID_SPEC.p3.yDigit[idx], 'wrong_fill'));
+                    if (cleanKey && expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
+                        let expIdx = GRID_SPEC.p3.chars.indexOf(expectedChar);
+                        if(!filledIndices.includes(expIdx)) drawMappedBubble(x, GRID_SPEC.p3.yDigit[expIdx], 'missing_key');
                     }
                 } else {
-                    if (cleanKey && expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
-                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key');
-                    }
+                    if (cleanKey && expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key');
                 }
             }
             if (cleanKey && stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
@@ -853,7 +895,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         if (warnings.length > 0) {
             if(warningsEl) warningsEl.innerHTML = `⚠️ ${warnings.join(' | ')}`;
             let statusText = document.getElementById('cam-status-text');
-            if(statusText) { statusText.textContent = `❌ Lỗi: Thiếu mã đề`; statusText.style.background = "var(--danger)"; }
+            if(statusText) { statusText.textContent = `❌ Lỗi: Thiếu mã đề hoặc file đáp án`; statusText.style.background = "var(--danger)"; }
         } else {
             if(warningsEl) warningsEl.textContent = "";
             let statusText = document.getElementById('cam-status-text');
