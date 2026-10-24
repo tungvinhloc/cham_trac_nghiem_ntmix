@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NTMIX PC - Chấm Webcam Chuẩn 100%</title>
+    <title>NTMIX PC - Chấm Webcam & Scan Chuẩn 100%</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -81,8 +81,8 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - Lõi Căn Tâm Đích Thực</h1>
-    <p>Chấm bài trắc nghiệm siêu tốc qua Webcam Laptop</p>
+    <h1>NTMIX OMR PC - Đa Môi Trường</h1>
+    <p>Thuật toán Hybrid: OpenCV Nắn Hình + PureJS Chấm Điểm</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
 
@@ -314,7 +314,6 @@ function drawVirtualGrid() {
     }
     
     const ctx = canvas.getContext('2d');
-    
     let type = getStrVal('cfg-sheet-type', 'bgd_2025_8sbd');
     let C = SHEET_CONFIGS[type];
     let isSquare = getCheckVal('cfg-show-grid', true);
@@ -323,27 +322,19 @@ function drawVirtualGrid() {
     ctx.lineWidth = 1.5;
 
     function drawShape(x, y, w, h) {
-        if(isSquare) {
-            ctx.strokeRect(x - w/2, y - h/2, w, h);
-        } else {
-            ctx.beginPath(); ctx.arc(x, y, w/2, 0, 2 * Math.PI); ctx.stroke();
-        }
+        if(isSquare) { ctx.strokeRect(x - w/2, y - h/2, w, h); } 
+        else { ctx.beginPath(); ctx.arc(x, y, w/2, 0, 2 * Math.PI); ctx.stroke(); }
     }
     
     C.sbd.x.forEach(x => { C.sbd.y.forEach(y => drawShape(x, y, C.sbd.cw, C.sbd.ch)); });
     C.made.x.forEach(x => { C.made.y.forEach(y => drawShape(x, y, C.made.cw, C.made.ch)); });
     C.p1.blockX.forEach(bx => { C.p1.offsetsX.forEach(offX => { C.p1.y.forEach(y => drawShape(bx + offX, y, C.p1.cw, C.p1.ch)); }); });
-    C.p2.blockX.forEach(bx => { 
-        C.p1.offsetsX.forEach(offX => { C.p2.y.forEach(y => drawShape(bx + offX, y, C.p2.cw, C.p2.ch)); }); 
-    });
+    C.p2.blockX.forEach(bx => { C.p1.offsetsX.forEach(offX => { C.p2.y.forEach(y => drawShape(bx + offX, y, C.p2.cw, C.p2.ch)); }); });
     C.p3.blockX.forEach(bx => { 
         drawShape(bx + C.p3.offsetsX[0], C.p3.yMinus, C.p3.cw, C.p3.ch);
-        C.p3.offsetsX.forEach(offX => { 
-            C.p3.yDigit.forEach(y => drawShape(bx + offX, y, C.p3.cw, C.p3.ch)); 
-        }); 
+        C.p3.offsetsX.forEach(offX => { C.p3.yDigit.forEach(y => drawShape(bx + offX, y, C.p3.cw, C.p3.ch)); }); 
     });
 }
-
 window.addEventListener('DOMContentLoaded', () => { drawVirtualGrid(); });
 
 async function startWebcam() {
@@ -369,13 +360,11 @@ function stopWebcam() {
     document.getElementById('cam-status-text').style.borderColor = "transparent";
 }
 
+// BƯỚC 1: SỬ DỤNG OPENCV CHO CẢ FILE UPLOAD ĐỂ NẮN HÌNH CHUẨN XÁC
 async function handleImageUpload(inputElement) {
     const files = inputElement.files;
     if (!files || !files.length) return;
-    if (Object.keys(answerKey).length === 0) { 
-        alert("Vui lòng nạp File Excel Đáp án trước!"); 
-        inputElement.value = ''; return; 
-    }
+    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp File Excel Đáp án trước!"); inputElement.value = ''; return; }
     
     const statusText = document.getElementById('cam-status-text');
     for (let i = 0; i < files.length; i++) {
@@ -385,10 +374,11 @@ async function handleImageUpload(inputElement) {
             const img = new Image();
             img.onload = () => {
                 let cvs = document.createElement('canvas');
-                cvs.width = 800; cvs.height = 1130;
-                cvs.getContext('2d').drawImage(img, 0, 0, 800, 1130);
+                // Khôi phục kích thước gốc để OpenCV dò góc chính xác
+                cvs.width = img.width; cvs.height = img.height;
+                cvs.getContext('2d').drawImage(img, 0, 0);
                 try {
-                    processImagePureJS(cvs, true); 
+                    processFullFrameOpenCV(cvs, true); 
                 } catch(err) {
                     alert(`Lỗi chấm file ${files[i].name}: ${err.message}`);
                 }
@@ -484,28 +474,32 @@ function startOpenCVScanLoop() {
     }, 100);
 }
 
+// LÕI OPENCV XỬ LÝ ẢNH SAU KHI CHỤP/UPLOAD (TÌM CHÍNH XÁC 4 Ô ĐEN)
 function processFullFrameOpenCV(sourceCanvas, isUpload) {
     try {
         const TARGET_W = 800; const TARGET_H = 1130;
         let src = cv.imread(sourceCanvas);
+        
         let gray = new cv.Mat(); cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
         let blur = new cv.Mat(); cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
         let thresh = new cv.Mat(); cv.adaptiveThreshold(blur, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 15);
         
         let contours = new cv.MatVector(); let hierarchy = new cv.Mat();
-        cv.findContours(thresh, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+        // Dùng RETR_LIST để tìm xuyên qua mọi lớp viền
+        cv.findContours(thresh, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
 
         let markers = [];
-        let minA = (src.cols * src.rows) * 0.0005; let maxA = (src.cols * src.rows) * 0.05;
+        let minA = (src.cols * src.rows) * 0.0001; 
+        let maxA = (src.cols * src.rows) * 0.05;
 
         for (let i = 0; i < contours.size(); i++) {
             let cnt = contours.get(i); let area = cv.contourArea(cnt);
             if (area > minA && area < maxA) {
                 let rect = cv.boundingRect(cnt); let ar = rect.width / rect.height;
-                if (ar >= 0.5 && ar <= 1.5) {
+                if (ar >= 0.5 && ar <= 1.5) { // Lọc hình vuông
                     let hull = new cv.Mat(); cv.convexHull(cnt, hull, false, true);
                     let hArea = cv.contourArea(hull);
-                    if (hArea > 0 && (area / hArea) > 0.75) {
+                    if (hArea > 0 && (area / hArea) > 0.7) { // Lọc độ đặc (để không bắt nhầm chữ O)
                         let M = cv.moments(cnt, false);
                         if (M.m00 !== 0) markers.push({ x: M.m10/M.m00, y: M.m01/M.m00 });
                     }
@@ -516,17 +510,30 @@ function processFullFrameOpenCV(sourceCanvas, isUpload) {
         }
         contours.delete(); hierarchy.delete(); thresh.delete(); blur.delete(); gray.delete();
 
-        if (markers.length < 4) {
-            alert("Lỗi: Không tìm thấy 4 ô vuông đen định vị trên ảnh. Vui lòng chụp rõ lại.");
+        // Tìm 4 điểm nằm xa nhất về 4 góc ảnh
+        let best4 = [];
+        if (markers.length >= 4) {
+            let corners = [ {x:0, y:0}, {x:src.cols, y:0}, {x:0, y:src.rows}, {x:src.cols, y:src.rows} ];
+            for (let c of corners) {
+                let closest = markers.reduce((best, m) => {
+                    let d = Math.pow(m.x - c.x, 2) + Math.pow(m.y - c.y, 2);
+                    return d < best.d && !best4.includes(m) ? {m: m, d: d} : best;
+                }, {m: null, d: Infinity});
+                if(closest.m) best4.push(closest.m);
+            }
+        }
+
+        if (best4.length < 4) {
+            alert("Lỗi: Không tìm thấy 4 ô vuông đen định vị trên ảnh. Vui lòng chụp/scan rõ lại.");
             src.delete();
             if(!isUpload) setTimeout(startOpenCVScanLoop, 1500);
             return;
         }
 
-        let pTL = markers.reduce((a, b) => (a.x + a.y < b.x + b.y ? a : b));
-        let pBR = markers.reduce((a, b) => (a.x + a.y > b.x + b.y ? a : b));
-        let pTR = markers.reduce((a, b) => (a.x - a.y > b.x - b.y ? a : b));
-        let pBL = markers.reduce((a, b) => (a.x - a.y < b.x - b.y ? a : b));
+        let pTL = best4.reduce((a, b) => (a.x + a.y < b.x + b.y ? a : b));
+        let pBR = best4.reduce((a, b) => (a.x + a.y > b.x + b.y ? a : b));
+        let pTR = best4.reduce((a, b) => (a.x - a.y > b.x - b.y ? a : b));
+        let pBL = best4.reduce((a, b) => (a.x - a.y < b.x - b.y ? a : b));
 
         let dstMat = new cv.Mat();
         let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [pTL.x, pTL.y, pTR.x, pTR.y, pBL.x, pBL.y, pBR.x, pBR.y]);
@@ -546,6 +553,7 @@ function processFullFrameOpenCV(sourceCanvas, isUpload) {
     } catch(err) { alert("Lỗi xử lý OpenCV: " + err.message); }
 }
 
+// BƯỚC 2: PURE JS KHÓA CHẶT TỌA ĐỘ VÀ CHẤM (CHỐNG NHIỄU TUYỆT ĐỐI)
 function processImagePureJS(flatCanvas, isUpload) {
     try {
         const WIDTH = 800; const HEIGHT = 1130;
@@ -563,10 +571,9 @@ function processImagePureJS(flatCanvas, isUpload) {
         let showGrid = getCheckVal('cfg-show-grid', true);
         let fallbackCode = getStrVal('fallback-code', "");
 
-        // THUẬT TOÁN TÌM TÂM GÓC TỪ BẢN 18/10 (SỬA LỖI VIỀN TRẮNG SCAN MỞ RỘNG 260px)
         function findBlackSquareCenter(startX, startY, w, h) {
             let minVal = 255;
-            let inset = 25; // Cắt bỏ 25 pixel rìa để không bắt dính viền đen máy scan
+            let inset = 15; // Vùng an toàn
             let sx = Math.max(0, startX + inset);
             let sy = Math.max(0, startY + inset);
             let ew = Math.min(WIDTH, startX + w - inset);
@@ -596,8 +603,9 @@ function processImagePureJS(flatCanvas, isUpload) {
             return { x: startX + w/2, y: startY + h/2 }; 
         }
 
-        // TĂNG KÍCH THƯỚC QUÉT LÊN 260x260 ĐỂ VƯỢT QUA LỚP MARGIN SCAN
-        let searchW = 260, searchH = 260;
+        // ẢNH ĐÃ ĐƯỢC OPENCV NẮN VỀ 800x1130 -> TÂM Ô VUÔNG CHẮC CHẮN NẰM TRONG KHUNG 100x100
+        // Cố định tìm kiếm siêu nhỏ để không bao giờ bắt lộn vào bảng điểm!
+        let searchW = 100, searchH = 100;
         let pTL = findBlackSquareCenter(0, 0, searchW, searchH);
         let pTR = findBlackSquareCenter(WIDTH - searchW, 0, searchW, searchH);
         let pBL = findBlackSquareCenter(0, HEIGHT - searchH, searchW, searchH);
