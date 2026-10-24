@@ -81,7 +81,7 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - V58.0 Tinh Chỉnh SBD & Độ Nhạy</h1>
+    <h1>NTMIX OMR PC - V59.0 Lưới Chuẩn Bản In</h1>
     <p>Thuật toán Hybrid: OpenCV Nắn Hình + Tương Phản Kết Hợp</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
@@ -154,7 +154,7 @@
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" onchange="drawVirtualGrid()"> Vẽ viền vuông thay vì chấm tròn
+                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" checked onchange="drawVirtualGrid()"> Vẽ viền định vị lên ảnh chấm (Vuông)
                 </label>
             </div>
         </div>
@@ -237,15 +237,18 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = [];
 let videoStream = null; let scanInterval = null;
 let stableFrames = 0; let lastGradedSbd = "Phieu";
 
-// ĐÃ TINH CHỈNH LẠI CỘT SBD VÀ MÃ ĐỀ (GIÃN CÁCH RỘNG HƠN)
+// V59: ĐÃ KÉO TỌA ĐỘ PHẦN 1, 2, 3 LÊN TRÊN VÀ SANG TRÁI ĐỂ KHỚP VỚI BẢN IN
 const SHEET_CONFIGS = {
     'bgd_2025_8sbd': {
         name: 'Phiếu BGD 2025 (SBD 8 số)',
         sbd: { x: [558, 577, 596, 615, 634, 653, 672, 691], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
         made: { x: [724, 743, 762, 781], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
-        p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584], cw: 14, ch: 14 },
-        p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743], cw: 14, ch: 14 },
-        p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
+        // Kéo P1 lên 8px, sang trái 2px
+        p1: { blockX: [69, 257, 445, 633], offsetsX: [0, 38, 76, 114], y: [409, 427, 446, 465, 483, 502, 520, 539, 557, 576], cw: 14, ch: 14 },
+        // Kéo P2 lên 8px, sang trái 2px
+        p2: { blockX: [69, 257, 445, 633], y: [678, 697, 716, 735], cw: 14, ch: 14 },
+        // Kéo P3 lên 14px, sang trái 4px
+        p3: { blockX: [60, 180, 300, 420, 540, 660], offsetsX: [0, 26, 52, 78], yMinus: 838, yDigit: [857, 877, 896, 915, 934, 953, 972, 991, 1010, 1029, 1048], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
     },
     'old_tnmaker': {
         name: 'Phiếu TNMaker Cũ',
@@ -324,7 +327,7 @@ function drawVirtualGrid() {
     const ctx = canvas.getContext('2d');
     let type = getStrVal('cfg-sheet-type', 'bgd_2025_8sbd');
     let C = SHEET_CONFIGS[type];
-    let isSquare = getCheckVal('cfg-show-grid', false); // Mặc định chấm tròn
+    let isSquare = getCheckVal('cfg-show-grid', true);
     let ox = getNumVal('cfg-offset-x', 0);
     let oy = getNumVal('cfg-offset-y', 0);
 
@@ -570,7 +573,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         let diemP1 = getNumVal('cfg-p1', 0.25);
         let diemP2 = [getNumVal('cfg-p2-1', 0.1), getNumVal('cfg-p2-2', 0.25), getNumVal('cfg-p2-3', 0.5), getNumVal('cfg-p2-4', 1.0)];
         let diemP3 = getNumVal('cfg-p3', 0.5);
-        let showGrid = getCheckVal('cfg-show-grid', false); // false = Chấm tròn
+        let showGrid = getCheckVal('cfg-show-grid', true);
         let fallbackCode = getStrVal('fallback-code', "");
         let ox = getNumVal('cfg-offset-x', 0);
         let oy = getNumVal('cfg-offset-y', 0);
@@ -621,7 +624,6 @@ function processImagePureJS(flatCanvas, isUpload) {
             return { x: ax, y: ay };
         }
 
-        // TÍNH TOÁN NGƯỠNG TƯƠNG PHẢN ĐỘNG & TĨNH KẾT HỢP ĐỂ CHỐNG NHIỄU SCAN (MỞ RỘNG VÙNG LẤY MẪU)
         function getMappedRegionDarkness(idealX, idealY, w) {
             let pt = mapCoord(idealX + ox, idealY + oy);
             let cx = Math.round(pt.x); let cy = Math.round(pt.y);
@@ -643,12 +645,9 @@ function processImagePureJS(flatCanvas, isUpload) {
                         }
                     }
                     let bgAvg = bgCount > 0 ? bgSum / bgCount : 255;
-                    
-                    // Kết hợp 2 điều kiện: Vừa phải đen hơn nền xung quanh, vừa phải đủ độ đen tuyệt đối (< 175)
                     let localThresh = Math.min(175, bgAvg * 0.88); 
 
                     let darkCount = 0, total = 0;
-                    // Lấy mẫu rộng hơn (w=12) để bao trọn ô tròn
                     for (let y = startY; y < startY + w; y++) {
                         for (let x = startX; x < startX + w; x++) {
                             if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
@@ -665,7 +664,6 @@ function processImagePureJS(flatCanvas, isUpload) {
             return bestScore;
         }
 
-        // HÀM VẼ CHẤM TRÒN / VUÔNG MÀU (CHUẨN XÁC)
         function drawMappedBubble(idealX, idealY, status) {
             let pt = mapCoord(idealX + ox, idealY + oy);
             sCtx.beginPath();
@@ -718,7 +716,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
         let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
-        // PHẦN I - CÓ BẮT TÔ ĐÚP NHIỀU Ô
         let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
         for (let i = 0; i < 40; i++) {
             let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
@@ -744,7 +741,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                 } else {
                     drawMappedBubble(xList[fIdx], y, 'info_read');
                 }
-            } else if (filledIndices.length > 1) { // TÔ ĐÚP
+            } else if (filledIndices.length > 1) { 
                 filledIndices.forEach(idx => drawMappedBubble(xList[idx], y, 'wrong_fill'));
                 if (corrIdx >= 0 && !filledIndices.includes(corrIdx)) drawMappedBubble(xList[corrIdx], y, 'missing_key');
             } else {
@@ -753,7 +750,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
         let scoreP1 = +(right1 * diemP1).toFixed(2);
 
-        // PHẦN II - CÓ BẮT TÔ ĐÚP 
         let key2Str = key.p2 ? key.p2.join('') : ''; let student2 = '', scoreP2 = 0, right2Details = 0;
         let sp = GRID_SPEC.sbd.x[1] - GRID_SPEC.sbd.x[0];
         for (let i = 0; i < 8; i++) {
@@ -800,7 +796,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
         scoreP2 = +scoreP2.toFixed(2);
 
-        // PHẦN III - CÓ BẮT TÔ ĐÚP
         let scoreP3 = 0, right3 = 0, validP3Count = 0; 
         for (let q = 0; q < 6; q++) {
             let rawKey = (key.p3 && q < key.p3.length) ? String(key.p3[q]) : "";
@@ -847,7 +842,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                             if (expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key'); 
                         }
                     } else drawMappedBubble(x, GRID_SPEC.p3.yDigit[fIdx], 'info_read');
-                } else if (filledIndices.length > 1) { // TÔ ĐÚP Ở PHẦN 3
+                } else if (filledIndices.length > 1) { 
                     filledIndices.forEach(idx => drawMappedBubble(x, GRID_SPEC.p3.yDigit[idx], 'wrong_fill'));
                     if (cleanKey && expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
                         let expIdx = GRID_SPEC.p3.chars.indexOf(expectedChar);
