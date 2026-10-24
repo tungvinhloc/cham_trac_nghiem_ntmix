@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NTMIX PC - Chấm Webcam & Scan Chuẩn 100%</title>
+    <title>NTMIX PC - Chấm Webcam Chuẩn 100%</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -81,7 +81,7 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - Đa Môi Trường</h1>
+    <h1>NTMIX OMR PC - V56.0 Hiển Thị Mọi Điểm Chạm</h1>
     <p>Thuật toán Hybrid: OpenCV Nắn Hình + PureJS Chấm Điểm</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
@@ -116,6 +116,12 @@
                     <option value="new_ntmix3">Phiếu NTMIX NEW (SBD 8 số - Mã 4 số)</option>
                 </select>
             </div>
+            
+            <div class="grid-2">
+                <div class="form-group"><label>Dịch Ngang (X):</label><input type="number" id="cfg-offset-x" value="0" onchange="drawVirtualGrid()"></div>
+                <div class="form-group"><label>Dịch Dọc (Y):</label><input type="number" id="cfg-offset-y" value="0" onchange="drawVirtualGrid()"></div>
+            </div>
+
             <div class="form-group" style="background: #ecfdf5; padding: 10px; border-radius: 8px; border: 1px dashed #10b981;">
                 <label style="color: #047857;">📷 Tốc độ chớp Webcam:</label>
                 <select id="cfg-scan-speed" style="border-color: #34d399; font-weight: bold; color: #047857;">
@@ -124,6 +130,7 @@
                     <option value="12">🐢 Chậm (1.2s)</option>
                 </select>
             </div>
+            
             <div class="grid-2">
                 <div class="form-group"><label>Ngưỡng Mực Chì:</label><input type="number" id="cfg-conf" step="0.02" value="0.35"></div>
                 <div class="form-group"><label>Ngưỡng Dấu Trừ:</label><input type="number" id="cfg-conf-minus" step="0.02" value="0.42"></div>
@@ -317,13 +324,16 @@ function drawVirtualGrid() {
     let type = getStrVal('cfg-sheet-type', 'bgd_2025_8sbd');
     let C = SHEET_CONFIGS[type];
     let isSquare = getCheckVal('cfg-show-grid', true);
+    let ox = getNumVal('cfg-offset-x', 0);
+    let oy = getNumVal('cfg-offset-y', 0);
 
     ctx.strokeStyle = "rgba(59, 130, 246, 0.8)"; 
     ctx.lineWidth = 1.5;
 
     function drawShape(x, y, w, h) {
-        if(isSquare) { ctx.strokeRect(x - w/2, y - h/2, w, h); } 
-        else { ctx.beginPath(); ctx.arc(x, y, w/2, 0, 2 * Math.PI); ctx.stroke(); }
+        let nx = x + ox; let ny = y + oy;
+        if(isSquare) { ctx.strokeRect(nx - w/2, ny - h/2, w, h); } 
+        else { ctx.beginPath(); ctx.arc(nx, ny, w/2, 0, 2 * Math.PI); ctx.stroke(); }
     }
     
     C.sbd.x.forEach(x => { C.sbd.y.forEach(y => drawShape(x, y, C.sbd.cw, C.sbd.ch)); });
@@ -360,11 +370,9 @@ function stopWebcam() {
     document.getElementById('cam-status-text').style.borderColor = "transparent";
 }
 
-// BƯỚC 1: SỬ DỤNG OPENCV CHO CẢ FILE UPLOAD ĐỂ NẮN HÌNH CHUẨN XÁC
 async function handleImageUpload(inputElement) {
     const files = inputElement.files;
     if (!files || !files.length) return;
-    if (Object.keys(answerKey).length === 0) { alert("Vui lòng nạp File Excel Đáp án trước!"); inputElement.value = ''; return; }
     
     const statusText = document.getElementById('cam-status-text');
     for (let i = 0; i < files.length; i++) {
@@ -374,7 +382,6 @@ async function handleImageUpload(inputElement) {
             const img = new Image();
             img.onload = () => {
                 let cvs = document.createElement('canvas');
-                // Khôi phục kích thước gốc để OpenCV dò góc chính xác
                 cvs.width = img.width; cvs.height = img.height;
                 cvs.getContext('2d').drawImage(img, 0, 0);
                 try {
@@ -474,18 +481,15 @@ function startOpenCVScanLoop() {
     }, 100);
 }
 
-// LÕI OPENCV XỬ LÝ ẢNH SAU KHI CHỤP/UPLOAD (TÌM CHÍNH XÁC 4 Ô ĐEN)
 function processFullFrameOpenCV(sourceCanvas, isUpload) {
     try {
         const TARGET_W = 800; const TARGET_H = 1130;
         let src = cv.imread(sourceCanvas);
-        
         let gray = new cv.Mat(); cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
         let blur = new cv.Mat(); cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0);
         let thresh = new cv.Mat(); cv.adaptiveThreshold(blur, thresh, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 51, 15);
         
         let contours = new cv.MatVector(); let hierarchy = new cv.Mat();
-        // Dùng RETR_LIST để tìm xuyên qua mọi lớp viền
         cv.findContours(thresh, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
 
         let markers = [];
@@ -496,10 +500,10 @@ function processFullFrameOpenCV(sourceCanvas, isUpload) {
             let cnt = contours.get(i); let area = cv.contourArea(cnt);
             if (area > minA && area < maxA) {
                 let rect = cv.boundingRect(cnt); let ar = rect.width / rect.height;
-                if (ar >= 0.5 && ar <= 1.5) { // Lọc hình vuông
+                if (ar >= 0.5 && ar <= 1.5) {
                     let hull = new cv.Mat(); cv.convexHull(cnt, hull, false, true);
                     let hArea = cv.contourArea(hull);
-                    if (hArea > 0 && (area / hArea) > 0.7) { // Lọc độ đặc (để không bắt nhầm chữ O)
+                    if (hArea > 0 && (area / hArea) > 0.7) {
                         let M = cv.moments(cnt, false);
                         if (M.m00 !== 0) markers.push({ x: M.m10/M.m00, y: M.m01/M.m00 });
                     }
@@ -510,7 +514,6 @@ function processFullFrameOpenCV(sourceCanvas, isUpload) {
         }
         contours.delete(); hierarchy.delete(); thresh.delete(); blur.delete(); gray.delete();
 
-        // Tìm 4 điểm nằm xa nhất về 4 góc ảnh
         let best4 = [];
         if (markers.length >= 4) {
             let corners = [ {x:0, y:0}, {x:src.cols, y:0}, {x:0, y:src.rows}, {x:src.cols, y:src.rows} ];
@@ -553,7 +556,6 @@ function processFullFrameOpenCV(sourceCanvas, isUpload) {
     } catch(err) { alert("Lỗi xử lý OpenCV: " + err.message); }
 }
 
-// BƯỚC 2: PURE JS KHÓA CHẶT TỌA ĐỘ VÀ CHẤM (CHỐNG NHIỄU TUYỆT ĐỐI)
 function processImagePureJS(flatCanvas, isUpload) {
     try {
         const WIDTH = 800; const HEIGHT = 1130;
@@ -570,10 +572,12 @@ function processImagePureJS(flatCanvas, isUpload) {
         let diemP3 = getNumVal('cfg-p3', 0.5);
         let showGrid = getCheckVal('cfg-show-grid', true);
         let fallbackCode = getStrVal('fallback-code', "");
+        let ox = getNumVal('cfg-offset-x', 0);
+        let oy = getNumVal('cfg-offset-y', 0);
 
         function findBlackSquareCenter(startX, startY, w, h) {
             let minVal = 255;
-            let inset = 15; // Vùng an toàn
+            let inset = 15;
             let sx = Math.max(0, startX + inset);
             let sy = Math.max(0, startY + inset);
             let ew = Math.min(WIDTH, startX + w - inset);
@@ -603,8 +607,6 @@ function processImagePureJS(flatCanvas, isUpload) {
             return { x: startX + w/2, y: startY + h/2 }; 
         }
 
-        // ẢNH ĐÃ ĐƯỢC OPENCV NẮN VỀ 800x1130 -> TÂM Ô VUÔNG CHẮC CHẮN NẰM TRONG KHUNG 100x100
-        // Cố định tìm kiếm siêu nhỏ để không bao giờ bắt lộn vào bảng điểm!
         let searchW = 100, searchH = 100;
         let pTL = findBlackSquareCenter(0, 0, searchW, searchH);
         let pTR = findBlackSquareCenter(WIDTH - searchW, 0, searchW, searchH);
@@ -620,7 +622,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
 
         function getMappedRegionDarkness(idealX, idealY, w) {
-            let pt = mapCoord(idealX, idealY);
+            let pt = mapCoord(idealX + ox, idealY + oy);
             let cx = Math.round(pt.x); let cy = Math.round(pt.y);
 
             if (showGrid) {
@@ -643,7 +645,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
 
         function drawMappedBubble(idealX, idealY, status) {
-            let pt = mapCoord(idealX, idealY);
+            let pt = mapCoord(idealX + ox, idealY + oy);
             sCtx.beginPath();
             if (showGrid) {
                 sCtx.lineWidth = 2;
@@ -692,9 +694,8 @@ function processImagePureJS(flatCanvas, isUpload) {
         let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
         let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
-        for (let i = 0; i < key.p1.length; i++) {
+        for (let i = 0; i < 40; i++) {
             let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
-            if (blockIdx >= 4) break;
             let y = GRID_SPEC.p1.y[rowIdx];
             let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
             
@@ -702,23 +703,30 @@ function processImagePureJS(flatCanvas, isUpload) {
             let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
             
             let isFilled = maxScore > minConf;
-            let corrLabel = key.p1[i], corrIdx = labelsP1.indexOf(corrLabel);
+            let corrLabel = (key.p1 && i < key.p1.length) ? key.p1[i] : null;
+            let corrIdx = corrLabel ? labelsP1.indexOf(corrLabel) : -1;
 
             if (isFilled) {
-                if (labelsP1[maxIdx] === corrLabel) { right1++; drawMappedBubble(xList[maxIdx], y, 'correct_fill'); }
-                else { drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key'); }
-            } else if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key');
+                if (corrLabel) {
+                    if (labelsP1[maxIdx] === corrLabel) { right1++; drawMappedBubble(xList[maxIdx], y, 'correct_fill'); }
+                    else { drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key'); }
+                } else {
+                    drawMappedBubble(xList[maxIdx], y, 'info_read');
+                }
+            } else if (corrIdx >= 0) {
+                drawMappedBubble(xList[corrIdx], y, 'missing_key');
+            }
         }
         let scoreP1 = +(right1 * diemP1).toFixed(2);
 
-        let key2Str = key.p2.join(''), student2 = '', scoreP2 = 0, right2Details = 0;
+        let key2Str = key.p2 ? key.p2.join('') : ''; let student2 = '', scoreP2 = 0, right2Details = 0;
         let sp = GRID_SPEC.sbd.x[1] - GRID_SPEC.sbd.x[0];
         for (let i = 0; i < 8; i++) {
             let blockIdx = Math.floor(i / 2), baseX = GRID_SPEC.p2.blockX[blockIdx];
             let xList = (i % 2 === 1) ? [baseX + sp*4, baseX + sp*6] : [baseX, baseX + sp*2];
             for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
                 let y = GRID_SPEC.p2.y[rowIdx];
-                let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
+                let gIdx = i * 4 + rowIdx, expected = (key2Str && gIdx < key2Str.length) ? key2Str[gIdx] : '';
                 
                 let scores = xList.map(x => getMappedRegionDarkness(x, y, 14));
                 let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
@@ -728,10 +736,14 @@ function processImagePureJS(flatCanvas, isUpload) {
                 student2 += val;
                 
                 if (isFilled) {
-                    if (val === expected) drawMappedBubble(xList[maxIdx], y, 'correct_fill');
-                    else { 
-                        drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); 
-                        if (expected) drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key');
+                    if (expected) {
+                        if (val === expected) drawMappedBubble(xList[maxIdx], y, 'correct_fill');
+                        else { 
+                            drawMappedBubble(xList[maxIdx], y, 'wrong_fill'); 
+                            drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key');
+                        }
+                    } else {
+                        drawMappedBubble(xList[maxIdx], y, 'info_read');
                     }
                 } else if (expected) {
                     drawMappedBubble(xList[expected === 'Đ' ? 0 : 1], y, 'missing_key');
@@ -748,22 +760,22 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         let scoreP3 = 0, right3 = 0, validP3Count = 0; 
         for (let q = 0; q < 6; q++) {
-            let rawKey = (q < key.p3.length) ? String(key.p3[q]) : "";
+            let rawKey = (key.p3 && q < key.p3.length) ? String(key.p3[q]) : "";
             let cleanKey = rawKey.trim().replace(/\./g, ',').replace(/[^-0-9,]/g, '');
-            if (!cleanKey) continue;
-            validP3Count++;
+            if (cleanKey) validP3Count++;
             
             let baseX = GRID_SPEC.p3.blockX[q];
             let stuAnsStr = "";
-            
             let expectedMinus = cleanKey.startsWith('-');
+            
             let minusScore = getMappedRegionDarkness(baseX + 10, GRID_SPEC.p3.yMinus, 10);
             let filledMinus = minusScore > minConfMinus;
             
             if (filledMinus) {
-                drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill');
+                if (cleanKey) drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill');
+                else drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, 'info_read');
                 stuAnsStr += "-";
-            } else if (expectedMinus) {
+            } else if (cleanKey && expectedMinus) {
                 drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, 'missing_key');
             }
             
@@ -785,21 +797,25 @@ function processImagePureJS(flatCanvas, isUpload) {
 
                 if (isFilled) {
                     stuAnsStr += filledChar;
-                    if (filledChar === expectedChar) {
-                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'correct_fill');
-                    } else { 
-                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'wrong_fill'); 
-                        if (expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
-                            drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key'); 
+                    if (cleanKey) {
+                        if (filledChar === expectedChar) {
+                            drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'correct_fill');
+                        } else { 
+                            drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'wrong_fill'); 
+                            if (expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
+                                drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key'); 
+                            }
                         }
+                    } else {
+                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'info_read');
                     }
                 } else {
-                    if (expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
+                    if (cleanKey && expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
                         drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key');
                     }
                 }
             }
-            if (stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
+            if (cleanKey && stuAnsStr === cleanKey) { right3++; scoreP3 += diemP3; }
         }
         
         scoreP3 = +scoreP3.toFixed(2);
@@ -825,7 +841,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         if(uiSbdMade) uiSbdMade.textContent = `SBD: ${scannedSbd} | Mã đề: ${code}`;
         
         let uiP1Score = document.getElementById('ui-p1-score'); if(uiP1Score) uiP1Score.textContent = `${scoreP1}đ`; 
-        let uiP1Detail = document.getElementById('ui-p1-detail'); if(uiP1Detail) uiP1Detail.textContent = `Đúng ${right1}/${key.p1.length}`;
+        let uiP1Detail = document.getElementById('ui-p1-detail'); if(uiP1Detail) uiP1Detail.textContent = `Đúng ${right1}/${key.p1 ? key.p1.length : 0}`;
         
         let uiP2Score = document.getElementById('ui-p2-score'); if(uiP2Score) uiP2Score.textContent = `${scoreP2}đ`; 
         let uiP2Detail = document.getElementById('ui-p2-detail'); if(uiP2Detail) uiP2Detail.textContent = `Đúng ${right2Details}/${key2Str.length}`;
