@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NTMIX PC - Chấm Bằng Webcam OpenCV</title>
+    <title>NTMIX PC - Chấm Webcam Chuẩn 100%</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -102,14 +102,16 @@
                     <option value="new_ntmix3">Phiếu NTMIX NEW (SBD 8 số, Mã 4 số)</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label>📷 Tốc độ chớp Camera:</label>
-                <select id="cfg-scan-speed">
+            
+            <div class="form-group" style="background: #ecfdf5; padding: 10px; border-radius: 8px; border: 1px dashed #10b981;">
+                <label style="color: #047857;">📷 Tốc độ chớp Webcam:</label>
+                <select id="cfg-scan-speed" style="border-color: #34d399; font-weight: bold; color: #047857;">
                     <option value="3">⚡ Nhanh (0.3s - Khuyên dùng)</option>
                     <option value="6" selected>🎯 Tiêu chuẩn (0.6s - Chống rung)</option>
                     <option value="12">🐢 Chậm (1.2s)</option>
                 </select>
             </div>
+
             <div class="grid-2">
                 <div class="form-group"><label>Ngưỡng Mực Chì:</label><input type="number" id="cfg-conf" step="0.02" value="0.35"></div>
                 <div class="form-group"><label>Ngưỡng Dấu Trừ:</label><input type="number" id="cfg-conf-minus" step="0.02" value="0.42"></div>
@@ -128,7 +130,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Mã đề dự phòng (Khi tô thiếu):</label>
+                <label>Mã đề dự phòng (Khi HS quên tô):</label>
                 <input type="text" id="fallback-code" placeholder="VD: 0234">
             </div>
             <div class="form-group">
@@ -206,6 +208,12 @@ function onOpenCvReady() {
     badge.textContent = "✅ Lõi OpenCV Sẵn Sàng!";
     badge.classList.add('ready');
 }
+
+// ================= HÀM LẤY DỮ LIỆU AN TOÀN TUYỆT ĐỐI =================
+function getNumVal(id, defVal) { let el = document.getElementById(id); return (el && el.value !== "") ? parseFloat(el.value) : defVal; }
+function getStrVal(id, defVal) { let el = document.getElementById(id); return (el && el.value) ? el.value.trim() : defVal; }
+function getCheckVal(id, defVal) { let el = document.getElementById(id); return el ? el.checked : defVal; }
+// =====================================================================
 
 let answerKey = {}; let dshsDict = {}; let gradedRows = [];
 let videoStream = null; let scanInterval = null;
@@ -327,7 +335,7 @@ function startOpenCVScanLoop() {
     scanInterval = setInterval(() => {
         if (!videoStream || video.readyState !== video.HAVE_ENOUGH_DATA) return;
         
-        let targetFrames = parseInt(document.getElementById('cfg-scan-speed').value) || 6;
+        let targetFrames = getNumVal('cfg-scan-speed', 6);
         let VW = video.videoWidth; let VH = video.videoHeight;
         
         overlay.width = VW; overlay.height = VH;
@@ -464,33 +472,22 @@ function processImagePureJS(flatCanvas, isUpload) {
         const sCtx = flatCanvas.getContext('2d', { willReadFrequently: true });
         const data = sCtx.getImageData(0, 0, WIDTH, HEIGHT).data;
 
-        let type = document.getElementById('cfg-sheet-type')?.value || 'old_tnmaker';
+        let type = getStrVal('cfg-sheet-type', 'old_tnmaker');
         let GRID_SPEC = SHEET_CONFIGS[type];
         
-        let confInput = document.getElementById('cfg-conf');
-        let minConf = confInput && confInput.value ? parseFloat(confInput.value) : 0.35;
+        let minConf = getNumVal('cfg-conf', 0.35); // Lấy an toàn mặc định 0.35
+        let minConfMinus = getNumVal('cfg-conf-minus', 0.42);
         
-        let confMinusInput = document.getElementById('cfg-conf-minus');
-        let minConfMinus = confMinusInput && confMinusInput.value ? parseFloat(confMinusInput.value) : 0.42;
-        
-        let p1Input = document.getElementById('cfg-p1');
-        let diemP1 = p1Input && p1Input.value ? parseFloat(p1Input.value) : 0.25;
-        
+        let diemP1 = getNumVal('cfg-p1', 0.25);
         let diemP2 = [
-            parseFloat(document.getElementById('cfg-p2-1')?.value || 0.1), 
-            parseFloat(document.getElementById('cfg-p2-2')?.value || 0.25), 
-            parseFloat(document.getElementById('cfg-p2-3')?.value || 0.5), 
-            parseFloat(document.getElementById('cfg-p2-4')?.value || 1.0)
+            getNumVal('cfg-p2-1', 0.1), 
+            getNumVal('cfg-p2-2', 0.25), 
+            getNumVal('cfg-p2-3', 0.5), 
+            getNumVal('cfg-p2-4', 1.0)
         ];
-        
-        let p3Input = document.getElementById('cfg-p3');
-        let diemP3 = p3Input && p3Input.value ? parseFloat(p3Input.value) : 0.5;
-        
-        let showGridCheckbox = document.getElementById('cfg-show-grid');
-        let showGrid = showGridCheckbox ? showGridCheckbox.checked : true;
-        
-        let fallbackInput = document.getElementById('fallback-code');
-        let fallbackCode = fallbackInput ? fallbackInput.value.trim() : "";
+        let diemP3 = getNumVal('cfg-p3', 0.5);
+        let showGrid = getCheckVal('cfg-show-grid', true);
+        let fallbackCode = getStrVal('fallback-code', "");
 
         function getRegionDarkness(cx, cy, w) {
             let darkCount = 0; let total = 0;
