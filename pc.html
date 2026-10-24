@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <!-- Đã sửa chính xác tên file OpenCV.js theo hệ thống của thầy -->
     <script async src="OpenCV.js" onload="onOpenCvReady();"></script>
 
     <style>
@@ -69,8 +68,8 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - Chấm Thi Tốc Độ Cao</h1>
-    <p>Hỗ trợ chấm qua Webcam hoặc Upload File Scan</p>
+    <h1>NTMIX OMR PC - Lõi OpenCV</h1>
+    <p>Chấm bài trắc nghiệm siêu tốc qua Webcam Laptop</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
 
@@ -222,14 +221,14 @@ const SHEET_CONFIGS = {
         made: { x: [680, 699, 718, 737], y: [168, 187, 206, 225, 244, 263, 282, 301, 320, 339], cw: 16, ch: 16 },
         p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584] },
         p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743] },
-        p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], digitChars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
+        p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
     },
     'new_ntmix3': {
         sbd: { x: [545, 565, 585, 605, 625, 645, 665, 685], y: [185, 205, 225, 245, 265, 285, 305, 325, 345, 365], cw: 18, ch: 18 },
         made: { x: [700, 720, 740, 760], y: [185, 205, 225, 245, 265, 285, 305, 325, 345, 365], cw: 18, ch: 18 },
         p1: { blockX: [75, 255, 435, 615], offsetsX: [20, 40, 60, 80], y: [415, 435, 455, 475, 495, 515, 535, 555, 575, 595] },
         p2: { blockX: [75, 260, 450, 635], y: [650, 670, 690, 710] },
-        p3: { blockX: [85, 205, 325, 445, 565, 685], offsetsX: [20, 40, 60, 80], yMinus: 805, yDigit: [825, 845, 865, 885, 905, 925, 945, 965, 985, 1005, 1025], digitChars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
+        p3: { blockX: [85, 205, 325, 445, 565, 685], offsetsX: [20, 40, 60, 80], yMinus: 805, yDigit: [825, 845, 865, 885, 905, 925, 945, 965, 985, 1005, 1025], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
     }
 };
 
@@ -496,6 +495,9 @@ function processImagePureJS(flatCanvas, isUpload) {
         let showGrid = getCheckVal('cfg-show-grid', true);
         let fallbackCode = getStrVal('fallback-code', "");
 
+        let ox = getNumVal('cfg-offset-x', 0);
+        let oy = getNumVal('cfg-offset-y', 0);
+
         function findDarkestSolidPatch(startX, startY, w, h) {
             let bestScore = Infinity;
             let bestX = startX + w/2; let bestY = startY + h/2;
@@ -528,9 +530,9 @@ function processImagePureJS(flatCanvas, isUpload) {
                     let innerAvg = innerSum / innerCount;
                     let haloAvg = haloSum / haloCount;
                     
-                    if (innerAvg > 160) continue; 
+                    if (innerAvg > 210) continue; 
+                    
                     let score = innerAvg - haloAvg; 
-
                     if (score < bestScore) { bestScore = score; bestX = x; bestY = y; }
                 }
             }
@@ -543,59 +545,39 @@ function processImagePureJS(flatCanvas, isUpload) {
         let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
         let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
-        function mapCoord(sx, sy) {
-            let u = sx / 800;
-            let v = sy / 1130;
+        function mapCoord(idealX, idealY) {
+            let u = idealX / 800;
+            let v = idealY / 1130;
             let ax = (1-u)*(1-v)*pTL.x + u*(1-v)*pTR.x + (1-u)*v*pBL.x + u*v*pBR.x;
             let ay = (1-u)*(1-v)*pTL.y + u*(1-v)*pTR.y + (1-u)*v*pBL.y + u*v*pBR.y;
             return { x: ax, y: ay };
         }
 
-        function getBestMappedDarkness(sx, sy, w, h) {
-            let center = mapCoord(sx, sy);
-            let cx = Math.round(center.x); let cy = Math.round(center.y);
+        function getMappedRegionDarkness(idealX, idealY, w) {
+            let pt = mapCoord(idealX + ox, idealY + oy);
+            let cx = Math.round(pt.x); let cy = Math.round(pt.y);
 
             if (showGrid) {
                 sCtx.strokeStyle = "rgba(100, 149, 237, 0.6)"; 
-                sCtx.lineWidth = 1; sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(h/2), w, h);
+                sCtx.lineWidth = 1; sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(w/2), w, w);
             }
 
-            let bestScore = 0;
-            for (let dy = -6; dy <= 6; dy += 3) {
-                for (let dx = -6; dx <= 6; dx += 3) {
-                    let startX = (cx + dx) - Math.floor(w/2);
-                    let startY = (cy + dy) - Math.floor(h/2);
-                    
-                    let bgSum = 0, bgCount = 0;
-                    for (let py = cy + dy - 16; py < cy + dy + 16; py+=2) {
-                        for (let px = cx + dx - 16; px < cx + dx + 16; px+=2) {
-                            if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
-                            let idx = (py * WIDTH + px) * 4;
-                            bgSum += 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                            bgCount++;
-                        }
-                    }
-                    let bgAvg = bgCount > 0 ? bgSum / bgCount : 255;
-                    let localThresh = Math.min(145, bgAvg * 0.85); 
-
-                    let darkCount = 0, total = 0;
-                    for (let y = startY; y < startY + h; y++) {
-                        for (let x = startX; x < startX + w; x++) {
-                            if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
-                            let idx = (y * WIDTH + x) * 4;
-                            let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
-                            if (gray < localThresh) darkCount++; total++;
-                        }
-                    }
-                    let score = total > 0 ? darkCount / total : 0;
-                    if (score > bestScore) { bestScore = score; }
+            let darkCount = 0; let total = 0;
+            let startX = Math.round(cx - w/2); let startY = Math.round(cy - w/2);
+            for (let y = startY; y < startY + w; y++) {
+                for (let x = startX; x < startX + w; x++) {
+                    if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
+                    let idx = (y * WIDTH + x) * 4;
+                    let gray = 0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2];
+                    if (gray < 130) darkCount++;
+                    total++;
                 }
             }
-            return bestScore;
+            return total > 0 ? darkCount / total : 0;
         }
 
-        function drawMappedBubble(sx, sy, status) {
-            let pt = mapCoord(sx, sy);
+        function drawMappedBubble(idealX, idealY, status) {
+            let pt = mapCoord(idealX + ox, idealY + oy);
             sCtx.beginPath();
             if (showGrid) {
                 sCtx.lineWidth = 2;
@@ -619,7 +601,7 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         let scannedSbd = "";
         for (let x of GRID_SPEC.sbd.x) {
-            let scores = GRID_SPEC.sbd.y.map(y => getBestMappedDarkness(x, y, 14, 14));
+            let scores = GRID_SPEC.sbd.y.map(y => getMappedRegionDarkness(x, y, 14));
             let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
             if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { 
                 scannedSbd += String(maxIdx); drawMappedBubble(x, GRID_SPEC.sbd.y[maxIdx], 'info_read'); 
@@ -628,7 +610,7 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         let scannedCode = "";
         for (let x of GRID_SPEC.made.x) {
-            let scores = GRID_SPEC.made.y.map(y => getBestMappedDarkness(x, y, 14, 14));
+            let scores = GRID_SPEC.made.y.map(y => getMappedRegionDarkness(x, y, 14));
             let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
             if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { 
                 scannedCode += String(maxIdx); drawMappedBubble(x, GRID_SPEC.made.y[maxIdx], 'info_read'); 
@@ -641,9 +623,7 @@ function processImagePureJS(flatCanvas, isUpload) {
             else warnings.push(`Mã đề ${scannedCode} không có`);
         }
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
-        
-        let sbd = scannedSbd;
-        let stuInfo = dshsDict[sbd] || { name: "", className: "" };
+        let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
         let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
         for (let i = 0; i < key.p1.length; i++) {
@@ -652,7 +632,7 @@ function processImagePureJS(flatCanvas, isUpload) {
             let y = GRID_SPEC.p1.y[rowIdx];
             let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
             
-            let scores = xList.map(x => getBestMappedDarkness(x, y, 14, 14));
+            let scores = xList.map(x => getMappedRegionDarkness(x, y, 14));
             let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
             
             let isFilled = maxScore > minConf;
@@ -674,7 +654,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                 let y = GRID_SPEC.p2.y[rowIdx];
                 let gIdx = i * 4 + rowIdx, expected = gIdx < key2Str.length ? key2Str[gIdx] : '';
                 
-                let scores = xList.map(x => getBestMappedDarkness(x, y, 14, 14));
+                let scores = xList.map(x => getMappedRegionDarkness(x, y, 14));
                 let maxScore = Math.max(...scores), maxIdx = scores.indexOf(maxScore);
                 
                 let isFilled = maxScore > minConf;
@@ -711,7 +691,7 @@ function processImagePureJS(flatCanvas, isUpload) {
             let stuAnsStr = "";
             
             let expectedMinus = cleanKey.startsWith('-');
-            let minusScore = getBestMappedDarkness(baseX + 10, GRID_SPEC.p3.yMinus, 10, 10);
+            let minusScore = getMappedRegionDarkness(baseX + 10, GRID_SPEC.p3.yMinus, 10);
             let filledMinus = minusScore > minConfMinus;
             
             if (filledMinus) {
@@ -727,7 +707,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                 let x = baseX + GRID_SPEC.p3.offsetsX[colIdx];
                 let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
                 
-                let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getBestMappedDarkness(x, y, 13, 13));
+                let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getMappedRegionDarkness(x, y, 13));
                 let maxDigitScore = Math.max(...scoresDigits);
                 let maxDigitIdx = scoresDigits.indexOf(maxDigitScore);
                 
@@ -767,7 +747,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         const outCanvas = document.getElementById('result-canvas');
         outCanvas.width = WIDTH; outCanvas.height = HEIGHT;
         outCanvas.getContext('2d').drawImage(flatCanvas, 0, 0);
-        outCanvas.style.display = 'block'; lastGradedSbd = `${sbd}_${code}`;
+        outCanvas.style.display = 'block'; lastGradedSbd = `${scannedSbd}_${code}`;
 
         document.getElementById('score-dashboard').style.display = 'block';
         document.getElementById('ui-total').textContent = `${totalScore}đ`;
@@ -776,7 +756,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         if(uiStuName) uiStuName.textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
         
         let uiSbdMade = document.getElementById('ui-sbd-made');
-        if(uiSbdMade) uiSbdMade.textContent = `SBD: ${sbd} | Mã đề: ${code}`;
+        if(uiSbdMade) uiSbdMade.textContent = `SBD: ${scannedSbd} | Mã đề: ${code}`;
         
         let uiP1Score = document.getElementById('ui-p1-score'); if(uiP1Score) uiP1Score.textContent = `${scoreP1}đ`; 
         let uiP1Detail = document.getElementById('ui-p1-detail'); if(uiP1Detail) uiP1Detail.textContent = `Đúng ${right1}/${key.p1.length}`;
@@ -794,14 +774,21 @@ function processImagePureJS(flatCanvas, isUpload) {
             if(statusText) { statusText.textContent = `❌ Lỗi: Thiếu mã đề`; statusText.style.background = "var(--danger)"; }
         } else {
             if(warningsEl) warningsEl.textContent = "";
+            let statusText = document.getElementById('cam-status-text');
+            if(statusText) { statusText.textContent = `✅ Đã chấm xong SBD: ${scannedSbd}`; statusText.style.background = "var(--success)"; }
         }
 
-        gradedRows.push({ sbd, name: stuInfo.name, className: stuInfo.className, code, scoreP1, scoreP2, scoreP3, totalScore, warnings: warnings.join('; ') });
-        updateResultsTable();
+        gradedRows.push({ sbd: scannedSbd, name: stuInfo.name, className: stuInfo.className, code: code, scoreP1, scoreP2, scoreP3, totalScore, warnings: warnings.join('; ') });
+        
+        let countGradedEl = document.getElementById('count-graded');
+        if(countGradedEl) countGradedEl.textContent = gradedRows.length;
+        
+        let resultsTbody = document.getElementById('results-tbody');
+        if(resultsTbody) resultsTbody.innerHTML = gradedRows.map((r, i) => `<tr><td>${i+1}</td><td><b>${r.sbd}</b></td><td style="text-align:left;">${r.name}</td><td>${r.code}</td><td><b style="color:#dc2626;">${r.totalScore}</b></td></tr>`).join('');
 
         if (!isUpload && warnings.length === 0) setTimeout(startOpenCVScanLoop, 1500);
 
-    } catch(err) { alert("Lỗi chấm bài: " + err.message); }
+    } catch(err) { alert("Lỗi xử lý: " + err.message); }
 }
 
 function downloadResultImage() {
@@ -809,11 +796,6 @@ function downloadResultImage() {
     link.download = `Cham_${lastGradedSbd}.jpg`;
     link.href = document.getElementById('result-canvas').toDataURL('image/jpeg', 0.9);
     link.click();
-}
-
-function updateResultsTable() {
-    document.getElementById('count-graded').textContent = gradedRows.length;
-    document.getElementById('results-tbody').innerHTML = gradedRows.map((r, i) => `<tr><td>${i+1}</td><td><b>${r.sbd}</b></td><td style="text-align:left;">${r.name}</td><td>${r.code}</td><td><b style="color:#dc2626;">${r.totalScore}</b></td></tr>`).join('');
 }
 
 function exportResultsExcel() {
