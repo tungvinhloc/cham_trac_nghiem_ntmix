@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NTMIX PC - Chấm Webcam & Scan Chuẩn 100%</title>
+    <title>NTMIX PC - Chấm Webcam Chuẩn 100%</title>
     
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- Đã sửa chính xác tên file OpenCV.js theo hệ thống của thầy -->
     <script async src="OpenCV.js" onload="onOpenCvReady();"></script>
 
     <style>
@@ -70,11 +71,10 @@
 <header>
     <h1>NTMIX OMR PC - Chấm Thi Tốc Độ Cao</h1>
     <p>Hỗ trợ chấm qua Webcam hoặc Upload File Scan</p>
-    <span id="cv-status" class="badge-cv">⏳ Đang khởi tạo trí tuệ nhân tạo (OpenCV)...</span>
+    <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
 
 <div class="container">
-    <!-- CỘT TRÁI: CẤU HÌNH -->
     <div class="left-panel">
         <div class="card">
             <div class="card-title">1. Dữ Liệu Chấm</div>
@@ -140,7 +140,6 @@
         </div>
     </div>
 
-    <!-- CỘT PHẢI: CAMERA & BẢNG ĐIỂM -->
     <div class="right-panel">
         <div class="card">
             <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -303,9 +302,6 @@ function stopWebcam() {
     document.getElementById('cam-status-text').style.borderColor = "transparent";
 }
 
-// =========================================================================================
-// LUỒNG 1: UPLOAD FILE SCAN (SỬ DỤNG 100% PURE JS V1.0 - BỎ QUA OPENCV WARP)
-// =========================================================================================
 async function handleImageUpload(inputElement) {
     const files = inputElement.files;
     if (!files || !files.length) return;
@@ -323,11 +319,8 @@ async function handleImageUpload(inputElement) {
             img.onload = () => {
                 let cvs = document.createElement('canvas');
                 cvs.width = 800; cvs.height = 1130;
-                // Vẽ thẳng ảnh scan vào khung chuẩn 800x1130
                 cvs.getContext('2d').drawImage(img, 0, 0, 800, 1130);
-                
                 try {
-                    // Chuyển thẳng sang bộ phân tích tĩnh V1.0, isUpload = true
                     processImagePureJS(cvs, true); 
                 } catch(err) {
                     alert(`Lỗi chấm file ${files[i].name}: ${err.message}`);
@@ -341,9 +334,6 @@ async function handleImageUpload(inputElement) {
     inputElement.value = '';
 }
 
-// =========================================================================================
-// LUỒNG 2: WEBCAM (SỬ DỤNG OPENCV TÌM GÓC & NẮN PHẲNG)
-// =========================================================================================
 function startOpenCVScanLoop() {
     if (scanInterval) clearInterval(scanInterval);
     const video = document.getElementById('webcam-video');
@@ -414,7 +404,7 @@ function startOpenCVScanLoop() {
                 let fullCanvas = document.createElement('canvas');
                 fullCanvas.width = VW; fullCanvas.height = VH;
                 fullCanvas.getContext('2d').drawImage(video, 0, 0);
-                setTimeout(() => { processFullFrameOpenCV(fullCanvas); }, 50);
+                setTimeout(() => { processFullFrameOpenCV(fullCanvas, false); }, 50);
             }
         } else {
             if(stableFrames > 0) stableFrames--;
@@ -427,7 +417,7 @@ function startOpenCVScanLoop() {
     }, 100);
 }
 
-function processFullFrameOpenCV(sourceCanvas) {
+function processFullFrameOpenCV(sourceCanvas, isUpload) {
     try {
         const TARGET_W = 800; const TARGET_H = 1130;
         let src = cv.imread(sourceCanvas);
@@ -462,7 +452,7 @@ function processFullFrameOpenCV(sourceCanvas) {
         if (markers.length < 4) {
             alert("Lỗi: Không tìm thấy 4 ô vuông đen định vị trên ảnh. Vui lòng chụp rõ lại.");
             src.delete();
-            setTimeout(startOpenCVScanLoop, 1500);
+            if(!isUpload) setTimeout(startOpenCVScanLoop, 1500);
             return;
         }
 
@@ -484,15 +474,11 @@ function processFullFrameOpenCV(sourceCanvas) {
 
         src.delete(); dstMat.delete(); srcTri.delete(); dstTri.delete(); M.delete();
 
-        // Chuyển sang bộ chấm điểm, isUpload = false
-        processImagePureJS(flatCanvas, false);
+        processImagePureJS(flatCanvas, isUpload);
 
     } catch(err) { alert("Lỗi xử lý OpenCV: " + err.message); }
 }
 
-// =========================================================================================
-// LÕI PURE JS V1.0 (THUẬT TOÁN TÌM GÓC TỐI - KHÔNG SỢ VIỀN SCAN)
-// =========================================================================================
 function processImagePureJS(flatCanvas, isUpload) {
     try {
         const WIDTH = 800; const HEIGHT = 1130;
@@ -510,7 +496,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         let showGrid = getCheckVal('cfg-show-grid', true);
         let fallbackCode = getStrVal('fallback-code', "");
 
-        // THUẬT TOÁN BẮT TÂM CỦA BẢN V1.0 CHUẨN (Chống viền scan)
         function findDarkestSolidPatch(startX, startY, w, h) {
             let bestScore = Infinity;
             let bestX = startX + w/2; let bestY = startY + h/2;
@@ -552,14 +537,12 @@ function processImagePureJS(flatCanvas, isUpload) {
             return {x: bestX, y: bestY};
         }
 
-        // TĂNG VÙNG TÌM KIẾM LÊN 240x240 ĐỂ BẮT QUA LỚP VIỀN TRẮNG CỦA MÁY SCAN
         let searchW = 240, searchH = 240;
         let pTL = findDarkestSolidPatch(0, 0, searchW, searchH);
         let pTR = findDarkestSolidPatch(WIDTH - searchW, 0, searchW, searchH);
         let pBL = findDarkestSolidPatch(0, HEIGHT - searchH, searchW, searchH);
         let pBR = findDarkestSolidPatch(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
-        // NỘI SUY TOÁN HỌC HOMOGRAPHY CỤC BỘ
         function mapCoord(sx, sy) {
             let u = sx / 800;
             let v = sy / 1130;
@@ -658,7 +641,9 @@ function processImagePureJS(flatCanvas, isUpload) {
             else warnings.push(`Mã đề ${scannedCode} không có`);
         }
         let key = answerKey[code] || { p1: [], p2: [], p3: [] };
-        let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
+        
+        let sbd = scannedSbd;
+        let stuInfo = dshsDict[sbd] || { name: "", className: "" };
 
         let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
         for (let i = 0; i < key.p1.length; i++) {
@@ -682,7 +667,7 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         let key2Str = key.p2.join(''), student2 = '', scoreP2 = 0, right2Details = 0;
         let sp = GRID_SPEC.sbd.x[1] - GRID_SPEC.sbd.x[0];
-        for (let i = 0; i < key.p2.length; i++) {
+        for (let i = 0; i < 8; i++) {
             let blockIdx = Math.floor(i / 2), baseX = GRID_SPEC.p2.blockX[blockIdx];
             let xList = (i % 2 === 1) ? [baseX + sp*4, baseX + sp*6] : [baseX, baseX + sp*2];
             for (let rowIdx = 0; rowIdx < 4; rowIdx++) {
@@ -726,14 +711,14 @@ function processImagePureJS(flatCanvas, isUpload) {
             let stuAnsStr = "";
             
             let expectedMinus = cleanKey.startsWith('-');
-            let minusScore = getBestMappedDarkness(baseX, GRID_SPEC.p3.yMinus, 10, 10);
+            let minusScore = getBestMappedDarkness(baseX + 10, GRID_SPEC.p3.yMinus, 10, 10);
             let filledMinus = minusScore > minConfMinus;
             
             if (filledMinus) {
-                drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill');
+                drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill');
                 stuAnsStr += "-";
             } else if (expectedMinus) {
-                drawMappedBubble(baseX, GRID_SPEC.p3.yMinus, 'missing_key');
+                drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, 'missing_key');
             }
             
             let expectedCols = cleanKey.replace(/^-/, '').split(''); 
@@ -750,7 +735,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                 let contrast = maxDigitScore - sortedScores[5]; 
                 
                 let isFilled = (maxDigitScore > minConf) && (contrast > 0.08);
-                let filledChar = isFilled ? GRID_SPEC.p3.digitChars[maxDigitIdx] : '';
+                let filledChar = isFilled ? GRID_SPEC.p3.chars[maxDigitIdx] : '';
 
                 if (isFilled) {
                     stuAnsStr += filledChar;
@@ -758,13 +743,13 @@ function processImagePureJS(flatCanvas, isUpload) {
                         drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'correct_fill');
                     } else { 
                         drawMappedBubble(x, GRID_SPEC.p3.yDigit[maxDigitIdx], 'wrong_fill'); 
-                        if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
-                            drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key'); 
+                        if (expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
+                            drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key'); 
                         }
                     }
                 } else {
-                    if (expectedChar && GRID_SPEC.p3.digitChars.includes(expectedChar)) {
-                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.digitChars.indexOf(expectedChar)], 'missing_key');
+                    if (expectedChar && GRID_SPEC.p3.chars.includes(expectedChar)) {
+                        drawMappedBubble(x, GRID_SPEC.p3.yDigit[GRID_SPEC.p3.chars.indexOf(expectedChar)], 'missing_key');
                     }
                 }
             }
@@ -786,8 +771,12 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         document.getElementById('score-dashboard').style.display = 'block';
         document.getElementById('ui-total').textContent = `${totalScore}đ`;
-        document.getElementById('ui-stu-name').textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
-        document.getElementById('ui-sbd-made').textContent = `SBD: ${sbd} | Mã đề: ${code}`;
+        
+        let uiStuName = document.getElementById('ui-stu-name');
+        if(uiStuName) uiStuName.textContent = stuInfo.name ? `${stuInfo.name} (${stuInfo.className})` : "Học sinh: (Chưa nạp DSHS)";
+        
+        let uiSbdMade = document.getElementById('ui-sbd-made');
+        if(uiSbdMade) uiSbdMade.textContent = `SBD: ${sbd} | Mã đề: ${code}`;
         
         let uiP1Score = document.getElementById('ui-p1-score'); if(uiP1Score) uiP1Score.textContent = `${scoreP1}đ`; 
         let uiP1Detail = document.getElementById('ui-p1-detail'); if(uiP1Detail) uiP1Detail.textContent = `Đúng ${right1}/${key.p1.length}`;
