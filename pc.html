@@ -81,8 +81,8 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - V60.0 Vá Lỗi Đọc Đáp Án</h1>
-    <p>Phân luồng thông minh: Khắc phục triệt để lỗi đảo câu P2 và P3</p>
+    <h1>NTMIX OMR PC - V61.0 Tọa Độ Toán Học Tuyệt Đối</h1>
+    <p>Phân luồng thông minh: Khắc phục lỗi lệch lề giấy in/scan</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
 
@@ -154,7 +154,7 @@
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" onchange="drawVirtualGrid()"> Vẽ viền định vị lên ảnh chấm (Vuông)
+                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" onchange="drawVirtualGrid()"> Vẽ viền định vị lên ảnh chấm (Vuông thay vì tròn)
                 </label>
             </div>
         </div>
@@ -237,14 +237,15 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = [];
 let videoStream = null; let scanInterval = null;
 let stableFrames = 0; let lastGradedSbd = "Phieu";
 
+// V61: KHÔI PHỤC TỌA ĐỘ GỐC CHUẨN XÁC, SỬ DỤNG CÔNG THỨC TOÁN HỌC ĐỂ BÙ TRỪ KÍCH THƯỚC GIẤY
 const SHEET_CONFIGS = {
     'bgd_2025_8sbd': {
         name: 'Phiếu BGD 2025 (SBD 8 số)',
         sbd: { x: [558, 577, 596, 615, 634, 653, 672, 691], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
         made: { x: [724, 743, 762, 781], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
-        p1: { blockX: [69, 257, 445, 633], offsetsX: [0, 38, 76, 114], y: [409, 427, 446, 465, 483, 502, 520, 539, 557, 576], cw: 14, ch: 14 },
-        p2: { blockX: [69, 257, 445, 633], y: [678, 697, 716, 735], cw: 14, ch: 14 },
-        p3: { blockX: [60, 180, 300, 420, 540, 660], offsetsX: [0, 26, 52, 78], yMinus: 838, yDigit: [857, 877, 896, 915, 934, 953, 972, 991, 1010, 1029, 1048], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
+        p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584], cw: 14, ch: 14 },
+        p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743], cw: 14, ch: 14 },
+        p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
     },
     'old_tnmaker': {
         name: 'Phiếu TNMaker Cũ',
@@ -266,7 +267,6 @@ const SHEET_CONFIGS = {
 
 function playBeep() { try { const ctx = new (window.AudioContext)(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = "sine"; osc.frequency.setValueAtTime(1250, ctx.currentTime); gain.gain.setValueAtTime(0.2, ctx.currentTime); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.12); } catch (e) {} }
 
-// V60: BỘ LỌC ĐÁP ÁN EXCEL MỚI CHỐNG NHẦM LẪN P2 VÀ P3
 function loadExcelKey(input) {
     if (!input.files[0]) return;
     const reader = new FileReader();
@@ -280,16 +280,12 @@ function loadExcelKey(input) {
                 let p1 = [], p2 = [], p3 = [];
                 for (let r = 1; r < rows.length; r++) {
                     let val = String(rows[r][col]).trim().toUpperCase(); if (!val) continue;
-                    
-                    // Logic phân loại mới chặt chẽ: Dài 4 VÀ chỉ chứa Đ, S, D
                     let isPart2 = (val.length === 4 && /^[ĐSD]+$/.test(val));
-                    
                     if (val.length === 1 && ['A','B','C','D'].includes(val)) {
                         p1.push(val);
                     } else if (isPart2) {
                         p2.push(val.replace(/D/g, 'Đ'));
                     } else {
-                        // Mọi chuỗi số, dấu phẩy, dấu âm... sẽ rơi vào Phần 3
                         p3.push(String(rows[r][col]).trim());
                     }
                 }
@@ -622,9 +618,10 @@ function processImagePureJS(flatCanvas, isUpload) {
         let pBL = findBlackSquareCenter(0, HEIGHT - searchH, searchW, searchH);
         let pBR = findBlackSquareCenter(WIDTH - searchW, HEIGHT - searchH, searchW, searchH);
 
+        // V61: CÔNG THỨC MAPPING TOÁN HỌC CHUẨN XÁC TỰ CO GIÃN THEO 4 GÓC
         function mapCoord(idealX, idealY) {
-            let u = idealX / 800;
-            let v = idealY / 1130;
+            let u = (idealX - 40) / 720;
+            let v = (idealY - 40) / 1050;
             let ax = (1-u)*(1-v)*pTL.x + u*(1-v)*pTR.x + (1-u)*v*pBL.x + u*v*pBR.x;
             let ay = (1-u)*(1-v)*pTL.y + u*(1-v)*pTR.y + (1-u)*v*pBL.y + u*v*pBR.y;
             return { x: ax, y: ay };
@@ -651,7 +648,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                         }
                     }
                     let bgAvg = bgCount > 0 ? bgSum / bgCount : 255;
-                    let localThresh = Math.min(175, bgAvg * 0.88); 
+                    let localThresh = Math.min(165, bgAvg * 0.88); 
 
                     let darkCount = 0, total = 0;
                     for (let y = startY; y < startY + w; y++) {
@@ -713,7 +710,7 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         let code = scannedCode.replace(/\?/g, '0'); let warnings = [];
         if (Object.keys(answerKey).length === 0) {
-            // Không cảnh báo gắt nếu chưa nạp file
+            // Cảnh báo ẩn
         } else if (!answerKey[code]) {
             if (fallbackCode && answerKey[fallbackCode]) code = fallbackCode;
             else warnings.push(`Mã đề ${scannedCode} không có`);
@@ -723,7 +720,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         let stuInfo = dshsDict[scannedSbd] || { name: "", className: "" };
 
         let right1 = 0; const labelsP1 = ['A', 'B', 'C', 'D'];
-        let limitP1 = key.p1 && key.p1.length > 0 ? key.p1.length : 40; // Chấm tới độ dài key hoặc chấm full nếu ko có key
+        let limitP1 = key.p1 && key.p1.length > 0 ? key.p1.length : 40;
         
         for (let i = 0; i < limitP1; i++) {
             let blockIdx = Math.floor(i / 10), rowIdx = i % 10;
@@ -748,7 +745,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                     if (fIdx === corrIdx) { right1++; drawMappedBubble(xList[fIdx], y, 'correct_fill'); }
                     else { drawMappedBubble(xList[fIdx], y, 'wrong_fill'); if (corrIdx >= 0) drawMappedBubble(xList[corrIdx], y, 'missing_key'); }
                 } else {
-                    drawMappedBubble(xList[fIdx], y, 'info_read'); // Xanh lam nếu chưa có đáp án
+                    drawMappedBubble(xList[fIdx], y, 'info_read'); 
                 }
             } else if (filledIndices.length > 1) { 
                 filledIndices.forEach(idx => drawMappedBubble(xList[idx], y, 'wrong_fill'));
@@ -761,7 +758,7 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         let key2Str = key.p2 ? key.p2.join('') : ''; let student2 = '', scoreP2 = 0, right2Details = 0;
         let sp = GRID_SPEC.sbd.x[1] - GRID_SPEC.sbd.x[0];
-        let limitP2 = key2Str.length > 0 ? (key2Str.length / 4) : 4; // Mặc định chấm 4 câu (16 ý) nếu ko có key
+        let limitP2 = key2Str.length > 0 ? (key2Str.length / 4) : 4; 
 
         for (let i = 0; i < limitP2; i++) {
             let blockIdx = Math.floor(i / 2), baseX = GRID_SPEC.p2.blockX[blockIdx];
