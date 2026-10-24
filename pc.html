@@ -81,8 +81,8 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - V57.0 Bắt Nét Chống Nhiễu</h1>
-    <p>Thuật toán Hybrid: OpenCV Nắn Hình + Tương Phản Động</p>
+    <h1>NTMIX OMR PC - V58.0 Tinh Chỉnh SBD & Độ Nhạy</h1>
+    <p>Thuật toán Hybrid: OpenCV Nắn Hình + Tương Phản Kết Hợp</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
 
@@ -132,7 +132,7 @@
             </div>
             
             <div class="grid-2">
-                <div class="form-group"><label>Ngưỡng Mực Chì:</label><input type="number" id="cfg-conf" step="0.02" value="0.30"></div>
+                <div class="form-group"><label>Ngưỡng Mực Chì:</label><input type="number" id="cfg-conf" step="0.02" value="0.25"></div>
                 <div class="form-group"><label>Ngưỡng Dấu Trừ:</label><input type="number" id="cfg-conf-minus" step="0.02" value="0.40"></div>
             </div>
             <div class="grid-2">
@@ -154,7 +154,6 @@
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <!-- MẶC ĐỊNH BỎ TICK ĐỂ HIỂN THỊ CHẤM TRÒN -->
                     <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" onchange="drawVirtualGrid()"> Vẽ viền vuông thay vì chấm tròn
                 </label>
             </div>
@@ -238,11 +237,12 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = [];
 let videoStream = null; let scanInterval = null;
 let stableFrames = 0; let lastGradedSbd = "Phieu";
 
+// ĐÃ TINH CHỈNH LẠI CỘT SBD VÀ MÃ ĐỀ (GIÃN CÁCH RỘNG HƠN)
 const SHEET_CONFIGS = {
     'bgd_2025_8sbd': {
         name: 'Phiếu BGD 2025 (SBD 8 số)',
-        sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
-        made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
+        sbd: { x: [558, 577, 596, 615, 634, 653, 672, 691], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
+        made: { x: [724, 743, 762, 781], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
         p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584], cw: 14, ch: 14 },
         p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743], cw: 14, ch: 14 },
         p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
@@ -565,8 +565,8 @@ function processImagePureJS(flatCanvas, isUpload) {
         let type = getStrVal('cfg-sheet-type', 'bgd_2025_8sbd');
         let GRID_SPEC = SHEET_CONFIGS[type];
         
-        let minConf = getNumVal('cfg-conf', 0.35); 
-        let minConfMinus = getNumVal('cfg-conf-minus', 0.42);
+        let minConf = getNumVal('cfg-conf', 0.25); 
+        let minConfMinus = getNumVal('cfg-conf-minus', 0.40);
         let diemP1 = getNumVal('cfg-p1', 0.25);
         let diemP2 = [getNumVal('cfg-p2-1', 0.1), getNumVal('cfg-p2-2', 0.25), getNumVal('cfg-p2-3', 0.5), getNumVal('cfg-p2-4', 1.0)];
         let diemP3 = getNumVal('cfg-p3', 0.5);
@@ -621,14 +621,10 @@ function processImagePureJS(flatCanvas, isUpload) {
             return { x: ax, y: ay };
         }
 
-        // TÍNH TOÁN NGƯỠNG TƯƠNG PHẢN ĐỘNG (ADAPTIVE THRESHOLD CỤC BỘ)
+        // TÍNH TOÁN NGƯỠNG TƯƠNG PHẢN ĐỘNG & TĨNH KẾT HỢP ĐỂ CHỐNG NHIỄU SCAN (MỞ RỘNG VÙNG LẤY MẪU)
         function getMappedRegionDarkness(idealX, idealY, w) {
             let pt = mapCoord(idealX + ox, idealY + oy);
             let cx = Math.round(pt.x); let cy = Math.round(pt.y);
-
-            // Vẽ khung vuông ảo xanh nhạt mờ để kiểm tra tọa độ
-            sCtx.strokeStyle = "rgba(100, 149, 237, 0.4)"; 
-            sCtx.lineWidth = 1; sCtx.strokeRect(cx - Math.floor(w/2), cy - Math.floor(w/2), w, w);
 
             let bestScore = 0;
             for (let dy = -3; dy <= 3; dy += 3) {
@@ -636,10 +632,9 @@ function processImagePureJS(flatCanvas, isUpload) {
                     let startX = (cx + dx) - Math.floor(w/2);
                     let startY = (cy + dy) - Math.floor(w/2);
                     
-                    // Lấy mẫu nền giấy xung quanh bọt nước
                     let bgSum = 0, bgCount = 0;
-                    for (let py = cy + dy - 12; py <= cy + dy + 12; py+=3) {
-                        for (let px = cx + dx - 12; px <= cx + dx + 12; px+=3) {
+                    for (let py = cy + dy - 14; py <= cy + dy + 14; py+=2) {
+                        for (let px = cx + dx - 14; px <= cx + dx + 14; px+=2) {
                             if (px < 0 || px >= WIDTH || py < 0 || py >= HEIGHT) continue;
                             if (Math.abs(px - (cx+dx)) < 6 && Math.abs(py - (cy+dy)) < 6) continue;
                             let idx = (py * WIDTH + px) * 4;
@@ -648,9 +643,12 @@ function processImagePureJS(flatCanvas, isUpload) {
                         }
                     }
                     let bgAvg = bgCount > 0 ? bgSum / bgCount : 255;
-                    let localThresh = Math.min(150, bgAvg * 0.88); // Ngưỡng động
+                    
+                    // Kết hợp 2 điều kiện: Vừa phải đen hơn nền xung quanh, vừa phải đủ độ đen tuyệt đối (< 175)
+                    let localThresh = Math.min(175, bgAvg * 0.88); 
 
                     let darkCount = 0, total = 0;
+                    // Lấy mẫu rộng hơn (w=12) để bao trọn ô tròn
                     for (let y = startY; y < startY + w; y++) {
                         for (let x = startX; x < startX + w; x++) {
                             if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
@@ -667,7 +665,7 @@ function processImagePureJS(flatCanvas, isUpload) {
             return bestScore;
         }
 
-        // HÀM VẼ CHẤM TRÒN / VUÔNG MÀU
+        // HÀM VẼ CHẤM TRÒN / VUÔNG MÀU (CHUẨN XÁC)
         function drawMappedBubble(idealX, idealY, status) {
             let pt = mapCoord(idealX + ox, idealY + oy);
             sCtx.beginPath();
@@ -693,7 +691,7 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         let scannedSbd = "";
         for (let x of GRID_SPEC.sbd.x) {
-            let scores = GRID_SPEC.sbd.y.map(y => getMappedRegionDarkness(x, y, 14));
+            let scores = GRID_SPEC.sbd.y.map(y => getMappedRegionDarkness(x, y, 12));
             let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
             if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { 
                 scannedSbd += String(maxIdx); drawMappedBubble(x, GRID_SPEC.sbd.y[maxIdx], 'info_read'); 
@@ -702,7 +700,7 @@ function processImagePureJS(flatCanvas, isUpload) {
 
         let scannedCode = "";
         for (let x of GRID_SPEC.made.x) {
-            let scores = GRID_SPEC.made.y.map(y => getMappedRegionDarkness(x, y, 14));
+            let scores = GRID_SPEC.made.y.map(y => getMappedRegionDarkness(x, y, 12));
             let maxIdx = scores.indexOf(Math.max(...scores)), sorted = [...scores].sort((a,b)=>a-b);
             if (scores[maxIdx] > minConf && (scores[maxIdx] - sorted[4]) > 0.08) { 
                 scannedCode += String(maxIdx); drawMappedBubble(x, GRID_SPEC.made.y[maxIdx], 'info_read'); 
@@ -727,7 +725,7 @@ function processImagePureJS(flatCanvas, isUpload) {
             let y = GRID_SPEC.p1.y[rowIdx];
             let xList = GRID_SPEC.p1.offsetsX.map(off => GRID_SPEC.p1.blockX[blockIdx] + off);
             
-            let scores = xList.map(x => getMappedRegionDarkness(x, y, 14));
+            let scores = xList.map(x => getMappedRegionDarkness(x, y, 12));
             let maxScore = Math.max(...scores);
             
             let filledIndices = [];
@@ -765,7 +763,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                 let y = GRID_SPEC.p2.y[rowIdx];
                 let gIdx = i * 4 + rowIdx, expected = (key2Str && gIdx < key2Str.length) ? key2Str[gIdx] : '';
                 
-                let scores = xList.map(x => getMappedRegionDarkness(x, y, 14));
+                let scores = xList.map(x => getMappedRegionDarkness(x, y, 12));
                 let maxScore = Math.max(...scores);
                 
                 let filledIndices = [];
@@ -814,7 +812,9 @@ function processImagePureJS(flatCanvas, isUpload) {
             let expectedMinus = cleanKey.startsWith('-');
             
             let minusScore = getMappedRegionDarkness(baseX + 10, GRID_SPEC.p3.yMinus, 10);
-            if (minusScore > minConfMinus) {
+            let filledMinus = minusScore > minConfMinus;
+            
+            if (filledMinus) {
                 if (cleanKey) drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, expectedMinus ? 'correct_fill' : 'wrong_fill');
                 else drawMappedBubble(baseX + 10, GRID_SPEC.p3.yMinus, 'info_read');
                 stuAnsStr += "-";
@@ -828,7 +828,7 @@ function processImagePureJS(flatCanvas, isUpload) {
                 let x = baseX + GRID_SPEC.p3.offsetsX[colIdx];
                 let expectedChar = colIdx < expectedCols.length ? expectedCols[colIdx] : ''; 
                 
-                let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getMappedRegionDarkness(x, y, 13));
+                let scoresDigits = GRID_SPEC.p3.yDigit.map(y => getMappedRegionDarkness(x, y, 12));
                 let maxScore = Math.max(...scoresDigits);
                 
                 let filledIndices = [];
