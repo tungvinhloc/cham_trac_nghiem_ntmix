@@ -68,7 +68,7 @@
 <body>
 
 <header>
-    <h1>NTMIX OMR PC - Lõi OpenCV</h1>
+    <h1>NTMIX OMR PC - Lõi Căn Tâm Chuẩn</h1>
     <p>Chấm bài trắc nghiệm siêu tốc qua Webcam Laptop</p>
     <span id="cv-status" class="badge-cv">⏳ Đang tải thư viện OpenCV...</span>
 </header>
@@ -97,9 +97,10 @@
             <div class="card-title">2. Cấu Hình Thuật Toán</div>
             <div class="form-group">
                 <label>📄 Mẫu phiếu:</label>
-                <select id="cfg-sheet-type">
-                    <option value="old_tnmaker">Phiếu TNMaker (SBD 8 số, Mã 4 số)</option>
-                    <option value="new_ntmix3">Phiếu NTMIX NEW (SBD 8 số, Mã 4 số)</option>
+                <select id="cfg-sheet-type" onchange="drawVirtualGrid()">
+                    <option value="bgd_2025_8sbd" selected>Phiếu BGD 2025 (SBD 8 số - Mã 4 số)</option>
+                    <option value="old_tnmaker">Phiếu TNMaker Cũ (SBD 8 số - Mã 4 số)</option>
+                    <option value="new_ntmix3">Phiếu NTMIX NEW (SBD 8 số - Mã 4 số)</option>
                 </select>
             </div>
             <div class="form-group" style="background: #ecfdf5; padding: 10px; border-radius: 8px; border: 1px dashed #10b981;">
@@ -133,7 +134,7 @@
             </div>
             <div class="form-group">
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" checked> Vẽ lưới định vị xanh lam bao phủ ô tròn
+                    <input type="checkbox" id="cfg-show-grid" style="width: 16px; height: 16px;" checked onchange="drawVirtualGrid()"> Vẽ lưới định vị lên ảnh chấm
                 </label>
             </div>
         </div>
@@ -156,7 +157,7 @@
                 <video id="webcam-video" autoplay playsinline muted></video>
                 <canvas id="webcam-canvas-overlay"></canvas>
                 <div class="webcam-hud">
-                    <span id="cam-status-text">Mở Webcam hoặc Tải File Scan/Ảnh chụp</span>
+                    <span id="cam-status-text">Mở Webcam hoặc Tải Ảnh chụp lên</span>
                 </div>
             </div>
 
@@ -215,20 +216,31 @@ let answerKey = {}; let dshsDict = {}; let gradedRows = [];
 let videoStream = null; let scanInterval = null;
 let stableFrames = 0; let lastGradedSbd = "Phieu";
 
+// ĐÃ CHỈNH SỬA BGD_2025 LÊN 8 SỐ CHUẨN XÁC
 const SHEET_CONFIGS = {
+    'bgd_2025_8sbd': {
+        name: 'Phiếu BGD 2025 (SBD 8 số)',
+        sbd: { x: [558, 576, 594, 612, 630, 648, 666, 684], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
+        made: { x: [724, 742, 760, 778], y: [83, 107, 131, 155, 179, 203, 227, 251, 275, 299], cw: 14, ch: 14 },
+        p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584], cw: 14, ch: 14 },
+        p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743], cw: 14, ch: 14 },
+        p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
+    },
     'old_tnmaker': {
-        sbd: { x: [520, 539, 558, 577, 596, 615, 634, 653], y: [168, 187, 206, 225, 244, 263, 282, 301, 320, 339], cw: 16, ch: 16 },
-        made: { x: [680, 699, 718, 737], y: [168, 187, 206, 225, 244, 263, 282, 301, 320, 339], cw: 16, ch: 16 },
-        p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584] },
-        p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743] },
-        p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
+        name: 'Phiếu TNMaker Cũ',
+        sbd: { x: [520, 539, 558, 577, 596, 615, 634, 653], y: [168, 187, 206, 225, 244, 263, 282, 301, 320, 339], cw: 14, ch: 14 },
+        made: { x: [680, 699, 718, 737], y: [168, 187, 206, 225, 244, 263, 282, 301, 320, 339], cw: 14, ch: 14 },
+        p1: { blockX: [71, 259, 447, 635], offsetsX: [0, 38, 76, 114], y: [417, 435, 454, 473, 491, 510, 528, 547, 565, 584], cw: 14, ch: 14 },
+        p2: { blockX: [71, 259, 447, 635], y: [686, 705, 724, 743], cw: 14, ch: 14 },
+        p3: { blockX: [64, 184, 304, 424, 544, 664], offsetsX: [0, 26, 52, 78], yMinus: 852, yDigit: [871, 891, 910, 929, 948, 967, 986, 1005, 1024, 1043, 1062], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 14, ch: 14 }
     },
     'new_ntmix3': {
+        name: 'Phiếu NTMIX NEW',
         sbd: { x: [545, 565, 585, 605, 625, 645, 665, 685], y: [185, 205, 225, 245, 265, 285, 305, 325, 345, 365], cw: 18, ch: 18 },
         made: { x: [700, 720, 740, 760], y: [185, 205, 225, 245, 265, 285, 305, 325, 345, 365], cw: 18, ch: 18 },
-        p1: { blockX: [75, 255, 435, 615], offsetsX: [20, 40, 60, 80], y: [415, 435, 455, 475, 495, 515, 535, 555, 575, 595] },
-        p2: { blockX: [75, 260, 450, 635], y: [650, 670, 690, 710] },
-        p3: { blockX: [85, 205, 325, 445, 565, 685], offsetsX: [20, 40, 60, 80], yMinus: 805, yDigit: [825, 845, 865, 885, 905, 925, 945, 965, 985, 1005, 1025], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] }
+        p1: { blockX: [75, 255, 435, 615], offsetsX: [20, 40, 60, 80], y: [415, 435, 455, 475, 495, 515, 535, 555, 575, 595], cw: 18, ch: 18 },
+        p2: { blockX: [75, 260, 450, 635], y: [650, 670, 690, 710], cw: 18, ch: 18 },
+        p3: { blockX: [85, 205, 325, 445, 565, 685], offsetsX: [20, 40, 60, 80], yMinus: 805, yDigit: [825, 845, 865, 885, 905, 925, 945, 965, 985, 1005, 1025], chars: [',', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], cw: 18, ch: 18 }
     }
 };
 
@@ -277,6 +289,49 @@ function loadExcelDSHS(input) {
     };
     reader.readAsArrayBuffer(input.files[0]);
 }
+
+function drawVirtualGrid() {
+    const canvas = document.getElementById('result-canvas');
+    if(canvas.style.display !== 'block') canvas.style.display = 'block';
+    
+    if(canvas.width < 100) {
+        canvas.width = 800; canvas.height = 1130;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = "#1e293b"; ctx.fillRect(0,0, 800, 1130);
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    let type = getStrVal('cfg-sheet-type', 'bgd_2025_8sbd');
+    let C = SHEET_CONFIGS[type];
+    let isSquare = getCheckVal('cfg-show-grid', true);
+
+    ctx.strokeStyle = "rgba(59, 130, 246, 0.8)"; 
+    ctx.lineWidth = 1.5;
+
+    function drawShape(x, y, w, h) {
+        if(isSquare) {
+            ctx.strokeRect(x - w/2, y - h/2, w, h);
+        } else {
+            ctx.beginPath(); ctx.arc(x, y, w/2, 0, 2 * Math.PI); ctx.stroke();
+        }
+    }
+    
+    C.sbd.x.forEach(x => { C.sbd.y.forEach(y => drawShape(x, y, C.sbd.cw, C.sbd.ch)); });
+    C.made.x.forEach(x => { C.made.y.forEach(y => drawShape(x, y, C.made.cw, C.made.ch)); });
+    C.p1.blockX.forEach(bx => { C.p1.offsetsX.forEach(offX => { C.p1.y.forEach(y => drawShape(bx + offX, y, C.p1.cw, C.p1.ch)); }); });
+    C.p2.blockX.forEach(bx => { 
+        C.p1.offsetsX.forEach(offX => { C.p2.y.forEach(y => drawShape(bx + offX, y, C.p2.cw, C.p2.ch)); }); 
+    });
+    C.p3.blockX.forEach(bx => { 
+        drawShape(bx + C.p3.offsetsX[0], C.p3.yMinus, C.p3.cw, C.p3.ch);
+        C.p3.offsetsX.forEach(offX => { 
+            C.p3.yDigit.forEach(y => drawShape(bx + offX, y, C.p3.cw, C.p3.ch)); 
+        }); 
+    });
+}
+
+window.addEventListener('DOMContentLoaded', () => { drawVirtualGrid(); });
 
 async function startWebcam() {
     if (!window.cvReady) return alert("OpenCV đang tải, xin đợi 2 giây...");
@@ -484,7 +539,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         const sCtx = flatCanvas.getContext('2d', { willReadFrequently: true });
         const data = sCtx.getImageData(0, 0, WIDTH, HEIGHT).data;
 
-        let type = getStrVal('cfg-sheet-type', 'old_tnmaker');
+        let type = getStrVal('cfg-sheet-type', 'bgd_2025_8sbd');
         let GRID_SPEC = SHEET_CONFIGS[type];
         
         let minConf = getNumVal('cfg-conf', 0.35); 
@@ -494,9 +549,6 @@ function processImagePureJS(flatCanvas, isUpload) {
         let diemP3 = getNumVal('cfg-p3', 0.5);
         let showGrid = getCheckVal('cfg-show-grid', true);
         let fallbackCode = getStrVal('fallback-code', "");
-
-        let ox = getNumVal('cfg-offset-x', 0);
-        let oy = getNumVal('cfg-offset-y', 0);
 
         function findDarkestSolidPatch(startX, startY, w, h) {
             let bestScore = Infinity;
@@ -554,7 +606,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
 
         function getMappedRegionDarkness(idealX, idealY, w) {
-            let pt = mapCoord(idealX + ox, idealY + oy);
+            let pt = mapCoord(idealX, idealY);
             let cx = Math.round(pt.x); let cy = Math.round(pt.y);
 
             if (showGrid) {
@@ -577,7 +629,7 @@ function processImagePureJS(flatCanvas, isUpload) {
         }
 
         function drawMappedBubble(idealX, idealY, status) {
-            let pt = mapCoord(idealX + ox, idealY + oy);
+            let pt = mapCoord(idealX, idealY);
             sCtx.beginPath();
             if (showGrid) {
                 sCtx.lineWidth = 2;
