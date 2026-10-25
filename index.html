@@ -3470,8 +3470,6 @@ function renderPhoto(sheetImg, cfg, marks, o) {
           String(v.code || '')
             .replace(/\D/g, '')
             .trim()
-            .padStart(4, '0')
-            .slice(-4)
         );
         for (let i = 0; i < 40; i++) {
           const x = v.mcq && v.mcq[i];
@@ -3683,8 +3681,8 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     cfg.p2 = st.p2;
     cfg.p3 = st.p3;
     cfg.versions.forEach(function (v) {
-      let c = String(v.code || '').trim().replace(/\D/g, '').padStart(4, '0');
-      v.code = c.length > 4 ? c.slice(-4) : c;
+      let c = String(v.code || '').trim().replace(/\D/g, '');
+      v.code = c;
     });
     saveCfg();
     scan = null;
