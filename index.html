@@ -2506,9 +2506,11 @@ function orient(g, w, h, pts, cands) {
       bs =
         SHEET.ORIENT === 'rings'
           ? ringScore(g, w, h, H, ref)
-          : SHEET.SPOT
-            ? spotScore(g, w, h, H, ref)
-            : barScore(g, w, h, H, ref);
+          : SHEET.ORIENT === 'bands' // NÂNG CẤP: Dùng thuật toán đánh giá bằng số ô neo khớp
+            ? (mid / (2 * (MARK_ROWS.length - 2) || 1)) 
+            : SHEET.SPOT
+              ? spotScore(g, w, h, H, ref)
+              : barScore(g, w, h, H, ref);
     found.push({ H: H, P: P, bar: bs + 0.1 * mid, raw: bs, mid: mid, ref: ref });
   }
   if (!found.length) return null;
@@ -2522,7 +2524,22 @@ function orient(g, w, h, pts, cands) {
     if (second && best.raw - second.raw < 0.03) return null;
     return best;
   }
-  if (best.raw < 0.12 && best.mid < 4) return null;
+  if (SHEET.ORIENT === 'bands') {
+    // Phiếu bgd25: Nếu thấy đủ ô neo giữa mép hoặc 4 góc thì tin tưởng hướng đó
+    if (best.mid >= Math.min(2, 2 * (MARK_ROWS.length - 2))) return best;
+    if (best.mid === 0 && second && best.mid === second.mid) {
+         // Nếu mờ quá không thấy ô giữa nào, chọn bừa hướng tốt nhất dự phòng
+         return best; 
+    }
+    return best;
+  }
+
+  // Các loại phiếu dùng thanh vạch mép phải (barScore)
+  if (best.raw < 0.12 && best.mid < 4) {
+    // SỬA LỖI CHO BGD25: Nếu không phải phiếu dùng bar, bỏ qua báo lỗi bar
+    if(SHEET.id !== 'nh') return best; 
+    return null; 
+  }
   if (second && best.bar - second.bar < 0.06) return null;
   return best;
 }
