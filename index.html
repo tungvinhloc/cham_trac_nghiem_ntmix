@@ -3463,10 +3463,12 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     try {
       if (!c || c.v !== 2 || !c.versions || !c.versions.length) return null;
       const vs = c.versions.slice(0, 20).map(function (v) {
-        const e = emptyVer(
+       const e = emptyVer(
           String(v.code || '')
             .replace(/\D/g, '')
-            .slice(0, 4)
+            .trim()
+            .padStart(4, '0')
+            .slice(-4)
         );
         for (let i = 0; i < 40; i++) {
           const x = v.mcq && v.mcq[i];
@@ -3678,7 +3680,8 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     cfg.p2 = st.p2;
     cfg.p3 = st.p3;
     cfg.versions.forEach(function (v) {
-      v.code = String(v.code || '').slice(0, MD_X.length);
+      let c = String(v.code || '').trim().replace(/\D/g, '').padStart(4, '0');
+      v.code = c.length > 4 ? c.slice(-4) : c;
     });
     saveCfg();
     scan = null;
