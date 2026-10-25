@@ -4935,13 +4935,18 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       return;
     }
     e.hidden = false;
+
+    // LẤY THÔNG TIN HỌC SINH TỪ BỘ NHỚ
+    const info = getStudentInfo(rd.scan.sbdStr);
+    const nameStr = info ? '<br><span style="color:#3ddc84">' + esc(info.name) + '</span> (' + esc(info.cls) + ')' : '';
+
     e.innerHTML =
       '<b>' +
       fmt(rd.g.total) +
       '</b><span>/' +
       fmt(rd.g.max) +
       '</span><small>SBD ' +
-      esc(rd.scan.sbdStr || '—') +
+      esc(rd.scan.sbdStr || '—') + nameStr +
       ' · Mã đề ' +
       esc(rd.scan.mdStr || '—') +
       '</small>';
@@ -5505,9 +5510,14 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       (cfg.n3 ? (cfg.n1 ? ' · ' : '') + 'Phần III đúng ' + g.p3.ok + '/' + cfg.n3 : '') +
       '</div></div></div>';
     h += warnHTML();
+    
+    // --- LẤY THÔNG TIN HỌC SINH ĐỂ HIỂN THỊ ---
+    const info = getStudentInfo(scan.sbdStr);
+    const nameStr = info ? ' - <b><span style="color:var(--ink)">' + esc(info.name) + '</span> (' + esc(info.cls) + ')</b>' : '';
+    // -----------------------------------------
+
     h +=
-      '<div class="fields"><div class="field"><label class="lbl" for="sbdIn">Số báo ' +
-      'danh</label><input id="sbdIn" class="mono" maxlength="' +
+      '<div class="fields"><div class="field"><label class="lbl" for="sbdIn">Số báo danh' + nameStr + '</label><input id="sbdIn" class="mono" maxlength="' +
       SBD_X.length +
       '" inputmode="numeric" value="' +
       esc(scan.sbdStr) +
@@ -6215,9 +6225,12 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       const pt = r.parts
         ? ' · I ' + fmt(r.parts[0]) + ' · II ' + fmt(r.parts[1]) + ' · III ' + fmt(r.parts[2])
         : '';
+      const info = getStudentInfo(r.sbd);
+      const nameStr = info ? ' - <span style="color:var(--ink)">' + esc(info.name) + '</span>' : '';
+      
       h +=
         '<div class="item"><div><div class="who">SBD ' +
-        esc(r.sbd || '—') +
+        esc(r.sbd || '—') + nameStr +
         ' · Mã đề ' +
         esc(r.md || '—') +
         '</div><div class="meta">' +
@@ -6225,18 +6238,6 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         pt +
         (r.edited ? ' · đã sửa' : '') +
         '</div></div><span class="sc">' +
-        fmt(r.total) +
-        '</span>' +
-        '<button type="button" data-del="' +
-        r.id +
-        '" aria-label="Xoá bài này">×</button>' +
-        '<div class="rowbtns">' +
-        (r.nm
-          ? '<img class="nmthumb" data-nm="' + r.id + '" data-edit="' + r.id + '" alt="Họ tên học sinh">'
-          : '') +
-        '<button type="button" class="viewimg" data-edit="' +
-        r.id +
-        '">Xem và sửa bài</button></div></div>';
     });
     h +=
       '</div><div class="actions"><button type="button" class="btn primary" id="csvBtn">Tải bảng ' +
@@ -6574,14 +6575,15 @@ function renderPhoto(sheetImg, cfg, marks, o) {
   });
   async function exportCsv() {
     const rows = [
-      ['Thời gian', 'Số báo danh', 'Mã đề', 'Phần I', 'Phần II', 'Phần III', 'Tổng điểm', 'Điểm tối đa']
+      ['Thời gian', 'Số báo danh', 'Họ và tên', 'Lớp', 'Mã đề', 'Phần I', 'Phần II', 'Phần III', 'Tổng điểm', 'Điểm tối đa']
     ];
     listRes()
       .slice()
       .reverse()
       .forEach(function (r) {
         const p = r.parts || ['', '', ''];
-        rows.push([new Date(r.t).toLocaleString('vi-VN'), r.sbd, r.md, p[0], p[1], p[2], r.total, r.max]);
+        const info = getStudentInfo(r.sbd) || {name: '', cls: ''};
+        rows.push([new Date(r.t).toLocaleString('vi-VN'), r.sbd, info.name, info.cls, r.md, p[0], p[1], p[2], r.total, r.max]);
       });
     const csv =
       '﻿' +
@@ -7270,21 +7272,25 @@ function renderPhoto(sheetImg, cfg, marks, o) {
 
   let qrState = { kind: 'idle' },
     qrUndo = null;
-  function renderQr() {
+ function renderQr() {
     const host = $('#qrCard');
     let h =
-      '<h2>Nhập đáp án bằng mã QR</h2><p class="hint">Chụp hoặc chọn ảnh mã QR chứa đáp án các ' +
+      '<h2>Nhập đáp án tự động</h2><p class="hint">Quét mã QR hoặc nạp file Excel chứa đáp án các ' +
       'mã đề. App đọc xong là nhập luôn, các mã đề cũ vẫn được giữ lại.</p>' +
-      '<div class="actions"><label class="btn primary" for="qrCam">Chụp mã QR</label><label class="btn" for="qrPick">Chọn ' +
-      'ảnh QR</label><button type="button" class="btn ghost" id="qrClearAll">Xoá tất cả mã ' +
-      'đề</button></div>' +
-      '<input class="vh" type="file" id="qrCam" accept="image/*" capture="environment"><input class="vh" type="file" id="qrPick" accept="image/*">' +
+      '<div class="actions">' +
+      '<button type="button" class="btn primary" id="qrLiveBtn">Quét QR trực tiếp</button>' +
+      '<label class="btn" for="excelPick" style="background:#1fb86a; color:#fff; border-color:#1fb86a;">Nhập từ Excel</label>' +
+      '<label class="btn" for="qrPick">Chọn ảnh QR</label>' +
+      '<button type="button" class="btn ghost danger" id="qrClearAll">Xoá tất cả</button></div>' +
+      '<input class="vh" type="file" id="qrPick" accept="image/*">' +
+      '<input class="vh" type="file" id="excelPick" accept=".xlsx, .xls, .csv">' +
       '<details class="qrpaste"' +
       (qrState.kind === 'paste' ? ' open' : '') +
       '><summary>Hoặc dán nội dung mã QR</summary><div class="field"><textarea id="qrText" spellcheck="false" placeholder=\'[["0101","A","B",…],["0102",…]]\'></textarea></div>' +
       '<div class="actions"><button type="button" class="btn small" id="qrParse">Đọc nội ' +
       'dung</button></div></details>';
-    if (qrState.kind === 'busy') h += '<div class="busy"><span class="spin"></span>Đang đọc mã QR…</div>';
+      
+    if (qrState.kind === 'busy') h += '<div class="busy"><span class="spin"></span>Đang xử lý dữ liệu…</div>';
     else if (qrState.kind === 'error')
       h += '<div class="note err"><b>' + esc(qrState.title) + '</b><br>' + esc(qrState.body) + '</div>';
     else if (qrState.kind === 'preview') {
@@ -7296,93 +7302,113 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         '<div class="qrprev"><div><b>Đọc được ' +
         r.total +
         ' mã đề:</b> <span class="mono">' +
-        r.versions
-          .map(function (v) {
-            return esc(v.code || '—');
-          })
-          .join(' · ') +
+        r.versions.map(function (v) { return esc(v.code || '—'); }).join(' · ') +
         '</span></div>' +
-        '<div class="chips"><span class="chip">Phần I: ' +
-        r.n1 +
-        ' câu</span><span class="chip">Phần II: ' +
-        r.n2 +
-        ' câu</span><span class="chip">Phần III: ' +
-        r.n3 +
-        ' câu</span></div>' +
+        '<div class="chips"><span class="chip">Phần I: ' + r.n1 + ' câu</span><span class="chip">Phần II: ' + r.n2 + ' câu</span><span class="chip">Phần III: ' + r.n3 + ' câu</span></div>' +
         '<p class="hint">' +
-        (pr
-          ? 'Điểm sẽ đặt theo mẫu ' +
-            pr.n1 +
-            ' · ' +
-            pr.n2 +
-            ' · ' +
-            pr.n3 +
-            ': ' +
-            fmt(pr.p1) +
-            ' điểm mỗi câu Phần I, tối đa ' +
-            fmt(pr.p2) +
-            ' mỗi câu Phần II, ' +
-            fmt(pr.p3) +
-            ' mỗi câu Phần III.'
-          : 'Điểm giữ nguyên như đang đặt (' +
-            fmt(cfg.p1) +
-            ' · ' +
-            fmt(cfg.p2) +
-            ' · ' +
-            fmt(cfg.p3) +
-            '). Chỉnh ở mục Cấu trúc đề nếu cần.') +
-        ' Các mã đề đã có được giữ lại; mã đề nào trùng số thì được cập nhật, mã mới được thêm ' +
-        'vào. Quét tiếp mã QR khác để thêm nữa.</p>' +
-        r.warnings
-          .map(function (w) {
-            return '<div class="note">' + esc(w) + '</div>';
-          })
-          .join('') +
-        '<div class="actions"><button type="button" class="btn primary" id="qrApply">Dùng đáp án ' +
-        'này</button><button type="button" class="btn ghost" id="qrCancel">Bỏ ' +
-        'qua</button></div></div>';
+        (pr ? 'Điểm sẽ đặt theo mẫu ' + pr.n1 + ' · ' + pr.n2 + ' · ' + pr.n3 + ': ' + fmt(pr.p1) + ' điểm mỗi câu Phần I, tối đa ' + fmt(pr.p2) + ' mỗi câu Phần II, ' + fmt(pr.p3) + ' mỗi câu Phần III.'
+            : 'Điểm giữ nguyên như đang đặt (' + fmt(cfg.p1) + ' · ' + fmt(cfg.p2) + ' · ' + fmt(cfg.p3) + '). Chỉnh ở mục Cấu trúc đề nếu cần.') +
+        ' Các mã đề đã có được giữ lại; mã đề trùng số sẽ được cập nhật, mã mới được thêm vào.</p>' +
+        r.warnings.map(function (w) { return '<div class="note">' + esc(w) + '</div>'; }).join('') +
+        '<div class="actions"><button type="button" class="btn primary" id="qrApply">Dùng đáp án này</button><button type="button" class="btn ghost" id="qrCancel">Bỏ qua</button></div></div>';
     } else if (qrState.kind === 'done') {
       h +=
-        '<div class="note ok"><b>' +
-        (qrState.head || 'Đã nhập đáp án từ mã QR.') +
-        '</b> ' +
-        esc(qrState.text) +
-        '</div>' +
-        (qrState.warns || [])
-          .map(function (w) {
-            return '<div class="note">' + esc(w) + '</div>';
-          })
-          .join('') +
-        (qrUndo
-          ? '<div class="actions"><button type="button" class="btn small" id="qrUndoBtn">Hoàn tác</button></div>'
-          : '');
+        '<div class="note ok"><b>' + (qrState.head || 'Thành công.') + '</b> ' + esc(qrState.text) + '</div>' +
+        (qrState.warns || []).map(function (w) { return '<div class="note">' + esc(w) + '</div>'; }).join('') +
+        (qrUndo ? '<div class="actions"><button type="button" class="btn small" id="qrUndoBtn">Hoàn tác</button></div>' : '');
     }
+    
     host.innerHTML = h;
-    ['qrCam', 'qrPick'].forEach(function (id) {
-      $('#' + id).onchange = function () {
+
+    // Gán chức năng cho các nút bấm
+    const qp = $('#qrPick');
+    if (qp) {
+      qp.onchange = function () {
         const f = this.files && this.files[0];
         this.value = '';
         if (f) qrFromFile(f);
       };
-    });
-    $('#qrParse').onclick = function () {
-      qrFromText($('#qrText').value, true);
-    };
+    }
+
+    const ql = $('#qrLiveBtn');
+    if (ql) ql.onclick = startQrLive; // Nút kích hoạt quét Camera trực tiếp
+
+    // Chức năng đọc Excel đáp án
+    const ep = $('#excelPick');
+    if (ep) {
+      ep.onchange = async function () {
+        const f = this.files && this.files[0];
+        this.value = '';
+        if (!f) return;
+        qrState = { kind: 'busy' };
+        renderQr();
+        try {
+          await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              const data = new Uint8Array(e.target.result);
+              const workbook = window.XLSX.read(data, { type: 'array' });
+              const json = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+              
+              const rows = json.map(function(r) { return r.filter(function(c) { return c !== null && c !== undefined && String(c).trim() !== ''; }); })
+                               .filter(function(r) { return r.length > 0; });
+                               
+              if (!rows.length) throw new Error("File Excel trống.");
+              
+              let isTNMaker = String(rows[0][0]).toLowerCase().trim() === 'câu';
+              let formattedRows = [];
+
+              if (isTNMaker) {
+                let headerRow = rows[0];
+                for (let col = 1; col < headerRow.length; col++) {
+                    let code = String(headerRow[col]).trim();
+                    if (!code || code === 'undefined') continue;
+                    let rowData = [code];
+                    let currentPart = 1, lastQ = 0;
+                    for (let r = 1; r < rows.length; r++) {
+                        if (!rows[r] || rows[r].length === 0) continue;
+                        let qNum = parseInt(rows[r][0]);
+                        if (isNaN(qNum)) continue;
+                        if (qNum <= lastQ && qNum === 1) currentPart++;
+                        lastQ = qNum;
+                        
+                        let val = rows[r][col] !== undefined ? String(rows[r][col]).trim() : '';
+                        if (currentPart === 1) rowData.push(val.toUpperCase());
+                        else if (currentPart === 2) rowData = rowData.concat(val.replace(/_/g, '').toUpperCase().split(''));
+                        else if (currentPart === 3) rowData.push(val);
+                    }
+                    formattedRows.push(rowData);
+                }
+              } else {
+                formattedRows = rows.slice(1); // Bỏ qua dòng tiêu đề nếu là file Excel thường
+              }
+              qrFromText(JSON.stringify(formattedRows), false);
+            } catch (err) {
+              qrState = { kind: 'error', title: 'Lỗi file Excel', body: err.message || 'Không thể trích xuất dữ liệu.' };
+              renderQr();
+            }
+          };
+          reader.readAsArrayBuffer(f);
+        } catch (err) {
+          qrState = { kind: 'error', title: 'Lỗi mạng', body: 'Không tải được thư viện Excel.' };
+          renderQr();
+        }
+      };
+    }
+
+    $('#qrParse').onclick = function () { qrFromText($('#qrText').value, true); };
     const ap = $('#qrApply');
     if (ap) ap.onclick = applyQr;
     const ca = $('#qrCancel');
-    if (ca)
-      ca.onclick = function () {
-        qrState = { kind: 'idle' };
-        renderQr();
-      };
+    if (ca) ca.onclick = function () { qrState = { kind: 'idle' }; renderQr(); };
     const un = $('#qrUndoBtn');
     if (un) un.onclick = undoQr;
     $('#qrClearAll').onclick = function () {
       qrUndo = JSON.parse(JSON.stringify(cfg));
-      cfg.versions = [emptyVer('')];
+      cfg.versions = [{code: '', mcq: new Array(40).fill(null), tf: Array.from({length: 8}, function() { return new Array(4).fill(null); }), num: new Array(6).fill('')}];
       cfg.active = 0;
-      qrState = { kind: 'done', head: 'Đã xoá tất cả mã đề.', text: 'Quét mã QR để nhập đáp án mới.' };
+      qrState = { kind: 'done', head: 'Đã xoá tất cả mã đề.', text: 'Hãy nhập đáp án mới.' };
       saveCfg();
       scan = null;
       renderScan();
