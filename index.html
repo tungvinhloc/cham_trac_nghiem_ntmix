@@ -7229,180 +7229,134 @@ function renderPhoto(sheetImg, cfg, marks, o) {
      Cấu trúc đề được suy ra từ chính mã QR; nếu loại phiếu đang chọn không chứa vừa cấu trúc đó thì
      tự chọn loại phiếu phù hợp (kết quả trả về trong sheet). */
   function parseQrKey(text) {
-    let data;
-    try {
-      data = JSON.parse(String(text).trim());
-    } catch (e) {
-      return { error: 'json' };
-    }
-    
-    let rows = [];
-    
-    // NÂNG CẤP: Nhận diện tự động định dạng mã QR của TNMaker
-    if (data && typeof data === 'object' && !Array.isArray(data)) {
-      // Kiểm tra dấu hiệu của TNMaker (có key "success" hoặc chứa dấu "#")
-      let isTNMaker = data.success !== undefined || Object.values(data).some(function(v) { 
-        return typeof v === 'string' && v.indexOf('#') > -1; 
-      });
-
-      if (isTNMaker) {
-        for (let key in data) {
-          if (key === 'success' || key === 'type') continue; // Bỏ qua dữ liệu rác
-          const val = data[key];
-          if (typeof val === 'string' && val.indexOf('#') > -1) {
-            const parts = val.split('#');
-            let row = [key];
-            // Xử lý Phần 1 (Tách từng chữ A,B,C,D)
-            if (parts[0]) row = row.concat(parts[0].split(''));
-            // Xử lý Phần 2 (Xóa dấu _, tách từng chữ Đ,S)
-            if (parts[1]) row = row.concat(parts[1].replace(/_/g, '').split(''));
-            // Xử lý Phần 3 (Tách số bằng dấu _)
-            if (parts[2]) row = row.concat(parts[2].split('_'));
-            rows.push(row);
-          }
-        }
-     } else {
-        // Xử lý object theo định dạng NTMIX cũ
-        rows = Object.keys(data).map(function (k) {
-          return [k].concat(Array.isArray(data[k]) ? data[k] : []);
-        });
-      }
-    } else if (Array.isArray(data)) {
-      rows = data.length && Array.isArray(data[0]) ? data : [data];
-    } else {
-      return { error: 'shape' };
-    }
-    rows = rows.filter(function (r) {
-      return Array.isArray(r) && r.length > 1;
-    });
-    if (!rows.length) return { error: 'shape' };
-    const P = [],
-      faulty = [];
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i],
-        // Dùng .padStart(4, '0') để ép tất cả mã đề QR từ 3 số (ví dụ 278) thành đủ 4 số (0278)
-        raw = String(r[0] || '').replace(/\D/g, '').trim().padStart(4, '0').slice(-4),
-        rest = r.slice(1);
-      let j = rest.length;
-      while (j > 0 && numLike(rest[j - 1])) j--;
-      const letters = rest.slice(0, j).map(qrTok);
-      if (
-        letters.some(function (x) {
-          return !/^[ABCDS*-]$/.test(x);
-        })
-      )
-        return { error: 'shape' };
-      letters.forEach(function (x, k) {
-        if (x === '*') faulty.push({ code: raw, pos: k });
-      });
-      P.push({ code: raw, letters: letters, nums: rest.slice(j) });
-    }
-    const L = P[0].letters.length,
-      N3 = P[0].nums.length;
-    if (
-      P.some(function (p) {
-        return p.letters.length !== L || p.nums.length !== N3;
-      })
-    )
-      return { error: 'inconsistent' };
-    const order = [cfg.sheet].concat(
-      ['m', 'nh', 'kt'].filter(function (id) {
-        return id !== cfg.sheet;
-      })
-    );
-    let firstErr = null;
-    const fits = [];
-    order.forEach(function (id) {
-      const s = qrStructure(P, L, N3, id);
-      if (s.error) {
-        if (!firstErr) firstErr = s.error;
-      } else fits.push(Object.assign(s, { sheet: id }));
-    });
-    if (!fits.length) return { error: firstErr || 'structure' };
-    /* ưu tiên loại phiếu có sẵn đúng cấu trúc này (kể cả phiếu đang chọn), nếu không thì giữ phiếu đang chọn */
-    const best =
-      fits.find(function (f) {
-        return f.exact;
-      }) || fits[0];
-    const warnings = [];
-    if (best.sheet !== cfg.sheet)
-      warnings.push(
-        'Cấu trúc ' +
-          best.n1 +
-          ' · ' +
-          best.n2 +
-          ' · ' +
-          N3 +
-          ' khớp với ' +
-          SHEETS[best.sheet].name +
-          ', app đã chuyển sang loại phiếu này.'
-      );
-    if (best.multi)
-      warnings.push(
-        'Cấu trúc đề có thể hiểu theo nhiều cách, app chọn ' +
-          best.n1 +
-          ' câu Phần I và ' +
-          best.n2 +
-          ' câu Phần II. Kiểm tra lại ở mục Cấu trúc đề.'
-      );
-    if (faulty.length) {
-      const ex = faulty.slice(0, 3).map(function (f) {
-        return (
-          'mã ' +
-          (f.code || '—') +
-          ' ' +
-          (f.pos < best.n1 ? 'câu ' + (f.pos + 1) : 'Phần II ý ' + (f.pos - best.n1 + 1))
-        );
-      });
-      warnings.push(
-        'Có ' +
-          faulty.length +
-          ' ô ghi 0 (' +
-          ex.join(', ') +
-          (faulty.length > 3 ? ', …' : '') +
-          '): app hiểu là câu lỗi, học sinh nào cũng được điểm câu đó.'
-      );
-    }
-    if (P.length > 20) warnings.push('Chỉ lấy 20 mã đề đầu tiên.');
-    const codes = P.map(function (p) {
-      return p.code;
-    });
-    if (
-      codes.some(function (c, i) {
-        return c && codes.indexOf(c) !== i;
-      })
-    )
-      warnings.push('Có mã đề bị trùng nhau.');
-    const versions = P.slice(0, 20).map(function (p) {
-      const v = emptyVer(p.code);
-      for (let i = 0; i < best.n1; i++) {
-        const x = p.letters[i];
-        v.mcq[i] = x === '*' ? [0, 1, 2, 3] : x === '-' ? null : LET.indexOf(x);
-      }
-      for (let q = 0; q < best.n2; q++)
-        for (let r = 0; r < 4; r++) {
-          const x = p.letters[best.n1 + q * 4 + r];
-          v.tf[q][r] = x === '*' ? 'DS' : x === '-' ? null : x;
-        }
-      for (let q = 0; q < N3; q++) v.num[q] = numToKey(p.nums[q]);
-      return v;
-    });
-    const longNum = versions.some(function (v) {
-      return v.num.slice(0, N3).some(function (x) {
-        return x.length > 4;
-      });
-    });
-    if (longNum) warnings.push('Có đáp án Phần III dài hơn 4 ký tự, học sinh không thể tô hết trên phiếu.');
-    return {
-      versions: versions,
-      n1: best.n1,
-      n2: best.n2,
-      n3: N3,
-      sheet: best.sheet,
-      warnings: warnings,
-      total: P.length
-    };
+  let data;
+  try {
+    data = JSON.parse(String(text).trim());
+  } catch (e) {
+    return { error: 'json' };
   }
+  
+  let rows = [];
+  
+  // NÂNG CẤP: Nhận diện tự động định dạng mã QR của TNMaker
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    let isTNMaker = data.success !== undefined || Object.values(data).some(function(v) { 
+      return typeof v === 'string' && v.indexOf('#') > -1; 
+    });
+
+    if (isTNMaker) {
+      for (let key in data) {
+        if (key === 'success' || key === 'type') continue; 
+        const val = data[key];
+        if (typeof val === 'string' && val.indexOf('#') > -1) {
+          const parts = val.split('#');
+          // Ép buộc mã đề luôn sạch khoảng trắng và đủ 4 chữ số (ví dụ: 0278)
+          let cleanKey = String(key || '').trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
+          if (!cleanKey || cleanKey === '0000') continue;
+          
+          let row = [cleanKey];
+          // Xử lý Phần 1 (Tách từng chữ A,B,C,D)
+          if (parts[0]) row = row.concat(parts[0].split(''));
+          // Xử lý Phần 2 (Xóa dấu _, giữ nguyên chữ Đ và S)
+          if (parts[1]) {
+            let tfArr = parts[1].split('_');
+            tfArr.forEach(function(tf) {
+              let cleanTf = tf.toUpperCase().replace(/[^ĐS]/g, '');
+              row.push(cleanTf || '----');
+            });
+          }
+          // Xử lý Phần 3 (Tách số bằng dấu _)
+          if (parts[2]) row = row.concat(parts[2].split('_'));
+          rows.push(row);
+        }
+      }
+    } else {
+      // Xử lý object theo định dạng NTMIX cũ
+      rows = Object.keys(data).map(function (k) {
+        let cleanKey = String(k || '').trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
+        return [cleanKey].concat(Array.isArray(data[k]) ? data[k] : []);
+      });
+    }
+  } else if (Array.isArray(data)) {
+    rows = data.length && Array.isArray(data[0]) ? data : [data];
+  } else {
+    return { error: 'shape' };
+  }
+
+  rows = rows.filter(function (r) {
+    return Array.isArray(r) && r.length > 1;
+  });
+  if (!rows.length) return { error: 'shape' };
+
+  const P = [], faulty = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i],
+      raw = String(r[0] || '').replace(/\D/g, '').trim().padStart(4, '0').slice(-4),
+      rest = r.slice(1);
+    let j = rest.length;
+    while (j > 0 && numLike(rest[j - 1])) j--;
+    const letters = rest.slice(0, j).map(qrTok);
+    if (letters.some(function (x) { return !/^[ABCDSĐ*-]$/.test(x); }))
+      return { error: 'shape' };
+    letters.forEach(function (x, k) {
+      if (x === '*') faulty.push({ code: raw, pos: k });
+    });
+    P.push({ code: raw, letters: letters, nums: rest.slice(j) });
+  }
+
+  const L = P[0].letters.length, N3 = P[0].nums.length;
+  if (P.some(function (p) { return p.letters.length !== L || p.nums.length !== N3; }))
+    return { error: 'inconsistent' };
+
+  const order = [cfg.sheet].concat(['m', 'nh', 'kt'].filter(function (id) { return id !== cfg.sheet; }));
+  let firstErr = null;
+  const fits = [];
+  order.forEach(function (id) {
+    const s = qrStructure(P, L, N3, id);
+    if (s.error) {
+      if (!firstErr) firstErr = s.error;
+    } else fits.push(Object.assign(s, { sheet: id }));
+  });
+  if (!fits.length) return { error: firstErr || 'structure' };
+
+  const best = fits.find(function (f) { return f.exact; }) || fits[0];
+  const warnings = [];
+  if (best.sheet !== cfg.sheet)
+    warnings.push('Cấu trúc ' + best.n1 + ' · ' + best.n2 + ' · ' + N3 + ' khớp với ' + SHEETS[best.sheet].name + ', app đã chuyển sang loại phiếu này.');
+  if (best.multi)
+    warnings.push('Cấu trúc đề có thể hiểu theo nhiều cách, app chọn ' + best.n1 + ' câu Phần I và ' + best.n2 + ' câu Phần II. Kiểm tra lại ở mục Cấu trúc đề.');
+  
+  if (P.length > 20) warnings.push('Chỉ lấy 20 mã đề đầu tiên.');
+  const codes = P.map(function (p) { return p.code; });
+  if (codes.some(function (c, i) { return c && codes.indexOf(c) !== i; }))
+    warnings.push('Có mã đề bị trùng nhau.');
+
+  const versions = P.slice(0, 20).map(function (p) {
+    const v = emptyVer(p.code);
+    for (let i = 0; i < best.n1; i++) {
+      const x = p.letters[i];
+      v.mcq[i] = x === '*' ? [0, 1, 2, 3] : x === '-' ? null : LET.indexOf(x);
+    }
+    for (let q = 0; q < best.n2; q++)
+      for (let r = 0; r < 4; r++) {
+        const x = p.letters[best.n1 + q * 4 + r];
+        // Giữ nguyên Đ hoặc S cho Phần II
+        v.tf[q][r] = x === '*' ? 'ĐS' : x === '-' ? null : x;
+      }
+    for (let q = 0; q < N3; q++) v.num[q] = numToKey(p.nums[q]);
+    return v;
+  });
+
+  return {
+    versions: versions,
+    n1: best.n1,
+    n2: best.n2,
+    n3: N3,
+    sheet: best.sheet,
+    warnings: warnings,
+    total: P.length
+  };
+}
 
 let qrState = { kind: 'idle' },
     qrUndo = null;
