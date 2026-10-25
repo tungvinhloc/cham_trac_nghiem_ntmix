@@ -3334,6 +3334,12 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     return new Array(n).fill(null);
   };
 
+  // BƯỚC 1: HÀM LẤY THÔNG TIN HỌC SINH TỪ BỘ NHỚ
+  function getStudentInfo(sbd) {
+    const stds = LS.get('omr.students', {});
+    return stds[String(sbd).trim()] || null;
+  }
+
   /* ---------- Cấu hình & dữ liệu ---------- */
   const PRESETS = [
     { n1: 12, n2: 4, n3: 6, p1: 0.25, p2: 1, p3: 0.5 },
@@ -6076,8 +6082,9 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         );
       }).join('') +
       '</select>' +
-      '<button type="button" class="btn small" id="listNew">＋ Đợt mới</button><button type="button" class="btn small ghost" id="listRen">Đổi ' +
-      'tên</button>' +
+      '<button type="button" class="btn small" id="listNew">＋ Đợt mới</button><button type="button" class="btn small ghost" id="listRen">Đổi tên</button>' +
+      '<label class="btn small ghost" for="studentPick" style="margin:0; border: 1px solid var(--line); cursor:pointer; margin-left: 8px;">DS Học sinh</label>' +
+      '<input class="vh" type="file" id="studentPick" accept=".xlsx, .xls, .csv">' +
       (L.length > 1
         ? '<button type="button" class="btn small ghost danger" id="listDel">Xoá đợt</button>'
         : '') +
@@ -6167,6 +6174,40 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       $('#listNo').onclick = function () {
         listUI = null;
         renderRes();
+      };
+    }
+    const sp = $('#studentPick');
+    if (sp) {
+      sp.onchange = async function () {
+        const f = this.files && this.files[0];
+        this.value = '';
+        if (!f) return;
+        try {
+          await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              const data = new Uint8Array(e.target.result);
+              const workbook = window.XLSX.read(data, { type: 'array' });
+              const rows = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+              let students = LS.get('omr.students', {});
+              let added = 0;
+              rows.forEach(function(row) {
+                  let sbd = row['SBD'] || row['Số báo danh'] || row['sbd'];
+                  let name = row['HỌ VÀ TÊN'] || row['Họ và tên'] || row['Họ tên'] || row['Tên'];
+                  let cls = row['Lớp'] || row['LỚP'] || row['Class'] || '';
+                  if (sbd && name) {
+                      students[String(sbd).trim()] = { name: String(name).trim(), cls: String(cls).trim() };
+                      added++;
+                  }
+              });
+              LS.set('omr.students', students);
+              alert('Đã cập nhật ' + added + ' học sinh vào hệ thống!');
+              renderRes(); // Render lại tên vào bảng
+            } catch (err) { alert('Lỗi file Excel: ' + err.message); }
+          };
+          reader.readAsArrayBuffer(f);
+        } catch (err) { alert('Không tải được thư viện Excel.'); }
       };
     }
   }
