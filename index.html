@@ -5381,7 +5381,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     }
     return pts;
   }
-  function paintMarks(c, sc, g, ver, lw, ringFn) {
+function paintMarks(c, sc, g, ver, lw, ringFn) {
     c.lineJoin = 'round';
     const ringPts =
       ringFn ||
@@ -5404,7 +5404,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     const GOOD = '#1fb86a',
       BAD = '#ff4b3e',
       NEU = '#9aa3b5',
-      KEY = '#ffb300'; // Đổi màu đáp án đúng (khi làm sai/bỏ trống) thành Màu Vàng
+      KEY = '#ffb300'; // Đổi màu đáp án đúng thành Vàng
 
     // Vẽ Phần I
     sc.L.p1.forEach(function (b) {
@@ -5412,7 +5412,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         isSel = sc.p1[b.q].indexOf(b.o) >= 0,
         isKey = keyArr(ver.mcq[b.q]).indexOf(b.o) >= 0;
       if (isSel) poly(ringPts(sc, b, 1.4), st === 'ok' ? GOOD : st === 'skip' ? NEU : BAD, false);
-      else if (isKey && st !== 'ok') poly(ringPts(sc, b, 1.4), KEY, false, lw * 1.2); // Vòng vàng nét liền, viền dày hơn chút
+      else if (isKey && st !== 'ok') poly(ringPts(sc, b, 1.4), KEY, false, lw * 1.2); 
     });
     
     // Vẽ Phần II
@@ -5420,11 +5420,11 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       const sv = sc.p2[b.q][b.r],
         kv = ver.tf[b.q][b.r],
         mine = b.s === 0 ? 'D' : 'S';
-      const isSel = sv === mine || sv === 'X';
+      const isSel = sv === mine || sv === 'X'; // 'X' là khi tô cả Đ và S
       if (isSel)
         poly(ringPts(sc, b, 1.4), kv === null ? NEU : tfHas(kv, mine) && sv !== 'X' ? GOOD : BAD, false);
       else if (tfHas(kv, mine) && !(sv && sv !== 'X' && tfHas(kv, sv)))
-        poly(ringPts(sc, b, 1.4), KEY, false, lw * 1.2); // Vòng vàng nét liền
+        poly(ringPts(sc, b, 1.4), KEY, false, lw * 1.2); 
     });
     
     // Vẽ Phần III
@@ -5444,17 +5444,10 @@ function renderPhoto(sheetImg, cfg, marks, o) {
           return m.c === b.c && m.k === b.k;
         })
       )
-        poly(ringPts(sc, b, 1.4), KEY, false, lw * 1.2); // Vòng vàng nét liền
+        poly(ringPts(sc, b, 1.4), KEY, false, lw * 1.2); 
     });
-      else if (
-        st !== 'ok' &&
-        st !== 'skip' &&
-        numToCells(ver.num[b.q]).some(function (m) {
-          return m.c === b.c && m.k === b.k;
-        })
-      )
-        poly(ringPts(sc, b, 1.4), KEY, true, lw * 0.9);
-    });
+
+    // Vẽ Số báo danh & Mã đề
     sc.L.sbd.forEach(function (b) {
       if (sc.sbd[b.c] === String(b.d)) poly(ringPts(sc, b, 1.45), 'rgba(60,130,255,0.95)', false, lw * 0.9);
     });
