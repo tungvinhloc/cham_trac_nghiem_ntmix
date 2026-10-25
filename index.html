@@ -7280,7 +7280,8 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       faulty = [];
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i],
-        raw = String(r[0]).replace(/\D/g, '').slice(0, 4),
+        // Ép buộc mã đề luôn đủ 4 chữ số bằng cách thêm số 0 vào bên trái nếu bị thiếu
+        raw = String(r[0]).replace(/\D/g, '').padStart(4, '0').slice(-4),
         rest = r.slice(1);
       let j = rest.length;
       while (j > 0 && numLike(rest[j - 1])) j--;
@@ -7559,8 +7560,9 @@ let qrState = { kind: 'idle' },
               if (isTNMaker) {
                 let headerRow = rows[0];
                 for (let col = 1; col < headerRow.length; col++) {
-                    let code = String(headerRow[col]).trim();
-                    if (!code || code === 'undefined') continue;
+                    // .trim() để xóa sạch dấu cách thừa, .padStart(4, '0') để ép đủ 4 chữ số (vd: 278 thành 0278)
+                    let code = String(headerRow[col] || '').trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
+                    if (!code || code === '0000' || code === 'undefined') continue;
                     let rowData = [code];
                     let currentPart = 1, lastQ = 0;
                     for (let r = 1; r < rows.length; r++) {
@@ -7577,6 +7579,7 @@ let qrState = { kind: 'idle' },
                     }
                     formattedRows.push(rowData);
                 }
+              }
               } else {
                 formattedRows = rows.slice(1);
               }
