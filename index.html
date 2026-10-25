@@ -4421,13 +4421,14 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         },
         o || {}
       );
-  if (cfg.sheet === 'bgd25')
+ // BẮT BUỘC PHẢI THÊM ĐOẠN NÀY ĐỂ VẼ ẢNH MẪU CHO PHIẾU BGD25:
+    if (cfg.sheet === 'bgd25')
       o = Object.assign(
         {
-          ppm: 5,
-          w: 1200,
-          h: 1650,
-          quad: [
+          ppm: 5,            // Tỷ lệ phóng đại
+          w: 1200,           // Chiều rộng khung giả lập
+          h: 1650,           // Chiều cao khung giả lập
+          quad: [            // Tọa độ 4 góc ép khung cho ảnh mẫu
             [90, 90],
             [1100, 90],
             [1100, 1550],
