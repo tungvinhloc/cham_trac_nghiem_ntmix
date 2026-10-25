@@ -7554,33 +7554,49 @@ let qrState = { kind: 'idle' },
                                
               if (!rows.length) throw new Error("File Excel trống.");
               
-              let isTNMaker = String(rows[0][0]).toLowerCase().trim() === 'câu';
+              let isTNMaker = String(rows[0][0] || '').toLowerCase().trim() === 'câu';
               let formattedRows = [];
 
               if (isTNMaker) {
                 let headerRow = rows[0];
                 for (let col = 1; col < headerRow.length; col++) {
-                    // .trim() để xóa sạch dấu cách thừa, .padStart(4, '0') để ép đủ 4 chữ số (vd: 278 thành 0278)
-                    let code = String(headerRow[col] || '').trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
-                    if (!code || code === '0000' || code === 'undefined') continue;
+                    let rawCol = headerRow[col];
+                    if (rawCol === undefined || rawCol === null || String(rawCol).trim() === '') continue;
+                    
+                    // LÀM SẠCH VÀ ÉP ĐỦ 4 CHỮ SỐ CHO MÃ ĐỀ EXCEL (VD: 278 -> 0278)
+                    let code = String(rawCol).trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
+                    if (!code || code === '0000') continue;
+                    
                     let rowData = [code];
                     let currentPart = 1, lastQ = 0;
+                    
                     for (let r = 1; r < rows.length; r++) {
                         if (!rows[r] || rows[r].length === 0) continue;
                         let qNum = parseInt(rows[r][0]);
                         if (isNaN(qNum)) continue;
-                        if (qNum <= lastQ && qNum === 1) currentPart++;
+                        
+                        // Kiểm tra nếu số câu quay đầu nhỏ hơn hoặc bằng câu trước -> chuyển sang Phần tiếp theo (Phần II, Phần III)
+                        if (qNum <= lastQ && qNum === 1) {
+                            currentPart++;
+                        }
                         lastQ = qNum;
                         
-                        let val = rows[r][col] !== undefined ? String(rows[r][col]).trim() : '';
-                        if (currentPart === 1) rowData.push(val.toUpperCase());
-                        else if (currentPart === 2) rowData = rowData.concat(val.replace(/_/g, '').toUpperCase().split(''));
-                        else if (currentPart === 3) rowData.push(val);
+                        let val = rows[r][col] !== undefined && rows[r][col] !== null ? String(rows[r][col]).trim() : '';
+                        
+                        if (currentPart === 1) {
+                            // Phần I: lấy chữ cái đầu (A, B, C, D)
+                            rowData.push(val.toUpperCase().charAt(0) || '-');
+                        } else if (currentPart === 2) {
+                            // Phần II: Xử lý chuỗi Đúng/Sai (ví dụ ĐĐSĐ giữ nguyên hoặc chuyển đổi ký tự)
+                            let tfStr = val.toUpperCase().replace(/[Đ]/g, 'D').replace(/[^DS]/g, '');
+                            rowData.push(tfStr || '----');
+                        } else {
+                            // Phần III: Trả lời ngắn (số)
+                            rowData.push(val);
+                        }
                     }
                     formattedRows.push(rowData);
                 }
-              } else {
-                formattedRows = rows.slice(1);
               }
               qrFromText(JSON.stringify(formattedRows), false);
             } catch (err) {
