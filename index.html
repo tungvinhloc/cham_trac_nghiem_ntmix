@@ -1449,6 +1449,8 @@ const SHEET_JPG="assets/sheet-1.jpg";
 const SHEET2_JPG="assets/sheet-2.jpg";
 const SHEET3_JPG="assets/sheet-3.jpg";
 const SHEET_PDF="assets/sheet.pdf";
+const SHEET4_JPG="assets/bgd2025.jpg";
+const SHEET4_PDF="assets/bgd2025.pdf";
 /* ===================== Lõi nhận diện phiếu TLTN (Nguyễn Huệ) ===================== */
 /* Toạ độ tính bằng mm trên trang 208 x 297 mm, đo trực tiếp từ file PDF gốc. */
 /* ---- Phiếu 1: PHIẾU TLTN Nguyễn Huệ (mm, trang 208 x 297) ---- */
@@ -1636,7 +1638,61 @@ const SHEET_M = {
   MAX2: 2,
   MAX3: 4
 };
-const SHEETS = { nh: SHEET_NH, kt: SHEET_KT, m: SHEET_M };
+const SHEET_BGD25 = {
+  id: 'bgd25',
+  name: 'Phiếu BGD 2025 (4MĐ)',
+  PW: 210, // Kích thước A4 chuẩn (mm)
+  PH: 297,
+  RB: 1.45,
+  ORIENT: 'rings', // Dùng thuật toán dò vòng tròn để xác định chiều phiếu
+  // Tọa độ 4 góc đen (Ước tính theo chuẩn A4, bạn có thể cần tinh chỉnh mm thực tế)
+  CORNERS: [
+    [10.0, 10.0],
+    [200.0, 10.0],
+    [200.0, 287.0],
+    [10.0, 287.0]
+  ],
+  NAME: [74, 52, 66, 16],
+  MARK_ROWS: [
+    [[10.0, 10.0], [200.0, 10.0]],
+    [[10.0, 287.0], [200.0, 287.0]]
+  ],
+  BAND_Y: [150.0],
+  bands: false, 
+  SBD_X: [145.6, 149.6, 153.6, 157.7, 161.8, 165.8, 169.8, 173.8],
+  MD_X: [181.9, 185.9, 189.9, 194.0],
+  ID_Y: [33.8, 39.7, 45.5, 51.4, 57.2, 63.0, 68.9, 74.7, 80.6, 86.5],
+  // Tọa độ Phần I (4 cột x 10 câu)
+  P1_X: [
+    [22.5, 30.8, 39.1, 47.4],
+    [69.5, 77.8, 86.2, 94.4],
+    [116.5, 124.8, 133.2, 141.4],
+    [163.5, 171.8, 180.1, 188.4]
+  ],
+  P1_Y: [108.9, 114.0, 118.9, 123.9, 128.9, 133.9, 138.9, 143.9, 148.9, 153.9],
+  // Tọa độ Phần II (4 cột x 2 câu x 4 ý)
+  P2_X: [
+    [22.6, 30.8], [39.2, 47.5],
+    [69.3, 77.8], [86.1, 94.4],
+    [116.4, 124.7], [133.2, 141.4],
+    [163.2, 171.7], [180.0, 188.4]
+  ],
+  P2_Y: [179.3, 184.3, 189.3, 194.3],
+  // Tọa độ Phần III (6 câu)
+  P3_X: [
+    [21.4, 26.4, 31.4, 36.4],
+    [51.4, 56.4, 61.4, 66.4],
+    [81.4, 86.4, 91.4, 96.4],
+    [111.4, 116.4, 121.4, 126.4],
+    [141.3, 146.4, 151.4, 156.4],
+    [171.4, 176.4, 181.4, 186.4]
+  ],
+  P3_DASH: 217.0,
+  P3_COMMA: 222.7,
+  P3_D: [228.2, 233.7, 239.3, 244.9, 250.5, 256.1, 261.6, 267.2, 272.7, 278.3],
+  MAX1: 40, MAX2: 8, MAX3: 6
+};
+const SHEETS = { nh: SHEET_NH, kt: SHEET_KT, m: SHEET_M, bgd25: SHEET_BGD25 };
 let SHEET = SHEET_NH,
   K = 1,
   MS = 3.8,
@@ -3541,6 +3597,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         ['nh', 'Phiếu B&amp;T Pro - F'],
         ['m', 'Phiếu B&amp;T Pro - M'],
         ['kt', 'Phiếu B&amp;T Pro - S']
+        ['bgd25', 'Phiếu BGD 2025 (4MĐ)']
       ]
         .map(function (x) {
           return (
@@ -4194,6 +4251,24 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       };
       return;
     }
+    if (cfg.sheet === 'bgd25') {
+      $('#sheetCard').innerHTML =
+        '<h2>Phiếu BGD 2025 (4 Mã Đề)</h2>' +
+        '<p class="hint">Mẫu phiếu chuẩn cấu trúc 2025 của Bộ GD&ĐT: SBD 8 số, Mã đề 4 số. Gồm 40 câu Phần I, 8 câu Phần II và 6 câu Phần III.</p>' +
+        '<img class="sheetimg" alt="Xem trước phiếu BGD 2025" src="' + SHEET4_JPG + '">' +
+        '<div class="actions"><button type="button" class="btn primary" id="pdfBtn">Tải phiếu gốc (PDF)</button></div>' +
+        '<p class="hint" id="pdfMsg">In khổ A4 tỷ lệ 100%. Đảm bảo 4 ô vuông đen ở 4 góc hiển thị rõ ràng.</p>';
+      $('#pdfBtn').onclick = async function () {
+        const msg = $('#pdfMsg');
+        this.disabled = true;
+        const st = await saveFile('phieu-bgd-2025.pdf', await fetchBytes(SHEET4_PDF));
+        if (st === 'saved') msg.textContent = 'Đã lưu file PDF của phiếu.';
+        else if (st === 'declined') msg.textContent = 'Bạn đã huỷ lưu. Nhấn lại nút để tải.';
+        else msg.textContent = 'Chế độ xem này không cho tải file. Nhấn giữ ảnh để lưu.';
+        this.disabled = false;
+      };
+      return;
+    }
     $('#sheetCard').innerHTML =
       '<h2>Phiếu B&amp;T Pro - F</h2>' +
       '<p class="hint">Ứng dụng chấm đúng trên mẫu phiếu này: số báo danh 8 chữ số, mã đề 4 chữ ' +
@@ -4251,8 +4326,11 @@ function renderPhoto(sheetImg, cfg, marks, o) {
   const sheetReady = loadImg(SHEET_JPG),
     sheet2Ready = loadImg(SHEET2_JPG),
     sheet3Ready = loadImg(SHEET3_JPG);
+    sheet4Ready = loadImg(SHEET4_JPG);
   const curSheetImg = function () {
-    return cfg.sheet === 'kt' ? sheet2Ready : cfg.sheet === 'm' ? sheet3Ready : sheetReady;
+    return cfg.sheet === 'kt' ? sheet2Ready : 
+           cfg.sheet === 'm' ? sheet3Ready : 
+           cfg.sheet === 'bgd25' ? sheet4Ready : sheetReady; // Cập nhật dòng này
   };
   function buildMarks(ver) {
     const rng = mulberry32(5),
