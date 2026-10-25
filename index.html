@@ -7100,13 +7100,43 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     } catch (e) {
       return { error: 'json' };
     }
-    let rows;
-    if (Array.isArray(data)) rows = data.length && Array.isArray(data[0]) ? data : [data];
-    else if (data && typeof data === 'object')
-      rows = Object.keys(data).map(function (k) {
-        return [k].concat(Array.isArray(data[k]) ? data[k] : []);
+    
+    let rows = [];
+    
+    // NÂNG CẤP: Nhận diện tự động định dạng mã QR của TNMaker
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      // Kiểm tra dấu hiệu của TNMaker (có key "success" hoặc chứa dấu "#")
+      let isTNMaker = data.success !== undefined || Object.values(data).some(function(v) { 
+        return typeof v === 'string' && v.indexOf('#') > -1; 
       });
-    else return { error: 'shape' };
+
+      if (isTNMaker) {
+        for (let key in data) {
+          if (key === 'success' || key === 'type') continue; // Bỏ qua dữ liệu rác
+          const val = data[key];
+          if (typeof val === 'string' && val.indexOf('#') > -1) {
+            const parts = val.split('#');
+            let row = [key];
+            // Xử lý Phần 1 (Tách từng chữ A,B,C,D)
+            if (parts[0]) row = row.concat(parts[0].split(''));
+            // Xử lý Phần 2 (Xóa dấu _, tách từng chữ Đ,S)
+            if (parts[1]) row = row.concat(parts[1].replace(/_/g, '').split(''));
+            // Xử lý Phần 3 (Tách số bằng dấu _)
+            if (parts[2]) row = row.concat(parts[2].split('_'));
+            rows.push(row);
+          }
+        }
+      } else {
+        // Xử lý object theo định dạng NTMIX cũ
+        rows = Object.keys(data).map(function (k) {
+          return [k].concat(Array.isArray(data[k]) ? data[k] : []);
+        });
+      }
+    } else if (Array.isArray(data)) {
+      rows = data.length && Array.isArray(data[0]) ? data : [data];
+    } else {
+      return { error: 'shape' };
+    }
     rows = rows.filter(function (r) {
       return Array.isArray(r) && r.length > 1;
     });
