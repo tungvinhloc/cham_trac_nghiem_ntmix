@@ -5640,7 +5640,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         if (camSupported()) startLive();
         else $('#cam').click();
       };
-    // CHỨC NĂNG NẠP EXCEL NGAY TRÊN MÀN HÌNH CHẤM BÀI
+   // CHỨC NĂNG NẠP EXCEL NGAY TRÊN MÀN HÌNH CHẤM BÀI
     const spScan = $('#studentPickScan');
     if (spScan) {
       spScan.onchange = async function () {
@@ -5658,7 +5658,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
               let students = LS.get('omr.students', {});
               let added = 0;
               rows.forEach(function(row) {
-                  let sbd = row['SBD'] || row['Số báo danh'] || row['sbd'];
+                  let sbd = row['SBD'] || row['Số báo danh'] || row['sbd'] || row['Mã học sinh'];
                   let name = row['HỌ VÀ TÊN'] || row['Họ và tên'] || row['Họ tên'] || row['Tên'];
                   let cls = row['Lớp'] || row['LỚP'] || row['Class'] || '';
                   if (sbd && name) {
