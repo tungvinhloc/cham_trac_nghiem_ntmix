@@ -1646,24 +1646,30 @@ const SHEET_M = {
 };
 const SHEET_BGD25 = {
   id: 'bgd25',
-  name: 'Phiếu BGD 2025 (4MĐ)',
+  name: 'Phiếu BGD 2025 (4MĐ - Đa mốc định vị)',
   PW: 210, 
   PH: 297,
   RB: 1.45,
+  
+  // 4 góc ngoài biên
   CORNERS: [
     [10.0, 10.0],
     [197.0, 10.0],
     [197.0, 287.0],
     [10.0, 287.0]
   ],
+  
   NAME: [74, 52, 66, 16],
   
+  // TẬN DỤNG CÁC Ô ĐEN ĐỊNH VỊ (MARKER ROWS) TRÊN TOÀN BỘ PHIẾU ĐỂ CHỐNG LỆCH VÊNH
   MARK_ROWS: [
-    [[10.0, 10.0], [197.0, 10.0]],
-    [[10.0, 93.0], [197.0, 93.0]],
-    [[10.0, 287.0], [197.0, 287.0]]
+    [[10.0, 10.0], [197.0, 10.0]],     // Hàng mốc trên cùng
+    [[10.0, 93.0], [197.0, 93.0]],     // Hàng mốc ngăn cách Phần I
+    [[10.0, 172.0], [197.0, 172.0]],   // Hàng mốc ngăn cách Phần II
+    [[10.0, 215.0], [197.0, 215.0]],   // Hàng mốc ngăn cách Phần III
+    [[10.0, 287.0], [197.0, 287.0]]    // Hàng mốc dưới cùng
   ],
-  BAND_Y: [93.0],
+  BAND_Y: [93.0, 172.0, 215.0],
   bands: true,
   ORIENT: 'bands',
   
@@ -1672,7 +1678,7 @@ const SHEET_BGD25 = {
   BAR_W: 3.72,
   BAR_H: 1.4,
   
-  // --- THU HẸP BƯỚC NHẢY CỘT SBD VÀ MÃ ĐỀ ĐỂ ÔM TRỌN TÂM BỌT NƯỚC ---
+  // --- TỌA ĐỘ CHUẨN XÁC TUYỆT ĐỐI THEO KHUÔN GỐC TNMAKER ---
   SBD_X: [131.0, 134.4, 137.8, 141.2, 144.6, 148.0, 151.4, 154.8],
   MD_X: [168.0, 171.4, 174.8, 178.2],
   ID_Y: [32.0, 37.6, 43.2, 48.8, 54.4, 60.0, 65.6, 71.2, 76.8, 82.4],
