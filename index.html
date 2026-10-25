@@ -7263,28 +7263,30 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         if (typeof val === 'string' && val.indexOf('#') > -1) {
           const parts = val.split('#');
           
-          // --- ÉP BUỘC CHUẨN HÓA MÃ ĐỀ ĐỦ 4 CHỮ SỐ (VD: 278 -> 0278) ---
-          let cleanKey = String(key || '').trim().replace(/\D/g, '').padStart(4, '0');
-          if (cleanKey.length > 4) cleanKey = cleanKey.slice(-4);
-          if (!cleanKey || cleanKey === '0000') continue;
+          // Lấy nguyên bản mã đề, không đệm thêm số 0
+          let cleanKey = String(key || '').trim().replace(/\D/g, '');
+          if (!cleanKey) continue;
           
           let row = [cleanKey];
+          
+          // Phần I: Tách lẻ từng đáp án A, B, C, D
           if (parts[0]) row = row.concat(parts[0].split(''));
+          
+          // Phần II: Xóa dấu _, chuyển Đ thành D, sau đó TÁCH LẺ từng ký tự để app không báo lỗi định dạng
           if (parts[1]) {
-            let tfArr = parts[1].split('_');
-            tfArr.forEach(function(tf) {
-              let cleanTf = tf.toUpperCase().replace(/[^ĐS]/g, '');
-              row.push(cleanTf || '----');
-            });
+            let cleanTf = parts[1].toUpperCase().replace(/_/g, '').replace(/Đ/g, 'D').replace(/[^DS\-]/g, '');
+            row = row.concat(cleanTf.split(''));
           }
+          
+          // Phần III: Tách lẻ các đáp án số bằng dấu _
           if (parts[2]) row = row.concat(parts[2].split('_'));
+          
           rows.push(row);
         }
       }
     } else {
       rows = Object.keys(data).map(function (k) {
-        let cleanKey = String(k || '').trim().replace(/\D/g, '').padStart(4, '0');
-        if (cleanKey.length > 4) cleanKey = cleanKey.slice(-4);
+        let cleanKey = String(k || '').trim().replace(/\D/g, '');
         return [cleanKey].concat(Array.isArray(data[k]) ? data[k] : []);
       });
     }
@@ -7302,25 +7304,27 @@ function renderPhoto(sheetImg, cfg, marks, o) {
   const P = [], faulty = [];
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i],
-      raw = String(r[0] || '').replace(/\D/g, '').trim().padStart(4, '0'),
-      raw4 = raw.length > 4 ? raw.slice(-4) : raw,
+      raw = String(r[0] || '').trim().replace(/\D/g, ''),
       rest = r.slice(1);
     let j = rest.length;
     while (j > 0 && numLike(rest[j - 1])) j--;
+    
     const letters = rest.slice(0, j).map(qrTok);
-    if (letters.some(function (x) { return !/^[ABCDSĐ*-]$/.test(x); }))
+    // Kiểm tra định dạng: Nếu có ký tự lạ (dính chùm) sẽ báo lỗi shape
+    if (letters.some(function (x) { return !/^[ABCDS*-]$/.test(x); }))
       return { error: 'shape' };
+      
     letters.forEach(function (x, k) {
-      if (x === '*') faulty.push({ code: raw4, pos: k });
+      if (x === '*') faulty.push({ code: raw, pos: k });
     });
-    P.push({ code: raw4, letters: letters, nums: rest.slice(j) });
+    P.push({ code: raw, letters: letters, nums: rest.slice(j) });
   }
 
   const L = P[0].letters.length, N3 = P[0].nums.length;
   if (P.some(function (p) { return p.letters.length !== L || p.nums.length !== N3; }))
     return { error: 'inconsistent' };
 
-  const order = [cfg.sheet].concat(['m', 'nh', 'kt'].filter(function (id) { return id !== cfg.sheet; }));
+  const order = [cfg.sheet].concat(['m', 'nh', 'kt', 'bgd25'].filter(function (id) { return id !== cfg.sheet; }));
   let firstErr = null;
   const fits = [];
   order.forEach(function (id) {
@@ -7340,9 +7344,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     warnings.push('Có mã đề bị trùng nhau.');
 
   const versions = P.slice(0, 20).map(function (p) {
-    let vCode = String(p.code || '').trim().padStart(4, '0');
-    if (vCode.length > 4) vCode = vCode.slice(-4);
-    const v = emptyVer(vCode);
+    const v = emptyVer(p.code);
     
     for (let i = 0; i < best.n1; i++) {
       const x = p.letters[i];
@@ -7351,7 +7353,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     for (let q = 0; q < best.n2; q++)
       for (let r = 0; r < 4; r++) {
         const x = p.letters[best.n1 + q * 4 + r];
-        v.tf[q][r] = x === '*' ? 'ĐS' : x === '-' ? null : x;
+        v.tf[q][r] = x === '*' ? 'DS' : x === '-' ? null : x;
       }
     for (let q = 0; q < N3; q++) v.num[q] = numToKey(p.nums[q]);
     return v;
