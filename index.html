@@ -4421,6 +4421,24 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         },
         o || {}
       );
+  if (cfg.sheet === 'bgd25')
+      o = Object.assign(
+        {
+          ppm: 5,
+          w: 1200,
+          h: 1650,
+          quad: [
+            [90, 90],
+            [1100, 90],
+            [1100, 1550],
+            [90, 1550]
+          ],
+          light: 0.2,
+          noise: 8
+        },
+        o || {}
+      );
+
     return { canvas: renderPhoto(img, cfg, marks, o), marks: marks };
   }
 
