@@ -7564,7 +7564,7 @@ let qrState = { kind: 'idle' },
                     if (rawCol === undefined || rawCol === null || String(rawCol).trim() === '') continue;
                     
                     // LÀM SẠCH VÀ ÉP ĐỦ 4 CHỮ SỐ CHO MÃ ĐỀ EXCEL (VD: 278 -> 0278)
-                    let code = String(rawCol).trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
+                    let code = String(headerRow[col] || '').trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
                     if (!code || code === '0000') continue;
                     
                     let rowData = [code];
