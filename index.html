@@ -2373,7 +2373,8 @@ function pickQuad(cands, w, h, img, live) {
             consider(rc.o, rc.sh, mn, mx, [A, B, C], 0.9, rc.virt, Math.min(4, Math.ceil((MIDN * 2) / 3)));
         }
   }
-  if (best && hasMids && !live && best.inl < Math.min(3, Math.ceil(MIDN / 2))) return null;
+  // Bỏ qua kiểm tra khắt khe ô neo giữa đối với ảnh mẫu của phiếu BGD 2025
+  if (best && hasMids && !live && SHEET.id !== 'bgd25' && best.inl < Math.min(3, Math.ceil(MIDN / 2))) return null;
   if (best && best.virt >= 0) {
     /* tìm lại ô vuông bị sót ở góc dựng thêm, nếu thấy thì dùng vị trí thật */
     const vp = best.pts[best.virt];
