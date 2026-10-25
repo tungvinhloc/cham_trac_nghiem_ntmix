@@ -6289,6 +6289,18 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         pt +
         (r.edited ? ' · đã sửa' : '') +
         '</div></div><span class="sc">' +
+        fmt(r.total) +
+        '</span>' +
+        '<button type="button" data-del="' +
+        r.id +
+        '" aria-label="Xoá bài này">×</button>' +
+        '<div class="rowbtns">' +
+        (r.nm
+          ? '<img class="nmthumb" data-nm="' + r.id + '" data-edit="' + r.id + '" alt="Họ tên học sinh">'
+          : '') +
+        '<button type="button" class="viewimg" data-edit="' +
+        r.id +
+        '">Xem và sửa bài</button></div></div>';
     });
     h +=
       '</div><div class="actions"><button type="button" class="btn primary" id="csvBtn">Tải bảng ' +
@@ -7179,7 +7191,9 @@ function renderPhoto(sheetImg, cfg, marks, o) {
             rows.push(row);
           }
         }
-      } else {
+     }
+      }
+      else {
         // Xử lý object theo định dạng NTMIX cũ
         rows = Object.keys(data).map(function (k) {
           return [k].concat(Array.isArray(data[k]) ? data[k] : []);
