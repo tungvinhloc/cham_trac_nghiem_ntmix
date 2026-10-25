@@ -1380,6 +1380,16 @@ h3.ph {
       </div>
       <div id="scanOut" aria-live="polite"></div>
     </section>
+    <div id="qrLive" class="live" hidden role="dialog" aria-label="Quét QR trực tiếp">
+      <video id="qrVideo" playsinline muted autoplay></video>
+      <div class="lv-top" style="z-index: 7;">
+        <button class="lv-btn" type="button" id="qrClose" aria-label="Đóng">✕</button>
+        <div class="lv-chip">Đang tìm mã QR...</div>
+      </div>
+      <div class="lv-bottom" style="z-index: 7;">
+        <div class="lv-msg">Đưa mã QR vào giữa khung hình</div>
+      </div>
+    </div>
     <div id="resEdit" class="imgview resedit" hidden role="dialog" aria-label="Sửa bài đã chấm">
       <div class="iv-top"><button class="lv-btn" type="button" id="reClose" aria-label="Đóng">✕</button><div class="iv-msg">Sửa thông tin bài đã chấm</div><button class="lv-btn" type="button" id="reSave">Lưu</button></div>
       <div class="re-body" id="reBody"></div>
@@ -7311,9 +7321,75 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     };
   }
 
-  let qrState = { kind: 'idle' },
+let qrState = { kind: 'idle' },
     qrUndo = null;
- function renderQr() {
+
+  let qrStream = null;
+  let qrScanTimer = 0;
+
+  async function startQrLive() {
+    if (!camSupported()) {
+      qrState = { kind: 'error', title: 'Lỗi Camera', body: 'Trình duyệt không hỗ trợ.' };
+      renderQr();
+      return;
+    }
+    $('#qrLive').hidden = false;
+    document.body.style.overflow = 'hidden';
+    try {
+      let st;
+      try {
+        st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      } catch (e1) {
+        st = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+      qrStream = st;
+      const v = $('#qrVideo');
+      v.srcObject = st;
+      await v.play();
+      qrScanLoop();
+    } catch (e) {
+      stopQrLive();
+      qrState = { kind: 'error', title: 'Lỗi Camera', body: 'Không mở được camera: ' + e.message };
+      renderQr();
+    }
+  }
+
+  function stopQrLive() {
+    if (qrStream) {
+      qrStream.getTracks().forEach(function (t) { t.stop(); });
+      qrStream = null;
+    }
+    try { $('#qrVideo').srcObject = null; } catch(e){}
+    $('#qrLive').hidden = true;
+    document.body.style.overflow = '';
+    clearTimeout(qrScanTimer);
+  }
+
+  const btnQrClose = $('#qrClose');
+  if(btnQrClose) btnQrClose.addEventListener('click', stopQrLive);
+
+  async function qrScanLoop() {
+    if (!qrStream) return;
+    const v = $('#qrVideo');
+    if (v.readyState >= 2 && v.videoWidth) {
+      const cv = document.createElement('canvas');
+      cv.width = v.videoWidth;
+      cv.height = v.videoHeight;
+      cv.getContext('2d', { willReadFrequently: true }).drawImage(v, 0, 0, cv.width, cv.height);
+      try {
+        const text = await decodeQrCanvas(cv);
+        if (text) {
+          try { beepDone(); } catch(e){} // Kêu bíp
+          stopQrLive();
+          qrFromText(text, false);
+          return;
+        }
+      } catch (e) {}
+    }
+    qrScanTimer = setTimeout(qrScanLoop, 400);
+  }
+
+  function renderQr() {
     const host = $('#qrCard');
     let h =
       '<h2>Nhập đáp án tự động</h2><p class="hint">Quét mã QR hoặc nạp file Excel chứa đáp án các ' +
@@ -7361,7 +7437,6 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     
     host.innerHTML = h;
 
-    // Gán chức năng cho các nút bấm
     const qp = $('#qrPick');
     if (qp) {
       qp.onchange = function () {
@@ -7372,9 +7447,8 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     }
 
     const ql = $('#qrLiveBtn');
-    if (ql) ql.onclick = startQrLive; // Nút kích hoạt quét Camera trực tiếp
+    if (ql) ql.onclick = startQrLive;
 
-    // Chức năng đọc Excel đáp án
     const ep = $('#excelPick');
     if (ep) {
       ep.onchange = async function () {
@@ -7422,7 +7496,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
                     formattedRows.push(rowData);
                 }
               } else {
-                formattedRows = rows.slice(1); // Bỏ qua dòng tiêu đề nếu là file Excel thường
+                formattedRows = rows.slice(1);
               }
               qrFromText(JSON.stringify(formattedRows), false);
             } catch (err) {
