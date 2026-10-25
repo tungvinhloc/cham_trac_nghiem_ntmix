@@ -3596,7 +3596,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       [
         ['nh', 'Phiếu B&amp;T Pro - F'],
         ['m', 'Phiếu B&amp;T Pro - M'],
-        ['kt', 'Phiếu B&amp;T Pro - S']
+        ['kt', 'Phiếu B&amp;T Pro - S'],
         ['bgd25', 'Phiếu BGD 2025 (4MĐ)']
       ]
         .map(function (x) {
@@ -4325,7 +4325,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
   }
   const sheetReady = loadImg(SHEET_JPG),
     sheet2Ready = loadImg(SHEET2_JPG),
-    sheet3Ready = loadImg(SHEET3_JPG);
+    sheet3Ready = loadImg(SHEET3_JPG),
     sheet4Ready = loadImg(SHEET4_JPG);
   const curSheetImg = function () {
     return cfg.sheet === 'kt' ? sheet2Ready : 
