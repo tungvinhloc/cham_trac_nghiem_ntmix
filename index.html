@@ -7248,7 +7248,6 @@ function renderPhoto(sheetImg, cfg, marks, o) {
   
   let rows = [];
   
-  // NÂNG CẤP: Nhận diện tự động định dạng mã QR của TNMaker
   if (data && typeof data === 'object' && !Array.isArray(data)) {
     let isTNMaker = data.success !== undefined || Object.values(data).some(function(v) { 
       return typeof v === 'string' && v.indexOf('#') > -1; 
@@ -7260,14 +7259,14 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         const val = data[key];
         if (typeof val === 'string' && val.indexOf('#') > -1) {
           const parts = val.split('#');
-          // Ép buộc mã đề luôn sạch khoảng trắng và đủ 4 chữ số (ví dụ: 0278)
-          let cleanKey = String(key || '').trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
+          
+          // --- ÉP BUỘC CHUẨN HÓA MÃ ĐỀ ĐỦ 4 CHỮ SỐ (VD: 278 -> 0278) ---
+          let cleanKey = String(key || '').trim().replace(/\D/g, '').padStart(4, '0');
+          if (cleanKey.length > 4) cleanKey = cleanKey.slice(-4);
           if (!cleanKey || cleanKey === '0000') continue;
           
           let row = [cleanKey];
-          // Xử lý Phần 1 (Tách từng chữ A,B,C,D)
           if (parts[0]) row = row.concat(parts[0].split(''));
-          // Xử lý Phần 2 (Xóa dấu _, giữ nguyên chữ Đ và S)
           if (parts[1]) {
             let tfArr = parts[1].split('_');
             tfArr.forEach(function(tf) {
@@ -7275,15 +7274,14 @@ function renderPhoto(sheetImg, cfg, marks, o) {
               row.push(cleanTf || '----');
             });
           }
-          // Xử lý Phần 3 (Tách số bằng dấu _)
           if (parts[2]) row = row.concat(parts[2].split('_'));
           rows.push(row);
         }
       }
     } else {
-      // Xử lý object theo định dạng NTMIX cũ
       rows = Object.keys(data).map(function (k) {
-        let cleanKey = String(k || '').trim().replace(/\D/g, '').padStart(4, '0').slice(-4);
+        let cleanKey = String(k || '').trim().replace(/\D/g, '').padStart(4, '0');
+        if (cleanKey.length > 4) cleanKey = cleanKey.slice(-4);
         return [cleanKey].concat(Array.isArray(data[k]) ? data[k] : []);
       });
     }
@@ -7301,7 +7299,8 @@ function renderPhoto(sheetImg, cfg, marks, o) {
   const P = [], faulty = [];
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i],
-      raw = String(r[0] || '').replace(/\D/g, '').trim().padStart(4, '0').slice(-4),
+      raw = String(r[0] || '').replace(/\D/g, '').trim().padStart(4, '0'),
+      raw4 = raw.length > 4 ? raw.slice(-4) : raw,
       rest = r.slice(1);
     let j = rest.length;
     while (j > 0 && numLike(rest[j - 1])) j--;
@@ -7309,9 +7308,9 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     if (letters.some(function (x) { return !/^[ABCDSĐ*-]$/.test(x); }))
       return { error: 'shape' };
     letters.forEach(function (x, k) {
-      if (x === '*') faulty.push({ code: raw, pos: k });
+      if (x === '*') faulty.push({ code: raw4, pos: k });
     });
-    P.push({ code: raw, letters: letters, nums: rest.slice(j) });
+    P.push({ code: raw4, letters: letters, nums: rest.slice(j) });
   }
 
   const L = P[0].letters.length, N3 = P[0].nums.length;
@@ -7331,10 +7330,6 @@ function renderPhoto(sheetImg, cfg, marks, o) {
 
   const best = fits.find(function (f) { return f.exact; }) || fits[0];
   const warnings = [];
-  if (best.sheet !== cfg.sheet)
-    warnings.push('Cấu trúc ' + best.n1 + ' · ' + best.n2 + ' · ' + N3 + ' khớp với ' + SHEETS[best.sheet].name + ', app đã chuyển sang loại phiếu này.');
-  if (best.multi)
-    warnings.push('Cấu trúc đề có thể hiểu theo nhiều cách, app chọn ' + best.n1 + ' câu Phần I và ' + best.n2 + ' câu Phần II. Kiểm tra lại ở mục Cấu trúc đề.');
   
   if (P.length > 20) warnings.push('Chỉ lấy 20 mã đề đầu tiên.');
   const codes = P.map(function (p) { return p.code; });
@@ -7342,7 +7337,10 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     warnings.push('Có mã đề bị trùng nhau.');
 
   const versions = P.slice(0, 20).map(function (p) {
-    const v = emptyVer(p.code);
+    let vCode = String(p.code || '').trim().padStart(4, '0');
+    if (vCode.length > 4) vCode = vCode.slice(-4);
+    const v = emptyVer(vCode);
+    
     for (let i = 0; i < best.n1; i++) {
       const x = p.letters[i];
       v.mcq[i] = x === '*' ? [0, 1, 2, 3] : x === '-' ? null : LET.indexOf(x);
@@ -7350,7 +7348,6 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     for (let q = 0; q < best.n2; q++)
       for (let r = 0; r < 4; r++) {
         const x = p.letters[best.n1 + q * 4 + r];
-        // Giữ nguyên Đ hoặc S cho Phần II
         v.tf[q][r] = x === '*' ? 'ĐS' : x === '-' ? null : x;
       }
     for (let q = 0; q < N3; q++) v.num[q] = numToKey(p.nums[q]);
