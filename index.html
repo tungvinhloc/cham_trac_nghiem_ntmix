@@ -1454,7 +1454,7 @@ const SHEET4_PDF="https://tungvinhloc.github.io/cham_trac_nghiem_ntmix/assets/bg
 /* ---- Phiếu 1: PHIẾU TLTN Nguyễn Huệ (mm, trang 208 x 297) ---- */
 const SHEET_NH = {
   id: 'nh',
-  name: 'Phiếu 1 · Bộ GD-ĐT',
+  name: 'Phiếu NTMIX BGD 2025',
   PW: 208,
   PH: 297,
   RB: 1.45,
@@ -1533,7 +1533,7 @@ const SHEET_NH = {
    câu, Phần II 2 câu, Phần III 3 câu ---- */
 const SHEET_KT = {
   id: 'kt',
-  name: 'Phiếu B&T Pro - S',
+  name: 'Phiếu NTMIX - 2',
   PW: 1901,
   PH: 861,
   RB: 11.2,
@@ -1578,7 +1578,7 @@ const SHEET_KT = {
    Phần I 12 câu, Phần II 2 câu, Phần III 4 câu ---- */
 const SHEET_M = {
   id: 'm',
-  name: 'Phiếu B&T Pro - M',
+  name: 'Phiếu NTMIX - 1',
   PW: 1100,
   PH: 914,
   RB: 6.4,
@@ -3607,9 +3607,9 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     e.innerHTML =
       '<span class="lbl">Loại phiếu</span><div class="vchips">' +
       [
-        ['nh', 'Phiếu B&amp;T Pro - F'],
-        ['m', 'Phiếu B&amp;T Pro - M'],
-        ['kt', 'Phiếu B&amp;T Pro - S'],
+        ['nh', 'Phiếu NTMIX BGD 2025'],
+        ['m', 'Phiếu NTMIX 2025 - 1'],
+        ['kt', 'Phiếu NTMIX 2025 - 2'],
         ['bgd25', 'Phiếu BGD 2025 (4MĐ)']
       ]
         .map(function (x) {
@@ -4217,7 +4217,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
   function renderSheet() {
     if (cfg.sheet === 'm') {
       $('#sheetCard').innerHTML =
-        '<h2>Phiếu B&amp;T Pro - M</h2>' +
+        '<h2>Phiếu NTMIX - 1</h2>' +
         '<p class="hint">Mẫu phiếu M: số báo danh 8 chữ số, mã đề 4 chữ số, Phần I tối đa 12 câu, ' +
         'Phần II tối đa 2 câu, Phần III tối đa 4 câu. Ứng dụng căn ảnh theo 6 ô vuông đen (4 góc ' +
         'và 2 ô giữa hai mép bên), chiều của phiếu nhận ra nhờ các vòng tròn in sẵn.</p>' +
@@ -4242,7 +4242,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     }
     if (cfg.sheet === 'kt') {
       $('#sheetCard').innerHTML =
-        '<h2>Phiếu B&amp;T Pro - S</h2>' +
+        '<h2>Phiếu NTMIX - 2</h2>' +
         '<p class="hint">Mẫu phiếu S (ngắn): số thứ tự 2 chữ số, mã đề 3 chữ số, Phần I tối đa 10 ' +
         'câu, Phần II tối đa 2 câu, Phần III tối đa 3 câu. Ứng dụng căn ảnh theo 4 ô vuông đen ở ' +
         'góc, ô vuông thứ năm giữa mép trên giúp nhận ra phiếu bị đặt ngược.</p>' +
@@ -4283,7 +4283,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       return;
     }
     $('#sheetCard').innerHTML =
-      '<h2>Phiếu B&amp;T Pro - F</h2>' +
+      '<h2>Phiếu NTMIX BGD 2025</h2>' +
       '<p class="hint">Ứng dụng chấm đúng trên mẫu phiếu này: số báo danh 8 chữ số, mã đề 4 chữ ' +
       'số, Phần I tối đa 40 câu, Phần II tối đa 8 câu, Phần III tối đa 6 câu. Mỗi tờ có 4 ô ' +
       'vuông đen ở góc để căn ảnh.</p>' +
