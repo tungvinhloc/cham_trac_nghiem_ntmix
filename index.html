@@ -7280,8 +7280,8 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       faulty = [];
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i],
-        // Ép buộc mã đề luôn đủ 4 chữ số bằng cách thêm số 0 vào bên trái nếu bị thiếu
-        raw = String(r[0]).replace(/\D/g, '').padStart(4, '0').slice(-4),
+        // Dùng .padStart(4, '0') để ép tất cả mã đề QR từ 3 số (ví dụ 278) thành đủ 4 số (0278)
+        raw = String(r[0] || '').replace(/\D/g, '').trim().padStart(4, '0').slice(-4),
         rest = r.slice(1);
       let j = rest.length;
       while (j > 0 && numLike(rest[j - 1])) j--;
