@@ -1647,34 +1647,33 @@ const SHEET_M = {
 const SHEET_BGD25 = {
   id: 'bgd25',
   name: 'Phiếu BGD 2025 (4MĐ)',
-  PW: 210, // Kích thước mm chuẩn A4
+  PW: 210, 
   PH: 297,
   RB: 1.45,
   CORNERS: [
     [10.0, 10.0],
-    [200.0, 10.0],
-    [200.0, 287.0],
+    [197.0, 10.0],
+    [197.0, 287.0],
     [10.0, 287.0]
   ],
   NAME: [74, 52, 66, 16],
   
-  // BẬT CHẾ ĐỘ BANDS: Khai báo 4 hàng chứa các cụm ô định vị dọc 2 mép
-  bands: true, 
-  ORIENT: 'bands', // Đổi thuật toán nhận diện chiều sang bands
+  // NÂNG CẤP: Khai báo CHÍNH XÁC 3 hàng ô neo của phiếu TNMaker
+  bands: true,
+  ORIENT: 'bands',
   MARK_ROWS: [
-    [[10.0, 10.0], [200.0, 10.0]],     // Hàng 1: Góc trên
-    [[10.0, 114.5], [200.0, 114.5]],   // Hàng 2: Điểm neo ngang dòng phân cách Phần I
-    [[10.0, 194.5], [200.0, 194.5]],   // Hàng 3: Điểm neo ngang dòng phân cách Phần II & III
-    [[10.0, 287.0], [200.0, 287.0]]    // Hàng 4: Góc dưới
+    [[10.0, 10.0], [197.0, 10.0]],     // Hàng 1: Góc trên
+    [[10.0, 93.0], [197.0, 93.0]],     // Hàng 2: Điểm neo giữa mép (dưới Phần I)
+    [[10.0, 287.0], [197.0, 287.0]]    // Hàng 3: Góc dưới
   ],
-  BAND_Y: [114.5, 194.5], // Trục Y để chia băng nắn hình
+  BAND_Y: [93.0], // Phân mảnh nắn ảnh tại điểm neo giữa
   
-  // Chấm điểm thanh Bar nhỏ bên góc phải (dùng để xác định chiều phiếu cứng)
-  BARS_Y: [15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0], 
-  BAR_X: 200.0,
+  // Dò chiều phiếu cho các mẫu không dùng rings
+  BARS_Y: [31.75, 37.63, 43.34, 49.19, 55.03, 60.87, 66.71, 72.55, 78.26, 84.23],
+  BAR_X: 197.0,
   BAR_W: 3.72,
   BAR_H: 1.4,
-
+  
   SBD_X: [137, 142, 147, 152, 157, 162, 167, 172],
   MD_X: [182, 187, 192, 197],
   ID_Y: [25, 30, 35, 40, 45, 50, 55, 60, 65, 70],
