@@ -5404,14 +5404,18 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     const GOOD = '#1fb86a',
       BAD = '#ff4b3e',
       NEU = '#9aa3b5',
-      KEY = '#1fb86a';
+      KEY = '#ffb300'; // Đổi màu đáp án đúng (khi làm sai/bỏ trống) thành Màu Vàng
+
+    // Vẽ Phần I
     sc.L.p1.forEach(function (b) {
       const st = g.p1.st[b.q],
         isSel = sc.p1[b.q].indexOf(b.o) >= 0,
         isKey = keyArr(ver.mcq[b.q]).indexOf(b.o) >= 0;
       if (isSel) poly(ringPts(sc, b, 1.4), st === 'ok' ? GOOD : st === 'skip' ? NEU : BAD, false);
-      else if (isKey && st !== 'ok') poly(ringPts(sc, b, 1.4), KEY, true, lw * 0.9);
+      else if (isKey && st !== 'ok') poly(ringPts(sc, b, 1.4), KEY, false, lw * 1.2); // Vòng vàng nét liền, viền dày hơn chút
     });
+    
+    // Vẽ Phần II
     sc.L.p2.forEach(function (b) {
       const sv = sc.p2[b.q][b.r],
         kv = ver.tf[b.q][b.r],
@@ -5420,8 +5424,10 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       if (isSel)
         poly(ringPts(sc, b, 1.4), kv === null ? NEU : tfHas(kv, mine) && sv !== 'X' ? GOOD : BAD, false);
       else if (tfHas(kv, mine) && !(sv && sv !== 'X' && tfHas(kv, sv)))
-        poly(ringPts(sc, b, 1.4), KEY, true, lw * 0.9);
+        poly(ringPts(sc, b, 1.4), KEY, false, lw * 1.2); // Vòng vàng nét liền
     });
+    
+    // Vẽ Phần III
     sc.L.p3.forEach(function (b) {
       const cells = numToCells(sc.p3[b.q]),
         st = g.p3.st[b.q];
@@ -5431,6 +5437,15 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         })
       )
         poly(ringPts(sc, b, 1.4), st === 'ok' ? GOOD : st === 'skip' ? NEU : BAD, false);
+      else if (
+        st !== 'ok' &&
+        st !== 'skip' &&
+        numToCells(ver.num[b.q]).some(function (m) {
+          return m.c === b.c && m.k === b.k;
+        })
+      )
+        poly(ringPts(sc, b, 1.4), KEY, false, lw * 1.2); // Vòng vàng nét liền
+    });
       else if (
         st !== 'ok' &&
         st !== 'skip' &&
