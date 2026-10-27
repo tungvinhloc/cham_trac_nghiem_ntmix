@@ -4452,7 +4452,24 @@ function renderPhoto(sheetImg, cfg, marks, o) {
         },
         o || {}
       );
- 
+ // BẮT BUỘC PHẢI THÊM ĐOẠN NÀY ĐỂ VẼ ẢNH MẪU CHO PHIẾU BGD25:
+   if (cfg.sheet === 'bgd25')
+      o = Object.assign(
+        {
+          ppm: 4.5, // Độ nét của ảnh mẫu
+          w: 1300,  // Chiều rộng không gian mặt bàn
+          h: 1750,  // Chiều cao không gian mặt bàn
+          quad: [   // Ép 4 góc tờ giấy tạo hiệu ứng chụp 3D nghiêng
+            [150, 150],   
+            [1150, 100],  
+            [1250, 1600], 
+            [50, 1650]    
+          ],
+          light: 0.2, // Hiệu ứng đổ bóng
+          noise: 8    // Nhiễu hạt camera
+        },
+        o || {}
+      );
     return { canvas: renderPhoto(img, cfg, marks, o), marks: marks };
   }
 
