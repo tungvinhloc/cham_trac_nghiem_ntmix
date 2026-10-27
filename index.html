@@ -1,5 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>NTMIX v1.1 - Nguyễn Thanh Tùng</title>
+<title>NTMark v1.1 - Nguyễn Thanh Tùng</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Itim&display=swap">
 <style>
@@ -1352,8 +1352,8 @@ h3.ph {
   <header class="top">
     <div class="brand">
       <div class="brand">
-      <img src="assets/logo-ntmix.png" width="32" height="32" alt="Logo NTMIX" style="border-radius: 6px; object-fit: contain;">
-      <h1>NTMIX v1.1</h1>
+      <img src="assets/logo-ntmark.png" width="32" height="32" alt="Logo NTMark" style="border-radius: 6px; object-fit: contain;">
+      <h1>NTMark v1.1</h1>
     </div>
       <span class="pill" id="cfgChip"></span>
   </header>
@@ -1462,7 +1462,7 @@ const SHEET4_PDF="assets/bgd2025.pdf";
 /* ---- Phiếu 1: PHIẾU TLTN Nguyễn Huệ (mm, trang 208 x 297) ---- */
 const SHEET_NH = {
   id: 'nh',
-  name: 'Phiếu NTMIX BGD 2025',
+  name: 'Phiếu BGD Chuẩn 2025',
   PW: 208,
   PH: 297,
   RB: 1.45,
@@ -3639,7 +3639,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     e.innerHTML =
       '<span class="lbl">Loại phiếu</span><div class="vchips">' +
       [
-        ['nh', 'Phiếu NTMIX BGD 2025'],
+        ['nh', 'Phiếu BGD Chuẩn 2025'],
         ['m', 'Phiếu NTMIX 2025 - 1'],
         ['kt', 'Phiếu NTMIX 2025 - 2'],
         ['bgd25', 'Phiếu BGD 2025 (4MĐ)']
@@ -4316,7 +4316,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       return;
     }
     $('#sheetCard').innerHTML =
-      '<h2>Phiếu NTMIX BGD 2025</h2>' +
+      '<h2>Phiếu BGD Chuẩn 2025</h2>' +
       '<p class="hint">Ứng dụng chấm đúng trên mẫu phiếu này: số báo danh 8 chữ số, mã đề 4 chữ ' +
       'số, Phần I tối đa 40 câu, Phần II tối đa 8 câu, Phần III tối đa 6 câu. Mỗi tờ có 4 ô ' +
       'vuông đen ở góc để căn ảnh.</p>' +
@@ -4460,17 +4460,16 @@ function renderPhoto(sheetImg, cfg, marks, o) {
           w: 1300,  // Chiều rộng không gian mặt bàn
           h: 1750,  // Chiều cao không gian mặt bàn
           quad: [   // Ép 4 góc tờ giấy tạo hiệu ứng chụp 3D nghiêng
-            [150, 150],   // Góc trên trái lùi vào
-            [1150, 100],  // Góc trên phải lùi vào
-            [1250, 1600], // Góc dưới phải phóng to
-            [50, 1650]    // Góc dưới trái phóng to
+            [150, 150],   
+            [1150, 100],  
+            [1250, 1600], 
+            [50, 1650]    
           ],
           light: 0.2, // Hiệu ứng đổ bóng
           noise: 8    // Nhiễu hạt camera
         },
         o || {}
       );
-
     return { canvas: renderPhoto(img, cfg, marks, o), marks: marks };
   }
 
