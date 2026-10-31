@@ -4270,7 +4270,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       $('#pdfBtn').onclick = async function () {
         const msg = $('#pdfMsg');
         this.disabled = true;
-        const st = await saveFile('phieu-bt-pro-m.jpg', await fetchBytes(SHEET3_JPG));
+        const st = await saveFile('phieu-nh-01.jpg', await fetchBytes(SHEET3_JPG));
         if (st === 'saved') msg.textContent = 'Đã lưu ảnh phiếu.';
         else if (st === 'declined') msg.textContent = 'Bạn đã huỷ lưu. Nhấn lại nút để tải.';
         else msg.textContent = 'Chế độ xem này không cho tải file. Nhấn giữ ảnh phiếu ở trên để lưu về máy.';
@@ -4294,7 +4294,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
       $('#pdfBtn').onclick = async function () {
         const msg = $('#pdfMsg');
         this.disabled = true;
-        const st = await saveFile('phieu-bt-pro-s.jpg', await fetchBytes(SHEET2_JPG));
+        const st = await saveFile('phieu-nh-02.jpg', await fetchBytes(SHEET2_JPG));
         if (st === 'saved') msg.textContent = 'Đã lưu ảnh phiếu.';
         else if (st === 'declined') msg.textContent = 'Bạn đã huỷ lưu. Nhấn lại nút để tải.';
         else msg.textContent = 'Chế độ xem này không cho tải file. Nhấn giữ ảnh phiếu ở trên để lưu về máy.';
@@ -4336,7 +4336,7 @@ function renderPhoto(sheetImg, cfg, marks, o) {
     $('#pdfBtn').onclick = async function () {
       const msg = $('#pdfMsg');
       this.disabled = true;
-      const st = await saveFile('phieu-bt-pro-f.pdf', await fetchBytes(SHEET_PDF));
+      const st = await saveFile('phieu-bgd-2025-vc1239.pdf', await fetchBytes(SHEET_PDF));
       if (st === 'saved') msg.textContent = 'Đã lưu file PDF của phiếu.';
       else if (st === 'declined') msg.textContent = 'Bạn đã huỷ lưu. Nhấn lại nút để tải.';
       else
